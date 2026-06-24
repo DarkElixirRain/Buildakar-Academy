@@ -1,22 +1,31 @@
-import express from 'express';
-import type { Application, Request, Response, NextFunction } from 'express';
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
 
-const app: Application = express();
+import { userRoutes } from "./routes/user.routes";
+import { errorHandler } from "./middleware/error.middleware";
+import { notFound } from "./middleware/notFound.middleware";
 
+const app = express();
+
+// ── Security & utility middleware ──────────────────────────────────────────
+app.use(helmet());
+app.use(cors());
+app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
-// 404 handler
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ message: 'Route not found' });
+// ── Health check ───────────────────────────────────────────────────────────
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Global error handler
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Internal server error' });
-});
+// ── Routes ─────────────────────────────────────────────────────────────────
+app.use("/api/users", userRoutes);
+
+// ── Error handling ─────────────────────────────────────────────────────────
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;
