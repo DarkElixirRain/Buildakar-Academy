@@ -1,13 +1,14 @@
 import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuthStore } from '@/store/authStore';
+import { Feather } from '@expo/vector-icons';
 
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
@@ -29,15 +30,32 @@ function getDevMenuHint() {
 }
 
 export default function HomeScreen() {
+  const { user, logout } = useAuthStore();
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.heroSection}>
           <AnimatedIcon />
           <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
+            Welcome, {user?.name || 'Developer'}!
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={{ textAlign: 'center', marginTop: -Spacing.two }}>
+            You are successfully authenticated on Buildakar Academy.
           </ThemedText>
         </ThemedView>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => logout()}
+          className="flex-row items-center justify-center bg-red-50 border border-red-100 rounded-xl px-6 py-3.5 mb-2 w-full max-w-[280px]"
+        >
+          <Feather name="log-out" size={16} color="#dc2626" />
+          <ThemedText style={{ color: '#dc2626', fontWeight: '700', marginLeft: Spacing.two }}>
+            Sign Out
+          </ThemedText>
+        </TouchableOpacity>
 
         <ThemedText type="code" style={styles.code}>
           get started
@@ -46,7 +64,7 @@ export default function HomeScreen() {
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
           <HintRow
             title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+            hint={<ThemedText type="code">src/app/(tabs)/index.tsx</ThemedText>}
           />
           <HintRow title="Dev tools" hint={getDevMenuHint()} />
           <HintRow

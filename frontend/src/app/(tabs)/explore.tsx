@@ -61,12 +61,12 @@ export default function TabTwoScreen() {
         <ThemedView style={styles.sectionsWrapper}>
           <Collapsible title="File-based routing">
             <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
+              This app has auth screens inside <ThemedText type="code">src/app/(auth)/</ThemedText> and tab screens inside{' '}
+              <ThemedText type="code">src/app/(tabs)/</ThemedText>.
             </ThemedText>
             <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
+              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> handles authentication status checks
+              and automatically redirects users.
             </ThemedText>
             <ExternalLink href="https://docs.expo.dev/router/introduction">
               <ThemedText type="linkPrimary">Learn more</ThemedText>
@@ -89,9 +89,7 @@ export default function TabTwoScreen() {
 
           <Collapsible title="Images">
             <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
+              For static images, you can use the <DocumentIconSuffix /> to provide files for different screen densities.
             </ThemedText>
             <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
             <ExternalLink href="https://reactnative.dev/docs/images">
@@ -122,6 +120,14 @@ export default function TabTwoScreen() {
         {Platform.OS === 'web' && <WebBadge />}
       </ThemedView>
     </ScrollView>
+  );
+}
+
+function DocumentIconSuffix() {
+  return (
+    <>
+      <ThemedText type="code">@2x</ThemedText> and <ThemedText type="code">@3x</ThemedText> suffixes
+    </>
   );
 }
 
