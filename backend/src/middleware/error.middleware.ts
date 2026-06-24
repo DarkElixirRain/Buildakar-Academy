@@ -1,28 +1,16 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 
-export function errorHandler(
+export const errorHandler = (
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
-  _next: NextFunction
-) {
-  console.error("❌ Error:", err.message);
+  next: NextFunction
+) => {
+  console.error('Error:', err.message);
+  console.error('Stack:', err.stack);
 
-  // Prisma unique constraint violation
-  if ((err as any).code === "P2002") {
-    res.status(409).json({ success: false, error: "Record already exists" });
-    return;
-  }
-
-  // Prisma record not found
-  if ((err as any).code === "P2025") {
-    res.status(404).json({ success: false, error: "Record not found" });
-    return;
-  }
-
-  res.status(500).json({
+  return res.status(500).json({
     success: false,
-    error:
-      process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
+    message: 'Internal server error',
   });
-}
+};

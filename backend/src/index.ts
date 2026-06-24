@@ -1,28 +1,17 @@
-import "dotenv/config";
-import app from "./app";
-import { prisma } from "./lib/prisma";
+import app from './app';
+import { config } from './config';
 
-const PORT = Number(process.env.PORT) || 3000;
+const startServer = async () => {
+  try {
+    app.listen(config.port, () => {
+      console.log(`🚀 Server running on http://localhost:${config.port}`);
+      console.log(`📖 Environment: ${config.nodeEnv}`);
+      console.log(`🔐 JWT Secret: ${config.jwt.secret ? '✅ Set' : '❌ Not set'}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-async function main() {
-  // Verify DB connection before starting
-  await prisma.$connect();
-  console.log("✅ Database connected");
-
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📋 Health check → http://localhost:${PORT}/health`);
-  });
-}
-
-main().catch((err) => {
-  console.error("❌ Failed to start server:", err);
-  process.exit(1);
-});
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  await prisma.$disconnect();
-  console.log("🛑 Server shut down");
-  process.exit(0);
-});
+startServer();
