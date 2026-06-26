@@ -9,6 +9,7 @@ interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
+  role?: 'STUDENT' | 'INSTRUCTOR';
 }
 
 interface LoginData {
@@ -18,7 +19,7 @@ interface LoginData {
 
 export class AuthService {
   async register(data: RegisterData) {
-    const { email, password, firstName, lastName } = data;
+    const { email, password, firstName, lastName, role = 'STUDENT' } = data;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -39,6 +40,7 @@ export class AuthService {
         password: hashedPassword,
         firstName,
         lastName,
+        role,
       },
     });
 

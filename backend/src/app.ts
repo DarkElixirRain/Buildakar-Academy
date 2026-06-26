@@ -69,7 +69,7 @@ app.get('/health', (req: Request, res: Response) => {
 // Root route
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    name: 'Coursera Backend API',
+    name: 'Backend API',
     version: '1.0.0',
     status: 'running',
     endpoints: {
