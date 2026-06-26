@@ -3,12 +3,15 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-interface Instructor {
+export interface Instructor {
   id: string;
   name: string;
   expertise: string;
   photo: string;
   rating: number;
+  studentsCount?: number;
+  coursesCount?: number;
+  bio?: string;
   isFollowing?: boolean;
 }
 
@@ -46,7 +49,7 @@ export const TopInstructors: React.FC<TopInstructorsProps> = ({
         <Text className="text-[#0F172A] text-xl font-bold">
           Top Instructors
         </Text>
-        <TouchableOpacity onPress={onSeeAll}>
+        <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
           <Text className="text-[#2563EB] text-sm font-semibold">
             See All
           </Text>
@@ -92,6 +95,11 @@ export const TopInstructors: React.FC<TopInstructorsProps> = ({
                 <Text className="text-[#0F172A] text-xs font-medium ml-0.5">
                   {instructor.rating.toFixed(1)}
                 </Text>
+                {instructor.studentsCount && (
+                  <Text className="text-[#94A3B8] text-xs ml-1">
+                    • {instructor.studentsCount.toLocaleString()} students
+                  </Text>
+                )}
               </View>
 
               <TouchableOpacity 

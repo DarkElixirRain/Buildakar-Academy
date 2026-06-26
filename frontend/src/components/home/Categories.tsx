@@ -13,6 +13,7 @@ interface Category {
   color: string;
   image?: string;
   courseCount?: number;
+  slug?: string; // Add slug field
 }
 
 interface CategoriesProps {
@@ -39,14 +40,20 @@ const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&h=300&fit=crop',
 ];
 
+// Map category names to slugs
+const getCategorySlug = (name: string): string => {
+  return name.toLowerCase().replace(/\s+/g, '-');
+};
+
 export const Categories: React.FC<CategoriesProps> = ({
   categories,
   onCategoryPress,
   onSeeAll,
 }) => {
-  // Add course counts to categories
+  // Add course counts and slugs to categories
   const categoriesWithCount = categories.map((cat, index) => ({
     ...cat,
+    slug: cat.slug || getCategorySlug(cat.name),
     courseCount: Math.floor(Math.random() * 50) + 10, // Mock course count
   }));
 
@@ -56,17 +63,19 @@ export const Categories: React.FC<CategoriesProps> = ({
       onSeeAll();
     } else {
       // Navigate to the categories page
-      router.push('/(categories)');
+      router.push('/categories' as any);
     }
   };
 
-  // Handle category press
-  const handleCategoryPress = (categoryId: string) => {
+  // Handle category press - navigate using slug
+  const handleCategoryPress = (category: Category) => {
+    const slug = category.slug || getCategorySlug(category.name);
+    
     if (onCategoryPress) {
-      onCategoryPress(categoryId);
+      onCategoryPress(category.id);
     } else {
-      // Navigate to category detail page
-      router.push(`/categories/${categoryId}`);
+      // Navigate to category detail page using slug
+      router.push(`/categories/${slug}` as any);
     }
   };
 
@@ -99,12 +108,13 @@ export const Categories: React.FC<CategoriesProps> = ({
         {categoriesWithCount.map((category, index) => {
           const imageUrl = CATEGORY_IMAGES[category.name] || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
           const color = category.color || '#2563EB';
+          const slug = category.slug || getCategorySlug(category.name);
 
           return (
             <TouchableOpacity
               key={category.id}
               className="mr-4"
-              onPress={() => handleCategoryPress(category.id)}
+              onPress={() => handleCategoryPress(category)}
               activeOpacity={0.8}
             >
               <View 

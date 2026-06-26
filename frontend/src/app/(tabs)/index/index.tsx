@@ -92,24 +92,43 @@ export default function HomeScreen() {
     } as any);
   };
 
+  // FIXED: Handle category press with slug instead of ID
   const handleCategoryPress = (categoryId: string) => {
-    router.push({
-      pathname: '/(categories)/[id]',
-      params: { id: categoryId }
-    } as any);
-  };
-
-  const handleSeeAll = (section: string) => {
-    // Navigate to categories page when categories section is clicked
-    if (section === 'categories') {
-      router.push('/categories' as any);
+    // Find the category to get its name/slug
+    const category = categories?.find(cat => cat.id === categoryId);
+    if (category) {
+      // Convert category name to slug (e.g., "Development" -> "development" or "dev")
+      const slug = category.name.toLowerCase().replace(/\s+/g, '-');
+      // Navigate to /categories/slug (without parentheses)
+      router.push(`/categories/${slug}` as any);
     } else {
-      router.push({
-        pathname: '/(explore)',
-        params: { section }
-      } as any);
+      // Fallback: navigate to categories page
+      router.push('/categories' as any);
     }
   };
+
+  // FIXED: Handle See All for different sections
+  // FIXED: Handle See All for different sections
+// app/(tabs)/index.tsx
+
+// FIXED: Handle See All for different sections
+const handleSeeAll = (section: string) => {
+  if (section === 'categories') {
+    router.push('/categories' as any);
+  } else if (section === 'instructors') {
+    // Change from '/instructors' to '/instructor' or whatever your route is
+    router.push('/instructor' as any); // Try singular
+    // OR if it's under a different path:
+    // router.push('/(tabs)/instructor' as any);
+    // OR if you want to go to explore with instructor filter:
+    // router.push({
+    //   pathname: '/explore',
+    //   params: { tab: 'instructors' }
+    // } as any);
+  } else {
+    router.push('/explore' as any);
+  }
+};
 
   const handleLiveClassJoin = (classId: string) => {
     router.push({
@@ -126,11 +145,9 @@ export default function HomeScreen() {
     router.push('/(achievements)' as any);
   };
 
+  // FIXED: Handle instructor press with proper navigation
   const handleInstructorPress = (instructorId: string) => {
-    router.push({
-      pathname: '/(instructor)/[id]',
-      params: { id: instructorId }
-    } as any);
+    router.push(`/instructor/${instructorId}` as any);
   };
 
   const handlePathPress = (pathId: string) => {
@@ -169,7 +186,7 @@ export default function HomeScreen() {
           title="Start Your Learning Journey"
           description="Explore thousands of courses and start learning today"
           buttonText="Explore Courses"
-          onPress={() => router.push('/(explore)' as any)}
+          onPress={() => router.push('/explore' as any)}
         />
       </SafeAreaView>
     );
@@ -205,8 +222,6 @@ export default function HomeScreen() {
             onChangeText={setSearchQuery}
             onSearch={handleSearch}
           />
-
-          
 
           {/* Continue Learning Section */}
           {continueLearning && continueLearning.length > 0 && (
@@ -252,8 +267,6 @@ export default function HomeScreen() {
             />
           )}
 
-          
-
           {/* Upcoming Live Classes */}
           {liveClasses && liveClasses.length > 0 && (
             <LiveClasses 
@@ -262,8 +275,6 @@ export default function HomeScreen() {
               onSeeAll={() => handleSeeAll('live')}
             />
           )}
-
-        
 
           {/* Top Instructors */}
           {topInstructors && topInstructors.length > 0 && (
