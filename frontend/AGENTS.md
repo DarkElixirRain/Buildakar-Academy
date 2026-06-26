@@ -31,9 +31,7 @@ React Native
 TypeScript
 Expo Router
 NativeWind / Tailwind CSS
-Zustand
-AsyncStorage
-Clerk for authentication
+AsyncStorage 
 Stream (for video playback + real-time features if needed)
 Server-side API routes / backend functions for AI + secure operations
 

@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
+import googleAuth from '@/lib/googleAuth';
+import api from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -345,7 +347,25 @@ export default function LoginScreen() {
                       backgroundColor: '#ffffff',
                       paddingVertical: isSmallDevice ? 10 : 14,
                     }}
-                    onPress={() => Alert.alert('Coming Soon', 'Google login will be available soon!')}
+                    onPress={async () => {
+                      try {
+                        setGeneralError(null);
+                        const { code, codeVerifier, redirectUri } = await googleAuth.signInWithGoogle();
+                        // Send code to backend
+                        const response = await api.post('/api/auth/google', { code, codeVerifier, redirectUri });
+
+                        if (response.data?.success) {
+                          const { user, token } = response.data.data;
+                          // Use existing auth store to set state and persist
+                          useAuthStore.setState({ user, token, isAuthenticated: true, initialized: true });
+                        } else {
+                          throw new Error(response.data?.message || 'Google login failed');
+                        }
+                      } catch (err: any) {
+                        const message = err?.message || 'Google sign-in failed';
+                        Alert.alert('Google Sign-In', message);
+                      }
+                    }}
                   >
                     <Ionicons name="logo-google" size={isSmallDevice ? 16 : 18} color="#ea4335" />
                     <Text style={{ fontWeight: 'bold', color: '#0f172a', marginLeft: 8, fontSize: isSmallDevice ? 12 : 14 }}>

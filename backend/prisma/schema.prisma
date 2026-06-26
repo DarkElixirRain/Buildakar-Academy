@@ -14,10 +14,17 @@ model User {
   firstName  String
   lastName   String
   role       Role     @default(STUDENT)
+  authProvider AuthProvider @default(EMAIL)
+  googleId   String?  @unique
   isVerified Boolean  @default(false)
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
 }
 
 enum Role {
