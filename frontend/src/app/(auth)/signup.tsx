@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// app/(auth)/signup.tsx
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,321 +8,524 @@ import {
   ScrollView,
   Platform,
   SafeAreaView,
+  Dimensions,
+  Alert,
+  ActivityIndicator,
+  TextInput,
 } from 'react-native';
-import { Link } from 'expo-router';
-import { FontAwesome, Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter, Link } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
-import { AuthInput } from '@/components/auth/AuthInput';
-import { AuthButton } from '@/components/auth/AuthButton';
-import { validateEmail, validatePassword, validateName, getPasswordStrength } from '@/lib/validation';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
+
+// Simple custom input component to avoid dependency issues
+const CustomInput: React.FC<{
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  secureTextEntry?: boolean;
+  error?: string | null;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+}> = ({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry = false,
+  error = null,
+  autoCapitalize = 'none',
+  keyboardType = 'default',
+}) => {
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 6 }}>
+        {label}
+      </Text>
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderWidth: 1,
+        borderColor: error ? '#ef4444' : '#e2e8f0',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 2,
+      }}>
+        <TextInput
+          style={{
+            flex: 1,
+            paddingVertical: 10,
+            fontSize: 16,
+            color: '#0f172a',
+          }}
+          placeholder={placeholder}
+          placeholderTextColor="#94a3b8"
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={secureTextEntry && !showPassword}
+          autoCapitalize={autoCapitalize}
+          keyboardType={keyboardType}
+        />
+        {secureTextEntry && (
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Ionicons 
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+              size={20} 
+              color="#64748b" 
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      {error && (
+        <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{error}</Text>
+      )}
+    </View>
+  );
+};
+
+// Simple button component
+const CustomButton: React.FC<{
+  title: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+}> = ({ title, onPress, loading = false, disabled = false }) => {
+  return (
+    <TouchableOpacity
+      style={{
+        width: '100%',
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: disabled || loading ? '#94a3b8' : '#0a53d6',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color="#ffffff" />
+      ) : (
+        <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16 }}>
+          {title}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+// Validation helpers
+const validateFirstName = (firstName: string): string | null => {
+  if (!firstName || !firstName.trim()) return 'First name is required';
+  if (firstName.trim().length < 2) return 'First name must be at least 2 characters';
+  return null;
+};
+
+const validateLastName = (lastName: string): string | null => {
+  if (!lastName || !lastName.trim()) return 'Last name is required';
+  if (lastName.trim().length < 2) return 'Last name must be at least 2 characters';
+  return null;
+};
+
+const validateEmail = (email: string): string | null => {
+  if (!email || !email.trim()) return 'Email is required';
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) return 'Please enter a valid email address';
+  return null;
+};
+
+const validatePassword = (password: string): string | null => {
+  if (!password) return 'Password is required';
+  if (password.length < 8) return 'Password must be at least 8 characters';
+  if (!/(?=.*[a-z])/.test(password)) return 'Password must contain at least one lowercase letter';
+  if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain at least one uppercase letter';
+  if (!/(?=.*\d)/.test(password)) return 'Password must contain at least one number';
+  return null;
+};
+
+const validateConfirmPassword = (password: string, confirmPassword: string): string | null => {
+  if (!confirmPassword) return 'Please confirm your password';
+  if (password !== confirmPassword) return 'Passwords do not match';
+  return null;
+};
 
 export default function SignupScreen() {
-  const { signup, loading } = useAuthStore();
+  const router = useRouter();
+  const { signup, loading, isAuthenticated, initialized } = useAuthStore();
+  const hasRedirected = useRef(false);
 
-  const [name, setName] = useState('');
+  // Form state - matching the User interface and signup function signature
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [agreed, setAgreed] = useState(false);
-
-  const [nameError, setNameError] = useState<string | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  const [firstNameError, setFirstNameError] = useState<string | null>(null);
+  const [lastNameError, setLastNameError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [agreementError, setAgreementError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
-  const passwordStrength = getPasswordStrength(password);
+  const isSmallDevice = width < 375;
+  const isTablet = width >= 768;
+  const cardPadding = isSmallDevice ? 16 : isTablet ? 32 : 24;
+
+  // Check if already authenticated and redirect
+  useEffect(() => {
+    if (initialized && isAuthenticated && !hasRedirected.current) {
+      hasRedirected.current = true;
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, initialized, router]);
+
+  // Reset redirect ref when not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      hasRedirected.current = false;
+    }
+  }, [isAuthenticated]);
+
+  // Show loading while checking auth state
+  if (!initialized) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0a53d6" />
+        <Text style={{ marginTop: 16, color: '#64748b', fontSize: 14, fontWeight: '500' }}>
+          Loading...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   const handleSignUp = async () => {
-    setNameError(null);
+    // Clear all errors
+    setFirstNameError(null);
+    setLastNameError(null);
     setEmailError(null);
     setPasswordError(null);
-    setAgreementError(null);
+    setConfirmPasswordError(null);
     setGeneralError(null);
 
-    const nameErr = validateName(name);
+    // Validate all fields
+    const firstNameErr = validateFirstName(firstName);
+    const lastNameErr = validateLastName(lastName);
     const emailErr = validateEmail(email);
     const passErr = validatePassword(password);
-    
-    let hasError = false;
-    if (nameErr) {
-      setNameError(nameErr);
-      hasError = true;
-    }
-    if (emailErr) {
+    const confirmPassErr = validateConfirmPassword(password, confirmPassword);
+
+    if (firstNameErr || lastNameErr || emailErr || passErr || confirmPassErr) {
+      setFirstNameError(firstNameErr);
+      setLastNameError(lastNameErr);
       setEmailError(emailErr);
-      hasError = true;
-    }
-    if (passErr) {
       setPasswordError(passErr);
-      hasError = true;
+      setConfirmPasswordError(confirmPassErr);
+      return;
     }
-
-    if (!agreed) {
-      setAgreementError('You must agree to the Terms of Service and Privacy Policy');
-      hasError = true;
-    }
-
-    if (hasError) return;
 
     try {
-      await signup(email, name);
+      // Call signup from auth store - matches the signature:
+      // signup: (email: string, firstName: string, lastName: string, password: string)
+      const result = await signup(
+        email.trim().toLowerCase(),
+        firstName.trim(),
+        lastName.trim(),
+        password
+      );
+      
+      // Navigation will be handled by the useEffect when isAuthenticated becomes true
+      Alert.alert('Success', 'Your account has been created successfully!', [
+        { text: 'Continue' }
+      ]);
+      
     } catch (err: any) {
-      setGeneralError(err?.message || 'Failed to create account. Please try again.');
+      const errorMessage = err?.message || 'Registration failed. Please try again.';
+      setGeneralError(errorMessage);
+      
+      Alert.alert('Registration Failed', errorMessage, [{ text: 'Try Again' }]);
     }
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-[#f8fafc]">
-      {/* Background Glows */}
-      <View
-        className="absolute top-[-100px] right-[-100px] w-[350px] h-[350px] rounded-full bg-blue-100/30"
-        style={{ filter: Platform.OS === 'web' ? 'blur(80px)' : undefined } as any}
-      />
-      <View
-        className="absolute bottom-[-100px] left-[-100px] w-[350px] h-[350px] rounded-full bg-indigo-100/30"
-        style={{ filter: Platform.OS === 'web' ? 'blur(80px)' : undefined } as any}
-      />
+  const handleSocialSignUp = (provider: string) => {
+    Alert.alert('Coming Soon', `${provider} sign up will be available soon!`);
+  };
 
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={{ flex: 1 }}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1 }}
-          className="px-6 py-6"
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingVertical: isSmallDevice ? 16 : 32,
+          }}
         >
-          {/* Header Area */}
-          <View className="flex-row items-center justify-center mt-3 mb-6 w-full max-w-[420px] mx-auto">
-            <Ionicons name="sparkles" size={24} color="#0a53d6" />
-            <Text className="text-[26px] font-bold text-[#0a53d6] ml-2 tracking-tight">
-              Buildakar
-            </Text>
-          </View>
-
-          {/* Form and Card Container */}
-          <View className="w-full max-w-[420px] mx-auto items-center mb-8">
-            <View className="w-full bg-white rounded-[24px] p-6 border border-[#f1f5f9] shadow-lg shadow-slate-200/50 relative overflow-hidden">
-              {/* Card top border blue highlight */}
-              <View className="absolute top-0 left-0 w-1/4 h-[3.5px] bg-[#0a53d6]" />
+          <View style={{ width: '100%', paddingHorizontal: 16 }}>
+            <View style={{ width: '100%', maxWidth: 480, marginHorizontal: 'auto', alignItems: 'center' }}>
+              {/* Logo */}
+              <View style={{ marginBottom: 24, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ 
+                  width: 80, 
+                  height: 80, 
+                  borderRadius: 40, 
+                  backgroundColor: '#dbeafe', 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}>
+                  <Ionicons name="person-add-outline" size={32} color="#0a53d6" />
+                </View>
+              </View>
 
               {/* Title & Subtitle */}
-              <Text className="text-[28px] font-bold text-[#0f172a] text-center mt-2 mb-1 tracking-tight">
-                Start Your Journey
-              </Text>
-              <Text className="text-[14px] text-[#64748b] text-center mb-6 leading-5 font-normal">
-                Create your account to unlock premium courses.
-              </Text>
-
-              {generalError && (
-                <View className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4">
-                  <Text className="text-red-600 text-sm text-center font-medium">
-                    {generalError}
-                  </Text>
-                </View>
-              )}
-
-              {/* Full Name */}
-              <AuthInput
-                label="Full Name"
-                iconName="user"
-                placeholder="John Doe"
-                autoCapitalize="words"
-                autoCorrect={false}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  if (nameError) setNameError(null);
+              <Text 
+                style={{
+                  fontWeight: 'bold',
+                  color: '#0f172a',
+                  textAlign: 'center',
+                  marginBottom: 8,
+                  fontSize: isSmallDevice ? 24 : 32,
                 }}
-                error={nameError}
-              />
-
-              {/* Email Address */}
-              <AuthInput
-                label="Email Address"
-                iconName="mail"
-                placeholder="name@company.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  if (emailError) setEmailError(null);
-                }}
-                error={emailError}
-              />
-
-              {/* Password */}
-              <AuthInput
-                label="Password"
-                iconName="lock"
-                placeholder="••••••••"
-                isPassword
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (passwordError) setPasswordError(null);
-                }}
-                error={passwordError}
-              />
-
-              {/* Password Strength Meter */}
-              {password.length > 0 && (
-                <View className="w-full -mt-2 mb-4">
-                  <View className="flex-row gap-1 h-1.5 w-full">
-                    <View
-                      className={`flex-1 h-full rounded-full ${
-                        passwordStrength >= 1 ? 'bg-[#0a53d6]' : 'bg-[#e2e8f0]'
-                      }`}
-                    />
-                    <View
-                      className={`flex-1 h-full rounded-full ${
-                        passwordStrength >= 2 ? 'bg-[#0a53d6]' : 'bg-[#e2e8f0]'
-                      }`}
-                    />
-                    <View
-                      className={`flex-1 h-full rounded-full ${
-                        passwordStrength >= 3 ? 'bg-[#0a53d6]' : 'bg-[#e2e8f0]'
-                      }`}
-                    />
-                    <View
-                      className={`flex-1 h-full rounded-full ${
-                        passwordStrength >= 4 ? 'bg-[#0a53d6]' : 'bg-[#e2e8f0]'
-                      }`}
-                    />
-                  </View>
-                  <Text className="text-[11px] text-[#64748b] mt-1.5 font-medium">
-                    {passwordStrength === 1 && 'Weak password'}
-                    {passwordStrength === 2 && 'Fair password'}
-                    {passwordStrength === 3 && 'Good password'}
-                    {passwordStrength >= 4 && 'Strong password'}
-                  </Text>
-                </View>
-              )}
-
-              {/* Checkbox Agreement */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  setAgreed(!agreed);
-                  if (agreementError) setAgreementError(null);
-                }}
-                className="flex-row items-start mt-1 mb-6 px-1"
               >
-                <View
-                  className={`w-4.5 h-4.5 border rounded-[4px] items-center justify-center mr-2.5 mt-0.5 ${
-                    agreed
-                      ? 'border-[#0a53d6] bg-[#0a53d6]'
-                      : 'border-[#cbd5e1] bg-white'
-                  }`}
-                  style={{ width: 18, height: 18 }}
-                >
-                  {agreed && <Feather name="check" size={12} color="#ffffff" />}
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[13px] text-[#475569] leading-4">
-                    I agree to the{' '}
-                    <Text className="text-[#0a53d6] font-semibold">Terms of Service</Text>{' '}
-                    and{' '}
-                    <Text className="text-[#0a53d6] font-semibold">Privacy Policy</Text>.
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              {agreementError && (
-                <Text className="text-red-500 text-[12px] -mt-4 mb-4 ml-1.5 font-medium">
-                  {agreementError}
-                </Text>
-              )}
+                Create Account
+              </Text>
+              <Text 
+                style={{
+                  color: '#64748b',
+                  textAlign: 'center',
+                  marginBottom: 24,
+                  paddingHorizontal: 16,
+                  fontSize: isSmallDevice ? 13 : 15,
+                }}
+              >
+                Join Buildakar and start your high-performance learning journey today.
+              </Text>
 
-              {/* Create Account Button */}
-              <View className="mb-6">
-                <AuthButton
-                  title="Create Account"
-                  onPress={handleSignUp}
-                  loading={loading}
+              {/* Main White Card Container */}
+              <View 
+                style={{
+                  width: '100%',
+                  backgroundColor: '#ffffff',
+                  borderRadius: 24,
+                  borderWidth: 1,
+                  borderColor: '#f1f5f9',
+                  padding: cardPadding,
+                  shadowColor: '#0f172a',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
+              >
+                {/* General Error Message */}
+                {generalError && (
+                  <View style={{ 
+                    backgroundColor: '#fef2f2', 
+                    borderWidth: 1, 
+                    borderColor: '#fecaca', 
+                    borderRadius: 12, 
+                    padding: 12, 
+                    marginBottom: 16 
+                  }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons name="alert-circle" size={20} color="#dc2626" style={{ marginRight: 8 }} />
+                      <Text style={{ color: '#dc2626', fontSize: 14, flex: 1, fontWeight: '500' }}>
+                        {generalError}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* First Name */}
+                <CustomInput
+                  label="First Name"
+                  placeholder="Enter your first name"
+                  value={firstName}
+                  onChangeText={(text) => {
+                    setFirstName(text);
+                    if (firstNameError) setFirstNameError(null);
+                  }}
+                  error={firstNameError}
+                  autoCapitalize="words"
                 />
-              </View>
 
-              {/* Divider: OR SIGN UP WITH */}
-              <View className="flex-row items-center mb-6">
-                <View className="flex-1 h-[1px] bg-[#e2e8f0]" />
-                <Text className="text-[11px] font-bold text-[#94a3b8] tracking-wider px-3 uppercase">
-                  or sign up with
-                </Text>
-                <View className="flex-1 h-[1px] bg-[#e2e8f0]" />
-              </View>
+                {/* Last Name */}
+                <CustomInput
+                  label="Last Name"
+                  placeholder="Enter your last name"
+                  value={lastName}
+                  onChangeText={(text) => {
+                    setLastName(text);
+                    if (lastNameError) setLastNameError(null);
+                  }}
+                  error={lastNameError}
+                  autoCapitalize="words"
+                />
 
-              {/* Social Login Buttons */}
-              <View className="flex-row gap-3 mb-6">
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  className="flex-1 flex-row items-center justify-center border border-[#e2e8f0] rounded-[12px] py-3.5 bg-white"
-                >
-                  <FontAwesome name="google" size={18} color="#ea4335" />
-                  <Text className="text-[14px] font-bold text-[#0f172a] ml-2">
-                    Google
+                {/* Email Address */}
+                <CustomInput
+                  label="Email Address"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError(null);
+                  }}
+                  error={emailError}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+
+                {/* Password */}
+                <CustomInput
+                  label="Password"
+                  placeholder="Create a strong password"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  error={passwordError}
+                  secureTextEntry
+                />
+
+                
+
+                {/* Confirm Password */}
+                <CustomInput
+                  label="Confirm Password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (confirmPasswordError) setConfirmPasswordError(null);
+                  }}
+                  error={confirmPasswordError}
+                  secureTextEntry
+                />
+
+                {/* Terms and Conditions */}
+                <View style={{ marginTop: -8, marginBottom: 20 }}>
+                  <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                    By creating an account, you agree to our{' '}
+                    <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Terms of Service</Text>
+                    {' '}and{' '}
+                    <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Privacy Policy</Text>
                   </Text>
-                </TouchableOpacity>
+                </View>
 
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  className="flex-1 flex-row items-center justify-center border border-[#e2e8f0] rounded-[12px] py-3.5 bg-white"
-                >
-                  <FontAwesome name="github" size={18} color="#000000" />
-                  <Text className="text-[14px] font-bold text-[#0f172a] ml-2">
-                    GitHub
+                {/* Sign Up Button */}
+                <View style={{ marginBottom: 24 }}>
+                  <CustomButton
+                    title="Create Account"
+                    onPress={handleSignUp}
+                    loading={loading}
+                  />
+                </View>
+
+                {/* Divider */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                  <Text style={{ 
+                    fontWeight: 'bold', 
+                    color: '#94a3b8', 
+                    letterSpacing: 1, 
+                    paddingHorizontal: 12, 
+                    fontSize: isSmallDevice ? 9 : 11 
+                  }}>
+                    or sign up with
                   </Text>
-                </TouchableOpacity>
+                  <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                </View>
+
+                {/* Social Sign Up Buttons */}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: '#e2e8f0',
+                      borderRadius: 12,
+                      backgroundColor: '#ffffff',
+                      paddingVertical: isSmallDevice ? 10 : 14,
+                    }}
+                    onPress={() => handleSocialSignUp('Google')}
+                  >
+                    <Ionicons name="logo-google" size={isSmallDevice ? 16 : 18} color="#ea4335" />
+                    <Text style={{ 
+                      fontWeight: 'bold', 
+                      color: '#0f172a', 
+                      marginLeft: 8, 
+                      fontSize: isSmallDevice ? 12 : 14 
+                    }}>
+                      Google
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderWidth: 1,
+                      borderColor: '#e2e8f0',
+                      borderRadius: 12,
+                      backgroundColor: '#ffffff',
+                      paddingVertical: isSmallDevice ? 10 : 14,
+                    }}
+                    onPress={() => handleSocialSignUp('Apple')}
+                  >
+                    <Ionicons name="logo-apple" size={isSmallDevice ? 16 : 18} color="#000000" />
+                    <Text style={{ 
+                      fontWeight: 'bold', 
+                      color: '#0f172a', 
+                      marginLeft: 8, 
+                      fontSize: isSmallDevice ? 12 : 14 
+                    }}>
+                      Apple
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
-              {/* Already have an account link inside the card */}
-              <View className="flex-row items-center justify-center mt-2 pt-4 border-t border-[#f1f5f9]">
-                <Text className="text-[14px] text-[#475569] font-normal">
+              {/* Bottom Link to Login */}
+              <View style={{ 
+                marginTop: 24, 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                flexWrap: 'wrap' 
+              }}>
+                <Text style={{ color: '#475569', fontSize: isSmallDevice ? 13 : 15 }}>
                   Already have an account?{' '}
                 </Text>
                 <Link href="/(auth)/login" asChild>
                   <TouchableOpacity>
-                    <Text className="text-[14px] font-bold text-[#0a53d6]">
-                      Login
+                    <Text style={{ 
+                      fontWeight: 'bold', 
+                      color: '#0a53d6', 
+                      fontSize: isSmallDevice ? 13 : 15 
+                    }}>
+                      Sign In
                     </Text>
                   </TouchableOpacity>
                 </Link>
-              </View>
-            </View>
-          </View>
-
-          {/* Footer Area */}
-          <View className="mt-auto items-center pb-4">
-            <View className="flex-row justify-center space-x-4 mb-4">
-              <Text className="text-[12px] text-[#94a3b8] font-normal">
-                © 2024 Buildakar Academy
-              </Text>
-              <Text className="text-[12px] text-[#94a3b8] font-normal px-2">|</Text>
-              <TouchableOpacity>
-                <Text className="text-[12px] text-[#64748b] font-medium">Support</Text>
-              </TouchableOpacity>
-              <Text className="text-[12px] text-[#94a3b8] font-normal px-2">|</Text>
-              <TouchableOpacity>
-                <Text className="text-[12px] text-[#64748b] font-medium">Security</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View className="flex-row gap-3">
-              {/* System Online Pill */}
-              <View className="flex-row items-center bg-[#f0fdf4] border border-[#dcfce7] rounded-full px-3 py-1">
-                <View className="w-1.5 h-1.5 rounded-full bg-[#22c55e] mr-1.5" />
-                <Text className="text-[#15803d] text-[11px] font-bold">
-                  System Online
-                </Text>
-              </View>
-
-              {/* Language Pill */}
-              <View className="flex-row items-center bg-[#f8fafc] border border-[#e2e8f0] rounded-full px-3 py-1">
-                <Feather name="globe" size={10} color="#64748b" className="mr-1.5" />
-                <Text className="text-[#475569] text-[11px] font-bold ml-1">
-                  English (US)
-                </Text>
               </View>
             </View>
           </View>

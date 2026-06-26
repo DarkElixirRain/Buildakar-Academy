@@ -1,72 +1,372 @@
+// store/authStore.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import api from '@/lib/api';
 
-export interface User {
+// Platform-specific storage
+const getStorage = () => {
+  if (Platform.OS === 'web') {
+    return {
+      getItem: (name: string) => {
+        try {
+          const value = localStorage.getItem(name);
+          return value ? Promise.resolve(JSON.parse(value)) : Promise.resolve(null);
+        } catch {
+          return Promise.resolve(null);
+        }
+      },
+      setItem: (name: string, value: any) => {
+        try {
+          localStorage.setItem(name, JSON.stringify(value));
+        } catch (error) {
+          console.error('Error saving to localStorage:', error);
+        }
+        return Promise.resolve();
+      },
+      removeItem: (name: string) => {
+        try {
+          localStorage.removeItem(name);
+        } catch (error) {
+          console.error('Error removing from localStorage:', error);
+        }
+        return Promise.resolve();
+      },
+    };
+  } else {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    return {
+      getItem: AsyncStorage.getItem,
+      setItem: AsyncStorage.setItem,
+      removeItem: AsyncStorage.removeItem,
+    };
+  }
+};
+
+interface User {
   id: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  name?: string;
+  avatar?: string;
+  role?: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+  isVerified?: boolean;
+  isActive?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface LoginResponse {
+  user: User;
+  token: string;
 }
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   initialized: boolean;
-  login: (email: string, name?: string) => Promise<void>;
-  signup: (email: string, name: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
+  signup: (email: string, firstName: string, lastName: string, password: string) => Promise<LoginResponse>;
   logout: () => Promise<void>;
-  setLoading: (loading: boolean) => void;
-  initialize: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
+  setUser: (user: User | null) => void;
+  setInitialized: () => void;
+  clearAuth: () => void;
+  getDisplayName: () => string;
+  getInitials: () => string;
+  getFullName: () => string;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
       loading: false,
       initialized: false,
-      login: async (email, name) => {
+
+      login: async (email: string, password: string): Promise<LoginResponse> => {
         set({ loading: true });
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        set({
-          user: { id: 'user_' + Date.now(), email, name: name || 'John Doe' },
-          isAuthenticated: true,
-          loading: false,
-        });
+
+        try {
+          const response = await api.post('/api/auth/login', { email, password });
+          
+          if (response.data.success) {
+            const { user, token } = response.data.data;
+            
+            set({
+              user: user,
+              token: token,
+              isAuthenticated: true,
+              loading: false,
+              initialized: true,
+            });
+            
+            return { user, token };
+          } else {
+            set({ loading: false });
+            throw new Error(response.data.message || 'Login failed');
+          }
+        } catch (error: any) {
+          set({ loading: false });
+          const errorMessage = error.response?.data?.message || 
+                              error.message || 
+                              'Login failed. Please try again.';
+          throw new Error(errorMessage);
+        }
       },
-      signup: async (email, name) => {
+
+      signup: async (email: string, firstName: string, lastName: string, password: string): Promise<LoginResponse> => {
         set({ loading: true });
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        set({
-          user: { id: 'user_' + Date.now(), email, name },
-          isAuthenticated: true,
-          loading: false,
-        });
+
+        try {
+          const response = await api.post('/api/auth/register', { 
+            email, 
+            firstName, 
+            lastName, 
+            password 
+          });
+          
+          if (response.data.success) {
+            const { user, token } = response.data.data;
+            
+            set({
+              user: user,
+              token: token,
+              isAuthenticated: true,
+              loading: false,
+              initialized: true,
+            });
+            
+            return { user, token };
+          } else {
+            set({ loading: false });
+            throw new Error(response.data.message || 'Signup failed');
+          }
+        } catch (error: any) {
+          set({ loading: false });
+          const errorMessage = error.response?.data?.message || 
+                              error.message || 
+                              'Signup failed. Please try again.';
+          throw new Error(errorMessage);
+        }
       },
+
       logout: async () => {
         set({ loading: true });
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        set({ user: null, isAuthenticated: false, loading: false });
+        
+        try {
+          const { token } = get();
+          if (token) {
+            try {
+              await api.post(
+                '/api/auth/logout',
+                {},
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+            } catch (error: any) {
+              if (error.response?.status === 404) {
+                // Continue with client-side logout
+              }
+            }
+          }
+        } catch (error) {
+          // Ignore errors during logout
+        }
+
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          loading: false,
+          initialized: true,
+        });
+
+        try {
+          const storage = getStorage();
+          await storage.removeItem('auth-storage');
+        } catch (error) {
+          // Ignore storage errors
+        }
       },
-      setLoading: (loading) => set({ loading }),
-      initialize: async () => {
-        // Hydration automatically takes care of loading state from AsyncStorage,
-        // but we set initialized to true to indicate the app can start redirecting.
+
+      clearAuth: () => {
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          loading: false,
+          initialized: true,
+        });
+        
+        try {
+          const storage = getStorage();
+          storage.removeItem('auth-storage').catch(() => {});
+        } catch (error) {
+          // Ignore storage errors
+        }
+      },
+
+      checkAuth: async (): Promise<void> => {
+        const { token, isAuthenticated } = get();
+        
+        if (token && isAuthenticated) {
+          try {
+            const response = await api.get('/api/auth/me', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.data.success) {
+              set({
+                user: response.data.data,
+                isAuthenticated: true,
+                initialized: true,
+              });
+              return;
+            }
+          } catch (error) {
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              initialized: true,
+            });
+            try {
+              const storage = getStorage();
+              await storage.removeItem('auth-storage');
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
+        } else if (token) {
+          try {
+            const response = await api.get('/api/auth/me', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.data.success) {
+              set({
+                user: response.data.data,
+                isAuthenticated: true,
+                initialized: true,
+              });
+              return;
+            }
+          } catch (error) {
+            set({
+              user: null,
+              token: null,
+              isAuthenticated: false,
+              initialized: true,
+            });
+            try {
+              const storage = getStorage();
+              await storage.removeItem('auth-storage');
+            } catch (e) {
+              // Ignore storage errors
+            }
+          }
+        }
+
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          initialized: true,
+        });
+      },
+
+      refreshUser: async (): Promise<User | null> => {
+        const { token } = get();
+        
+        if (!token) {
+          return null;
+        }
+
+        try {
+          const response = await api.get('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.data.success) {
+            const user = response.data.data;
+            set({ user });
+            return user;
+          } else {
+            return null;
+          }
+        } catch (error) {
+          return null;
+        }
+      },
+
+      setUser: (user: User | null) => {
+        set({ user });
+      },
+
+      setInitialized: () => {
         set({ initialized: true });
+      },
+
+      getDisplayName: (): string => {
+        const { user, isAuthenticated } = get();
+        if (!isAuthenticated || !user) return 'Guest';
+        
+        // Combine firstName and lastName
+        if (user.firstName && user.lastName) {
+          return `${user.firstName} ${user.lastName}`;
+        }
+        if (user.firstName) {
+          return user.firstName;
+        }
+        return user.email?.split('@')[0] || 'User';
+      },
+
+      getInitials: (): string => {
+        const { user, isAuthenticated } = get();
+        if (!isAuthenticated || !user) return '?';
+        
+        // Use firstName and lastName for initials
+        if (user.firstName && user.lastName) {
+          return (user.firstName[0] + user.lastName[0]).toUpperCase();
+        }
+        if (user.firstName) {
+          return user.firstName.slice(0, 2).toUpperCase();
+        }
+        if (user.email) {
+          return user.email[0].toUpperCase();
+        }
+        
+        return '?';
+      },
+
+      getFullName: (): string => {
+        const { user, isAuthenticated } = get();
+        if (!isAuthenticated || !user) return '';
+        
+        if (user.firstName && user.lastName) {
+          return `${user.firstName} ${user.lastName}`;
+        }
+        if (user.firstName) {
+          return user.firstName;
+        }
+        return user.email?.split('@')[0] || '';
       },
     }),
     {
-      name: 'buildakar-auth-store',
-      storage: createJSONStorage(() => AsyncStorage),
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          state.initialize();
-        }
-      },
+      name: 'auth-storage',
+      storage: createJSONStorage(() => getStorage()),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

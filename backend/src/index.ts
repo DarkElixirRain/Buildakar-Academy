@@ -1,17 +1,14 @@
+// server.ts or index.ts
 import app from './app';
 import { config } from './config';
 
-const startServer = async () => {
-  try {
-    app.listen(config.port, () => {
-      console.log(`🚀 Server running on http://localhost:${config.port}`);
-      console.log(`📖 Environment: ${config.nodeEnv}`);
-      console.log(`🔐 JWT Secret: ${config.jwt.secret ? '✅ Set' : '❌ Not set'}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
+const PORT = config.port || 8081;
 
-startServer();
+// Listen on all network interfaces (0.0.0.0)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\x1b[32m✅ Server is running!\x1b[0m`);
+  console.log(`\x1b[36m📍 Local:\x1b[0m http://localhost:${PORT}`);
+  console.log(`\x1b[36m📍 Network:\x1b[0m http://YOUR_IP:${PORT}`);
+  console.log(`\x1b[33m⚠️  CORS is wide open (development mode)\x1b[0m`);
+  console.log(`\x1b[33m📱 Access from any device on the same network\x1b[0m`);
+});
