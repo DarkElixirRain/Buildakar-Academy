@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const registerRoleSchema = z.enum(['STUDENT', 'INSTRUCTOR']);
+
 // Register validation schema
 export const registerSchema = z.object({
   email: z
@@ -21,6 +23,7 @@ export const registerSchema = z.object({
     .string()
     .min(2, 'Last name must be at least 2 characters')
     .max(50, 'Last name must be less than 50 characters'),
+  role: registerRoleSchema.default('STUDENT'),
 });
 
 // Login validation schema
