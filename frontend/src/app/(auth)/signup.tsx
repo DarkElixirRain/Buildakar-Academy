@@ -155,6 +155,28 @@ const validateConfirmPassword = (password: string, confirmPassword: string): str
   return null;
 };
 
+type SignupRole = 'STUDENT' | 'INSTRUCTOR';
+
+const roleOptions: Array<{
+  value: SignupRole;
+  title: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}> = [
+  {
+    value: 'STUDENT',
+    title: 'Student',
+    description: 'Learn, practice, and track progress',
+    icon: 'school-outline',
+  },
+  {
+    value: 'INSTRUCTOR',
+    title: 'Instructor',
+    description: 'Create and share learning content',
+    icon: 'people-outline',
+  },
+];
+
 export default function SignupScreen() {
   const router = useRouter();
   const { signup, loading, isAuthenticated, initialized } = useAuthStore();
@@ -166,6 +188,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<SignupRole>('STUDENT');
   
   const [firstNameError, setFirstNameError] = useState<string | null>(null);
   const [lastNameError, setLastNameError] = useState<string | null>(null);
@@ -237,7 +260,8 @@ export default function SignupScreen() {
         email.trim().toLowerCase(),
         firstName.trim(),
         lastName.trim(),
-        password
+        password,
+        role
       );
       
       // Navigation will be handled by the useEffect when isAuthenticated becomes true
@@ -399,7 +423,62 @@ export default function SignupScreen() {
                   secureTextEntry
                 />
 
-                
+                {/* Role Selection */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 6 }}>
+                    Choose Your Role
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {roleOptions.map((option) => {
+                      const isSelected = role === option.value;
+
+                      return (
+                        <TouchableOpacity
+                          key={option.value}
+                          activeOpacity={0.85}
+                          onPress={() => setRole(option.value)}
+                          style={{
+                            flex: 1,
+                            borderWidth: 1.5,
+                            borderColor: isSelected ? '#0a53d6' : '#e2e8f0',
+                            backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                            borderRadius: 16,
+                            paddingVertical: 14,
+                            paddingHorizontal: 12,
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                            <View
+                              style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 17,
+                                backgroundColor: isSelected ? '#dbeafe' : '#f8fafc',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: 10,
+                              }}
+                            >
+                              <Ionicons
+                                name={option.icon}
+                                size={18}
+                                color={isSelected ? '#0a53d6' : '#64748b'}
+                              />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 15, fontWeight: '700', color: '#0f172a' }}>
+                                {option.title}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text style={{ fontSize: 12, color: '#64748b', lineHeight: 17 }}>
+                            {option.description}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
 
                 {/* Confirm Password */}
                 <CustomInput
@@ -417,7 +496,7 @@ export default function SignupScreen() {
                 {/* Terms and Conditions */}
                 <View style={{ marginTop: -8, marginBottom: 20 }}>
                   <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
-                    By creating an account, you agree to our{' '}
+                    By creating a {role.toLowerCase()} account, you agree to our{' '}
                     <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Terms of Service</Text>
                     {' '}and{' '}
                     <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Privacy Policy</Text>

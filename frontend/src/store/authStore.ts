@@ -56,6 +56,8 @@ interface User {
   updatedAt?: string;
 }
 
+type SignupRole = 'STUDENT' | 'INSTRUCTOR';
+
 interface LoginResponse {
   user: User;
   token: string;
@@ -68,7 +70,13 @@ interface AuthState {
   loading: boolean;
   initialized: boolean;
   login: (email: string, password: string) => Promise<LoginResponse>;
-  signup: (email: string, firstName: string, lastName: string, password: string) => Promise<LoginResponse>;
+  signup: (
+    email: string,
+    firstName: string,
+    lastName: string,
+    password: string,
+    role?: SignupRole
+  ) => Promise<LoginResponse>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
@@ -94,71 +102,76 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const response = await api.post('/api/auth/login', { email, password });
-          
+
           if (response.data.success) {
             const { user, token } = response.data.data;
-            
+
             set({
-              user: user,
-              token: token,
+              user,
+              token,
               isAuthenticated: true,
               loading: false,
               initialized: true,
             });
-            
+
             return { user, token };
-          } else {
-            set({ loading: false });
-            throw new Error(response.data.message || 'Login failed');
           }
+
+          set({ loading: false });
+          throw new Error(response.data.message || 'Login failed');
         } catch (error: any) {
           set({ loading: false });
-          const errorMessage = error.response?.data?.message || 
-                              error.message || 
-                              'Login failed. Please try again.';
+          const errorMessage =
+            error.response?.data?.message || error.message || 'Login failed. Please try again.';
           throw new Error(errorMessage);
         }
       },
 
-      signup: async (email: string, firstName: string, lastName: string, password: string): Promise<LoginResponse> => {
+      signup: async (
+        email: string,
+        firstName: string,
+        lastName: string,
+        password: string,
+        role: SignupRole = 'STUDENT'
+      ): Promise<LoginResponse> => {
         set({ loading: true });
 
         try {
-          const response = await api.post('/api/auth/register', { 
-            email, 
-            firstName, 
-            lastName, 
-            password 
+          const response = await api.post('/api/auth/register', {
+            email,
+            firstName,
+            lastName,
+            password,
+            role,
           });
-          
+
           if (response.data.success) {
             const { user, token } = response.data.data;
-            
+
             set({
-              user: user,
-              token: token,
+              user,
+              token,
               isAuthenticated: true,
               loading: false,
               initialized: true,
             });
-            
+
             return { user, token };
-          } else {
-            set({ loading: false });
-            throw new Error(response.data.message || 'Signup failed');
           }
+
+          set({ loading: false });
+          throw new Error(response.data.message || 'Signup failed');
         } catch (error: any) {
           set({ loading: false });
-          const errorMessage = error.response?.data?.message || 
-                              error.message || 
-                              'Signup failed. Please try again.';
+          const errorMessage =
+            error.response?.data?.message || error.message || 'Signup failed. Please try again.';
           throw new Error(errorMessage);
         }
       },
 
       logout: async () => {
         set({ loading: true });
-        
+
         try {
           const { token } = get();
           if (token) {
@@ -204,7 +217,7 @@ export const useAuthStore = create<AuthState>()(
           loading: false,
           initialized: true,
         });
-        
+
         try {
           const storage = getStorage();
           storage.removeItem('auth-storage').catch(() => {});
@@ -215,7 +228,7 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuth: async (): Promise<void> => {
         const { token, isAuthenticated } = get();
-        
+
         if (token && isAuthenticated) {
           try {
             const response = await api.get('/api/auth/me', {
@@ -240,7 +253,7 @@ export const useAuthStore = create<AuthState>()(
             try {
               const storage = getStorage();
               await storage.removeItem('auth-storage');
-            } catch (e) {
+            } catch {
               // Ignore storage errors
             }
           }
@@ -268,7 +281,7 @@ export const useAuthStore = create<AuthState>()(
             try {
               const storage = getStorage();
               await storage.removeItem('auth-storage');
-            } catch (e) {
+            } catch {
               // Ignore storage errors
             }
           }
@@ -284,7 +297,7 @@ export const useAuthStore = create<AuthState>()(
 
       refreshUser: async (): Promise<User | null> => {
         const { token } = get();
-        
+
         if (!token) {
           return null;
         }
@@ -298,10 +311,10 @@ export const useAuthStore = create<AuthState>()(
             const user = response.data.data;
             set({ user });
             return user;
-          } else {
-            return null;
           }
-        } catch (error) {
+
+          return null;
+        } catch {
           return null;
         }
       },
@@ -317,8 +330,7 @@ export const useAuthStore = create<AuthState>()(
       getDisplayName: (): string => {
         const { user, isAuthenticated } = get();
         if (!isAuthenticated || !user) return 'Guest';
-        
-        // Combine firstName and lastName
+
         if (user.firstName && user.lastName) {
           return `${user.firstName} ${user.lastName}`;
         }
@@ -331,8 +343,7 @@ export const useAuthStore = create<AuthState>()(
       getInitials: (): string => {
         const { user, isAuthenticated } = get();
         if (!isAuthenticated || !user) return '?';
-        
-        // Use firstName and lastName for initials
+
         if (user.firstName && user.lastName) {
           return (user.firstName[0] + user.lastName[0]).toUpperCase();
         }
@@ -342,14 +353,14 @@ export const useAuthStore = create<AuthState>()(
         if (user.email) {
           return user.email[0].toUpperCase();
         }
-        
+
         return '?';
       },
 
       getFullName: (): string => {
         const { user, isAuthenticated } = get();
         if (!isAuthenticated || !user) return '';
-        
+
         if (user.firstName && user.lastName) {
           return `${user.firstName} ${user.lastName}`;
         }
