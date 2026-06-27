@@ -103,6 +103,13 @@ export const verifyEmailSchema = z.object({
     .min(1, 'Token is required'),
 });
 
+// Update role validation
+export const updateRoleSchema = z.object({
+  role: z.enum(['STUDENT', 'INSTRUCTOR'], {
+    errorMap: () => ({ message: 'Role must be either STUDENT or INSTRUCTOR' }),
+  }),
+});
+
 // Export all schemas
 export const schemas = {
   register: registerSchema,
@@ -113,6 +120,7 @@ export const schemas = {
   forgotPassword: forgotPasswordSchema,
   resetPassword: resetPasswordSchema,
   verifyEmail: verifyEmailSchema,
+  updateRole: updateRoleSchema,
 };
 
 // Type inference for TypeScript
@@ -123,3 +131,4 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;

@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
+import googleAuth from '@/lib/googleAuth';
+import api from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -155,28 +157,6 @@ const validateConfirmPassword = (password: string, confirmPassword: string): str
   return null;
 };
 
-type SignupRole = 'STUDENT' | 'INSTRUCTOR';
-
-const roleOptions: Array<{
-  value: SignupRole;
-  title: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}> = [
-  {
-    value: 'STUDENT',
-    title: 'Student',
-    description: 'Learn, practice, and track progress',
-    icon: 'school-outline',
-  },
-  {
-    value: 'INSTRUCTOR',
-    title: 'Instructor',
-    description: 'Create and share learning content',
-    icon: 'people-outline',
-  },
-];
-
 export default function SignupScreen() {
   const router = useRouter();
   const { signup, loading, isAuthenticated, initialized } = useAuthStore();
@@ -188,7 +168,6 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<SignupRole>('STUDENT');
   
   const [firstNameError, setFirstNameError] = useState<string | null>(null);
   const [lastNameError, setLastNameError] = useState<string | null>(null);
@@ -260,8 +239,7 @@ export default function SignupScreen() {
         email.trim().toLowerCase(),
         firstName.trim(),
         lastName.trim(),
-        password,
-        role
+        password
       );
       
       // Navigation will be handled by the useEffect when isAuthenticated becomes true
@@ -277,8 +255,28 @@ export default function SignupScreen() {
     }
   };
 
-  const handleSocialSignUp = (provider: string) => {
-    Alert.alert('Coming Soon', `${provider} sign up will be available soon!`);
+  const handleSocialSignUp = async (provider: string) => {
+    if (provider === 'Google') {
+      try {
+        setGeneralError(null);
+        const { code, codeVerifier, redirectUri } = await googleAuth.signInWithGoogle();
+        // Send code to backend
+        const response = await api.post('/api/auth/google', { code, codeVerifier, redirectUri });
+
+        if (response.data?.success) {
+          const { user, token } = response.data.data;
+          // Use existing auth store to set state and persist
+          useAuthStore.setState({ user, token, isAuthenticated: true, initialized: true });
+        } else {
+          throw new Error(response.data?.message || 'Google sign-up failed');
+        }
+      } catch (err: any) {
+        const message = err?.message || 'Google sign-up failed';
+        Alert.alert('Google Sign-Up', message);
+      }
+    } else {
+      Alert.alert('Coming Soon', `${provider} sign up will be available soon!`);
+    }
   };
 
   return (
@@ -423,63 +421,6 @@ export default function SignupScreen() {
                   secureTextEntry
                 />
 
-                {/* Role Selection */}
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 6 }}>
-                    Choose Your Role
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {roleOptions.map((option) => {
-                      const isSelected = role === option.value;
-
-                      return (
-                        <TouchableOpacity
-                          key={option.value}
-                          activeOpacity={0.85}
-                          onPress={() => setRole(option.value)}
-                          style={{
-                            flex: 1,
-                            borderWidth: 1.5,
-                            borderColor: isSelected ? '#0a53d6' : '#e2e8f0',
-                            backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                            borderRadius: 16,
-                            paddingVertical: 14,
-                            paddingHorizontal: 12,
-                          }}
-                        >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <View
-                              style={{
-                                width: 34,
-                                height: 34,
-                                borderRadius: 17,
-                                backgroundColor: isSelected ? '#dbeafe' : '#f8fafc',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: 10,
-                              }}
-                            >
-                              <Ionicons
-                                name={option.icon}
-                                size={18}
-                                color={isSelected ? '#0a53d6' : '#64748b'}
-                              />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 15, fontWeight: '700', color: '#0f172a' }}>
-                                {option.title}
-                              </Text>
-                            </View>
-                          </View>
-                          <Text style={{ fontSize: 12, color: '#64748b', lineHeight: 17 }}>
-                            {option.description}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-
                 {/* Confirm Password */}
                 <CustomInput
                   label="Confirm Password"
@@ -496,7 +437,7 @@ export default function SignupScreen() {
                 {/* Terms and Conditions */}
                 <View style={{ marginTop: -8, marginBottom: 20 }}>
                   <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
-                    By creating a {role.toLowerCase()} account, you agree to our{' '}
+                    By creating an account, you agree to our{' '}
                     <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Terms of Service</Text>
                     {' '}and{' '}
                     <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Privacy Policy</Text>
@@ -552,32 +493,6 @@ export default function SignupScreen() {
                       fontSize: isSmallDevice ? 12 : 14 
                     }}>
                       Google
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={{
-                      flex: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: '#e2e8f0',
-                      borderRadius: 12,
-                      backgroundColor: '#ffffff',
-                      paddingVertical: isSmallDevice ? 10 : 14,
-                    }}
-                    onPress={() => handleSocialSignUp('Apple')}
-                  >
-                    <Ionicons name="logo-apple" size={isSmallDevice ? 16 : 18} color="#000000" />
-                    <Text style={{ 
-                      fontWeight: 'bold', 
-                      color: '#0f172a', 
-                      marginLeft: 8, 
-                      fontSize: isSmallDevice ? 12 : 14 
-                    }}>
-                      Apple
                     </Text>
                   </TouchableOpacity>
                 </View>

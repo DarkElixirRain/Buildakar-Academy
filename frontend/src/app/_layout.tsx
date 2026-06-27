@@ -31,7 +31,7 @@ export default function RootLayout() {
   
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { isAuthenticated, initialized, checkAuth } = useAuthStore();
+  const { isAuthenticated, initialized, user, checkAuth } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -66,27 +66,39 @@ export default function RootLayout() {
 
     const currentPath = segments.join('/');
     const isInAuthGroup = currentPath.startsWith('(auth)');
+    const isRoleSelection = currentPath.startsWith('(auth)/role-selection');
     const isRoot = currentPath === '' || currentPath === 'index';
 
     console.log('Navigation check:', { 
       currentPath, 
       isAuthenticated, 
       isInAuthGroup,
-      isRoot 
+      isRoleSelection,
+      isRoot,
+      hasCompletedOnboarding: user?.hasCompletedOnboarding
     });
 
+    // If not authenticated and not in auth group, redirect to login
     if (!isAuthenticated && !isInAuthGroup) {
       console.log('Redirecting to login...');
       router.replace('/(auth)/login');
       return;
     }
 
-    if (isAuthenticated && (isInAuthGroup || isRoot)) {
+    // If authenticated but hasn't completed onboarding and not already on role-selection, redirect to role-selection
+    if (isAuthenticated && user && !user.hasCompletedOnboarding && !isRoleSelection) {
+      console.log('Redirecting to role-selection...');
+      router.replace('/(auth)/role-selection');
+      return;
+    }
+
+    // If authenticated and has completed onboarding, redirect to tabs if in auth group or root
+    if (isAuthenticated && user?.hasCompletedOnboarding && (isInAuthGroup || isRoot)) {
       console.log('Redirecting to tabs...');
       router.replace('/(tabs)');
       return;
     }
-  }, [isAuthenticated, initialized, segments]);
+  }, [isAuthenticated, initialized, segments, user?.hasCompletedOnboarding]);
 
   // Show splash screen while initializing
   if (!initialized) {

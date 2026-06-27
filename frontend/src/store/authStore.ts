@@ -52,6 +52,7 @@ interface User {
   role?: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
   isVerified?: boolean;
   isActive?: boolean;
+  hasCompletedOnboarding?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -77,6 +78,7 @@ interface AuthState {
     password: string,
     role?: SignupRole
   ) => Promise<LoginResponse>;
+  updateRole: (role: SignupRole) => Promise<User>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   refreshUser: () => Promise<User | null>;
@@ -131,8 +133,7 @@ export const useAuthStore = create<AuthState>()(
         email: string,
         firstName: string,
         lastName: string,
-        password: string,
-        role: SignupRole = 'STUDENT'
+        password: string
       ): Promise<LoginResponse> => {
         set({ loading: true });
 
@@ -142,7 +143,6 @@ export const useAuthStore = create<AuthState>()(
             firstName,
             lastName,
             password,
-            role,
           });
 
           if (response.data.success) {
@@ -325,6 +325,41 @@ export const useAuthStore = create<AuthState>()(
 
       setInitialized: () => {
         set({ initialized: true });
+      },
+
+      updateRole: async (role: SignupRole): Promise<User> => {
+        const { token } = get();
+        
+        if (!token) {
+          throw new Error('Not authenticated');
+        }
+
+        set({ loading: true });
+
+        try {
+          const response = await api.put('/api/auth/role', { role }, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.data.success) {
+            const user = response.data.data;
+            
+            set({
+              user,
+              loading: false,
+            });
+            
+            return user;
+          }
+
+          set({ loading: false });
+          throw new Error(response.data.message || 'Failed to update role');
+        } catch (error: any) {
+          set({ loading: false });
+          const errorMessage =
+            error.response?.data?.message || error.message || 'Failed to update role. Please try again.';
+          throw new Error(errorMessage);
+        }
       },
 
       getDisplayName: (): string => {

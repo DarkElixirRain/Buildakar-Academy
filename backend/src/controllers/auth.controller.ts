@@ -1,4 +1,3 @@
-// auth.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import authService from '../services/auth.services';
 import { schemas } from '../utils/validation';
@@ -70,6 +69,30 @@ export class AuthController {
       
       res.status(200).json({
         success: true,
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateRole(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated',
+        });
+      }
+
+      const validatedData = schemas.updateRole.parse(req.body);
+      const user = await authService.updateRole({ userId, role: validatedData.role });
+
+      res.status(200).json({
+        success: true,
+        message: 'Role updated successfully',
         data: user,
       });
     } catch (error) {

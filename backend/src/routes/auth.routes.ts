@@ -16,5 +16,6 @@ router.post('/google', googleAuthController.googleAuth);
 // Protected routes
 router.get('/me', authenticate, authController.getMe);
 router.post('/logout', authenticate, authController.logout);
+router.put('/role', authenticate, validate(schemas.updateRole), authController.updateRole);
 
 export default router;

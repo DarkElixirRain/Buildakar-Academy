@@ -17,6 +17,11 @@ interface LoginData {
   password: string;
 }
 
+interface UpdateRoleData {
+  userId: string;
+  role: 'STUDENT' | 'INSTRUCTOR';
+}
+
 export class AuthService {
   async register(data: RegisterData) {
     const { email, password, firstName, lastName, role = 'STUDENT' } = data;
@@ -118,6 +123,32 @@ export class AuthService {
     if (!user) {
       throw new Error('User not found');
     }
+
+    return user;
+  }
+
+  async updateRole(data: UpdateRoleData) {
+    const { userId, role } = data;
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        role,
+        hasCompletedOnboarding: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isVerified: true,
+        isActive: true,
+        hasCompletedOnboarding: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     return user;
   }

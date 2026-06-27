@@ -372,27 +372,6 @@ export default function LoginScreen() {
                       Google
                     </Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    style={{
-                      flex: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderWidth: 1,
-                      borderColor: '#e2e8f0',
-                      borderRadius: 12,
-                      backgroundColor: '#ffffff',
-                      paddingVertical: isSmallDevice ? 10 : 14,
-                    }}
-                    onPress={() => Alert.alert('Coming Soon', 'Apple login will be available soon!')}
-                  >
-                    <Ionicons name="logo-apple" size={isSmallDevice ? 16 : 18} color="#000000" />
-                    <Text style={{ fontWeight: 'bold', color: '#0f172a', marginLeft: 8, fontSize: isSmallDevice ? 12 : 14 }}>
-                      Apple
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               </View>
 

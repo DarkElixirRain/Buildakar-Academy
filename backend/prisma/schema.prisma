@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  password   String
-  firstName  String
-  lastName   String
-  role       Role     @default(STUDENT)
-  authProvider AuthProvider @default(EMAIL)
-  googleId   String?  @unique
-  isVerified Boolean  @default(false)
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                     String       @id @default(cuid())
+  email                  String       @unique
+  password               String
+  firstName              String
+  lastName               String
+  role                   Role         @default(STUDENT)
+  authProvider           AuthProvider @default(EMAIL)
+  googleId               String?      @unique
+  isVerified             Boolean      @default(false)
+  isActive               Boolean      @default(true)
+  hasCompletedOnboarding Boolean      @default(false)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 }
 
 enum AuthProvider {
