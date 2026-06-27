@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -27,26 +26,28 @@ enum Level {
 }
 
 // ============= MODELS =============
-model User {
-id                     String       @id @default(cuid())
-email                  String       @unique
-password               String
-firstName              String
-lastName               String
-role                   Role         @default(STUDENT)
-authProvider           AuthProvider @default(EMAIL)
-googleId               String?      @unique
-isVerified             Boolean      @default(false)
-isActive               Boolean      @default(true)
-hasCompletedOnboarding Boolean      @default(false)
-createdAt              DateTime     @default(now())
-updatedAt              DateTime     @updatedAt
 
-// Relations
-courses          Course[]      @relation("InstructorCourses")
-enrolledCourses  Enrollment[]
-createdCategories Category[]
-reviews          Review[]
+model User {
+  id                     String       @id @default(cuid())
+  email                  String       @unique
+  password               String
+  firstName              String
+  lastName               String
+  role                   Role         @default(STUDENT)
+  authProvider           AuthProvider @default(EMAIL)
+  googleId               String?      @unique
+  isVerified             Boolean      @default(false)
+  isActive               Boolean      @default(true)
+  hasCompletedOnboarding Boolean      @default(false)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // Relations
+  courses           Course[]     @relation("InstructorCourses")
+  enrolledCourses   Enrollment[]
+  createdCategories Category[]   @relation("UserCreatedCategories")
+  reviews           Review[]
+}
 
 model Category {
   id          String   @id @default(cuid())
@@ -62,37 +63,39 @@ model Category {
 
   // Relations
   courses     Course[]
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User     @relation("UserCreatedCategories", fields: [createdById], references: [id])
   createdById String
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  thumbnail   String?
-  price       Float    @default(0)
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  thumbnail     String?
+  price         Float    @default(0)
   originalPrice Float?
-  level       Level    @default(BEGINNER)
-  language    String   @default("English")
-  duration    String?
-  totalHours  Float?
-  rating      Float    @default(0)
-  studentsCount Int    @default(0)
-  isPublished Boolean  @default(false)
-  isBestseller Boolean @default(false)
-  isTrending  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  level         Level    @default(BEGINNER)
+  language      String   @default("English")
+  duration      String?
+  totalHours    Float?
+  rating        Float    @default(0)
+  studentsCount Int      @default(0)
+  isPublished   Boolean  @default(false)
+  isBestseller  Boolean  @default(false)
+  isTrending    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
-  instructor   User     @relation("InstructorCourses", fields: [instructorId], references: [id])
+  instructor   User   @relation("InstructorCourses", fields: [instructorId], references: [id])
   instructorId String
-  category     Category @relation(fields: [categoryId], references: [id])
-  categoryId   String
-  lessons      Lesson[]
-  enrollments  Enrollment[]
-  reviews      Review[]
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  reviews     Review[]
 }
 
 model Lesson {
@@ -108,57 +111,57 @@ model Lesson {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  course      Course   @relation(fields: [courseId], references: [id])
-  courseId    String
-  progress    LessonProgress[]
+  course   Course           @relation(fields: [courseId], references: [id])
+  courseId String
+  progress LessonProgress[]
 }
 
 model Enrollment {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   courseId    String
-  progress    Float    @default(0)
-  isCompleted Boolean  @default(false)
+  progress    Float     @default(0)
+  isCompleted Boolean   @default(false)
   completedAt DateTime?
-  enrolledAt  DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  enrolledAt  DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id])
-  course      Course   @relation(fields: [courseId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
+  course         Course           @relation(fields: [courseId], references: [id])
   lessonProgress LessonProgress[]
 
   @@unique([userId, courseId])
 }
 
 model LessonProgress {
-  id          String   @id @default(cuid())
+  id           String    @id @default(cuid())
   enrollmentId String
-  lessonId    String
-  isCompleted Boolean  @default(false)
-  watchedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  lessonId     String
+  isCompleted  Boolean   @default(false)
+  watchedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relations
-  enrollment  Enrollment @relation(fields: [enrollmentId], references: [id])
-  lesson      Lesson     @relation(fields: [lessonId], references: [id])
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+  lesson     Lesson     @relation(fields: [lessonId], references: [id])
 
   @@unique([enrollmentId, lessonId])
 }
 
 model Review {
-  id          String   @id @default(cuid())
-  userId      String
-  courseId    String
-  rating      Int
-  comment     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user        User     @relation(fields: [userId], references: [id])
-  course      Course   @relation(fields: [courseId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
 
   @@unique([userId, courseId])
 }

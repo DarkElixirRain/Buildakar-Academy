@@ -112,7 +112,7 @@ export default function RoleSelectionScreen() {
       const result = await updateRole(selectedRole);
       
       Alert.alert('Welcome!', `You're now set up as a ${selectedRole.toLowerCase()}.`, [
-        { text: 'Continue', onPress: () => router.replace('/(tabs)') }
+        { text: 'Continue', onPress: () => router.replace('/(tabs)' as any) }
       ]);
     } catch (err: any) {
       const errorMessage = err?.message || 'Failed to set role. Please try again.';

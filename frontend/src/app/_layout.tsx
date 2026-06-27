@@ -86,7 +86,7 @@ export default function RootLayout() {
       (isInAuthGroup || isRoot)
     ) {
       console.log('Redirecting to tabs...');
-      router.replace('/(tabs)');
+      router.replace('/(tabs)' as any);
       return;
     }
   }, [isAuthenticated, initialized, segments, user?.hasCompletedOnboarding]);
