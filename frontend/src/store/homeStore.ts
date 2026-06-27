@@ -132,10 +132,8 @@ export const useHomeStore = create<HomeState>()(
         try {
           set({ loading: true, error: null });
           
-          console.log('[HomeStore] Fetching home data...');
           const data = await homeService.getHomeData();
           
-          console.log('[HomeStore] Home data fetched successfully');
           set({
             data,
             featuredCourses: data.featuredCourses || [],
@@ -154,7 +152,7 @@ export const useHomeStore = create<HomeState>()(
             error: null,
           });
         } catch (error: any) {
-          console.error('[HomeStore] Error fetching home data:', error);
+          console.error('Error fetching home data:', error);
           set({
             loading: false,
             error: error?.message || 'Failed to load home data',
@@ -166,10 +164,8 @@ export const useHomeStore = create<HomeState>()(
         try {
           set({ refreshing: true, error: null });
           
-          console.log('[HomeStore] Refreshing home data...');
           const data = await homeService.getHomeData(true);
           
-          console.log('[HomeStore] Home data refreshed successfully');
           set({
             data,
             featuredCourses: data.featuredCourses || [],
@@ -190,7 +186,7 @@ export const useHomeStore = create<HomeState>()(
             hasMoreRecommendations: true,
           });
         } catch (error: any) {
-          console.error('[HomeStore] Error refreshing home data:', error);
+          console.error('Error refreshing home data:', error);
           set({
             refreshing: false,
             error: error?.message || 'Failed to refresh home data',
@@ -202,31 +198,27 @@ export const useHomeStore = create<HomeState>()(
         const { isLoadingMore, hasMoreRecommendations, recommendationsPage, recommendedCourses } = get();
         
         if (isLoadingMore || !hasMoreRecommendations) {
-          console.log('[HomeStore] No more recommendations to load');
           return;
         }
         
         try {
           set({ isLoadingMore: true });
-          console.log('[HomeStore] Loading more recommendations, page:', recommendationsPage + 1);
           
           const nextPage = recommendationsPage + 1;
           const moreCourses = await homeService.getRecommendedCourses(nextPage);
           
           if (moreCourses.length === 0) {
-            console.log('[HomeStore] No more recommendations available');
             set({ hasMoreRecommendations: false, isLoadingMore: false });
             return;
           }
           
-          console.log('[HomeStore] Loaded', moreCourses.length, 'more recommendations');
           set({
             recommendedCourses: [...recommendedCourses, ...moreCourses],
             recommendationsPage: nextPage,
             isLoadingMore: false,
           });
         } catch (error) {
-          console.error('[HomeStore] Error loading more recommendations:', error);
+          console.error('Error loading more recommendations:', error);
           set({ isLoadingMore: false });
         }
       },
@@ -256,8 +248,6 @@ export const useHomeStore = create<HomeState>()(
       },
 
       toggleSaveCourse: (courseId: string) => {
-        console.log('[HomeStore] Toggling save for course:', courseId);
-        
         set((state) => ({
           recommendedCourses: state.recommendedCourses.map((course) =>
             course.id === courseId
@@ -280,7 +270,7 @@ export const useHomeStore = create<HomeState>()(
         
         // Call service to persist the change
         homeService.toggleSaveCourse(courseId).catch((error) => {
-          console.error('[HomeStore] Error toggling save:', error);
+          console.error('Error toggling save:', error);
           // Revert the change if API call fails
           set((state) => ({
             recommendedCourses: state.recommendedCourses.map((course) =>
@@ -293,8 +283,6 @@ export const useHomeStore = create<HomeState>()(
       },
 
       followInstructor: (instructorId: string) => {
-        console.log('[HomeStore] Following instructor:', instructorId);
-        
         set((state) => ({
           topInstructors: state.topInstructors.map((instructor) =>
             instructor.id === instructorId
@@ -316,7 +304,7 @@ export const useHomeStore = create<HomeState>()(
         }
         
         homeService.followInstructor(instructorId).catch((error) => {
-          console.error('[HomeStore] Error following instructor:', error);
+          console.error('Error following instructor:', error);
           // Revert the change if API call fails
           set((state) => ({
             topInstructors: state.topInstructors.map((instructor) =>
@@ -329,8 +317,6 @@ export const useHomeStore = create<HomeState>()(
       },
 
       unfollowInstructor: (instructorId: string) => {
-        console.log('[HomeStore] Unfollowing instructor:', instructorId);
-        
         set((state) => ({
           topInstructors: state.topInstructors.map((instructor) =>
             instructor.id === instructorId
@@ -352,7 +338,7 @@ export const useHomeStore = create<HomeState>()(
         }
         
         homeService.unfollowInstructor(instructorId).catch((error) => {
-          console.error('[HomeStore] Error unfollowing instructor:', error);
+          console.error('Error unfollowing instructor:', error);
           // Revert the change if API call fails
           set((state) => ({
             topInstructors: state.topInstructors.map((instructor) =>
@@ -365,8 +351,6 @@ export const useHomeStore = create<HomeState>()(
       },
 
       markNotificationAsRead: (notificationId: string) => {
-        console.log('[HomeStore] Marking notification as read:', notificationId);
-        
         set((state) => ({
           notifications: state.notifications
             ? {
@@ -388,7 +372,7 @@ export const useHomeStore = create<HomeState>()(
         }
         
         homeService.markNotificationAsRead(notificationId).catch((error) => {
-          console.error('[HomeStore] Error marking notification as read:', error);
+          console.error('Error marking notification as read:', error);
         });
       },
 
@@ -397,13 +381,10 @@ export const useHomeStore = create<HomeState>()(
       },
 
       reset: () => {
-        console.log('[HomeStore] Resetting state');
         set(initialState);
       },
 
       updateRecentlyViewed: (course: { id: string; title: string; thumbnail: string; lastOpened?: string; instructor?: string }) => {
-        console.log('[HomeStore] Updating recently viewed:', course.id);
-        
         set((state) => {
           const recentlyViewedCourse: RecentlyViewedCourse = {
             id: course.id,
@@ -433,13 +414,12 @@ export const useHomeStore = create<HomeState>()(
         
         // Track view in background
         homeService.trackCourseView(course.id).catch((error) => {
-          console.error('[HomeStore] Error tracking course view:', error);
+          console.error('Error tracking course view:', error);
         });
       },
 
       updateContinueLearning: (courseId: string, progress: number, remainingTime: string) => {
         const clampedProgress = Math.min(Math.max(progress, 0), 100);
-        console.log('[HomeStore] Updating continue learning:', courseId, clampedProgress);
         
         set((state) => ({
           continueLearning: state.continueLearning.map((course) =>

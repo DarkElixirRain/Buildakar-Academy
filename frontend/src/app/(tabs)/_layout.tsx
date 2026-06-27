@@ -3,9 +3,19 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Platform, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+
+  // Calculate responsive tab bar height
+  const getTabBarHeight = () => {
+    const baseHeight = Platform.OS === 'ios' ? 85 : 75;
+    const bottomInset = insets.bottom > 0 ? insets.bottom : 10;
+    return baseHeight + bottomInset;
+  };
 
   return (
     <Tabs
@@ -15,24 +25,33 @@ export default function TabsLayout() {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E2E8F0',
+          height: getTabBarHeight(),
           paddingTop: 8,
-          paddingBottom: insets.bottom + 8,
-          height: 70 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+          paddingHorizontal: 4,
           shadowColor: '#0F172A',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 4,
           elevation: 4,
+          position: 'relative',
+          bottom: 0,
         },
         tabBarActiveTintColor: '#2563EB',
         tabBarInactiveTintColor: '#94A3B8',
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '500',
-          marginTop: 4,
+          marginTop: 2,
+          marginBottom: 4,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 2,
+          marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 0,
+          paddingHorizontal: 0,
         },
       }}
     >
@@ -43,14 +62,13 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? 'home' : 'home-outline'} 
-              size={size} 
+              size={size || 24} 
               color={color} 
             />
           ),
         }}
       />
       
-      {/* ✅ UNCOMMENT THIS - Explore Tab */}
       <Tabs.Screen
         name="explore"
         options={{
@@ -58,7 +76,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? 'compass' : 'compass-outline'} 
-              size={size} 
+              size={size || 24} 
               color={color} 
             />
           ),
@@ -66,46 +84,28 @@ export default function TabsLayout() {
       />
       
       <Tabs.Screen
-        name="my-learning"
+        name="live"
         options={{
-          title: 'My Learning',
+          title: 'Live',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? 'book' : 'book-outline'} 
-              size={size} 
-              color={color} 
-            />
+            <View className="relative">
+              <Ionicons 
+                name={focused ? 'videocam' : 'videocam-outline'} 
+                size={size || 24} 
+                color={color} 
+              />
+              {/* Live indicator dot */}
+              <View className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-white">
+                <View className="absolute inset-0 rounded-full animate-pulse" />
+              </View>
+            </View>
           ),
         }}
       />
       
-      <Tabs.Screen
-        name="certificates"
-        options={{
-          title: 'Certificates',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? 'ribbon' : 'ribbon-outline'} 
-              size={size} 
-              color={color} 
-            />
-          ),
-        }}
-      />
       
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? 'person' : 'person-outline'} 
-              size={size} 
-              color={color} 
-            />
-          ),
-        }}
-      />
+      
+      
     </Tabs>
   );
 }

@@ -1,26 +1,18 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
+// prisma/schema.prisma
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                     String       @id @default(cuid())
-  email                  String       @unique
-  password               String
-  firstName              String
-  lastName               String
-  role                   Role         @default(STUDENT)
-  authProvider           AuthProvider @default(EMAIL)
-  googleId               String?      @unique
-  isVerified             Boolean      @default(false)
-  isActive               Boolean      @default(true)
-  hasCompletedOnboarding Boolean      @default(false)
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============= ENUMS =============
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
 }
 
 enum AuthProvider {
@@ -28,8 +20,145 @@ enum AuthProvider {
   GOOGLE
 }
 
-enum Role {
-  STUDENT
-  INSTRUCTOR
-  ADMIN
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// ============= MODELS =============
+model User {
+id                     String       @id @default(cuid())
+email                  String       @unique
+password               String
+firstName              String
+lastName               String
+role                   Role         @default(STUDENT)
+authProvider           AuthProvider @default(EMAIL)
+googleId               String?      @unique
+isVerified             Boolean      @default(false)
+isActive               Boolean      @default(true)
+hasCompletedOnboarding Boolean      @default(false)
+createdAt              DateTime     @default(now())
+updatedAt              DateTime     @updatedAt
+
+// Relations
+courses          Course[]      @relation("InstructorCourses")
+enrolledCourses  Enrollment[]
+createdCategories Category[]
+reviews          Review[]
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  image       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  courses     Course[]
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  thumbnail   String?
+  price       Float    @default(0)
+  originalPrice Float?
+  level       Level    @default(BEGINNER)
+  language    String   @default("English")
+  duration    String?
+  totalHours  Float?
+  rating      Float    @default(0)
+  studentsCount Int    @default(0)
+  isPublished Boolean  @default(false)
+  isBestseller Boolean @default(false)
+  isTrending  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  instructor   User     @relation("InstructorCourses", fields: [instructorId], references: [id])
+  instructorId String
+  category     Category @relation(fields: [categoryId], references: [id])
+  categoryId   String
+  lessons      Lesson[]
+  enrollments  Enrollment[]
+  reviews      Review[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  videoUrl    String?
+  duration    String?
+  order       Int
+  isPreview   Boolean  @default(false)
+  isFree      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    String
+  progress    LessonProgress[]
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  progress    Float    @default(0)
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  enrolledAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id])
+  lessonProgress LessonProgress[]
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  enrollmentId String
+  lessonId    String
+  isCompleted Boolean  @default(false)
+  watchedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  enrollment  Enrollment @relation(fields: [enrollmentId], references: [id])
+  lesson      Lesson     @relation(fields: [lessonId], references: [id])
+
+  @@unique([enrollmentId, lessonId])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
 }

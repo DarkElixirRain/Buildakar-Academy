@@ -34,6 +34,7 @@ const CACHE_KEYS = {
   RECENTLY_VIEWED: 'home_recently_viewed',
 };
 
+// ✅ Mock data for everything except categories
 const MOCK_DATA: HomeData = {
   featuredCourses: [
     {
@@ -116,16 +117,7 @@ const MOCK_DATA: HomeData = {
       isTrending: true,
     },
   ],
-  categories: [
-    { id: 'dev', name: 'Development', icon: 'code-slash', color: '#2563EB' },
-    { id: 'ai', name: 'AI', icon: 'brain', color: '#7C3AED' },
-    { id: 'data', name: 'Data Science', icon: 'bar-chart', color: '#22C55E' },
-    { id: 'design', name: 'Design', icon: 'color-palette', color: '#F59E0B' },
-    { id: 'marketing', name: 'Marketing', icon: 'megaphone', color: '#EF4444' },
-    { id: 'business', name: 'Business', icon: 'briefcase', color: '#3B82F6' },
-    { id: 'finance', name: 'Finance', icon: 'cash', color: '#10B981' },
-    { id: 'languages', name: 'Languages', icon: 'language', color: '#EC4899' },
-  ],
+  categories: [],
   continueLearning: [
     {
       id: '10',
@@ -236,32 +228,237 @@ const MOCK_DATA: HomeData = {
   ],
 };
 
+// ✅ Helper function for mock categories
+function getMockCategories(): Category[] {
+  return [
+    { 
+      id: 'dev', 
+      name: 'Development', 
+      icon: 'code-slash', 
+      color: '#2563EB',
+      slug: 'development',
+      courseCount: 45,
+      description: 'Learn programming and software development',
+      isActive: true,
+    },
+    { 
+      id: 'ai', 
+      name: 'AI & Machine Learning', 
+      icon: 'bulb-outline', 
+      color: '#7C3AED',
+      slug: 'ai-machine-learning',
+      courseCount: 32,
+      description: 'Artificial Intelligence and Machine Learning',
+      isActive: true,
+    },
+    { 
+      id: 'data', 
+      name: 'Data Science', 
+      icon: 'bar-chart-outline', 
+      color: '#22C55E',
+      slug: 'data-science',
+      courseCount: 28,
+      description: 'Data analysis, visualization, and statistics',
+      isActive: true,
+    },
+    { 
+      id: 'design', 
+      name: 'Design', 
+      icon: 'color-palette-outline', 
+      color: '#F59E0B',
+      slug: 'design',
+      courseCount: 38,
+      description: 'UI/UX, graphic design, and creative skills',
+      isActive: true,
+    },
+    { 
+      id: 'marketing', 
+      name: 'Marketing', 
+      icon: 'megaphone-outline', 
+      color: '#EF4444',
+      slug: 'marketing',
+      courseCount: 25,
+      description: 'Digital marketing, SEO, and social media',
+      isActive: true,
+    },
+    { 
+      id: 'business', 
+      name: 'Business', 
+      icon: 'briefcase-outline', 
+      color: '#3B82F6',
+      slug: 'business',
+      courseCount: 30,
+      description: 'Entrepreneurship and business management',
+      isActive: true,
+    },
+    { 
+      id: 'finance', 
+      name: 'Finance', 
+      icon: 'cash-outline', 
+      color: '#10B981',
+      slug: 'finance',
+      courseCount: 20,
+      description: 'Financial planning and investment strategies',
+      isActive: true,
+    },
+    { 
+      id: 'languages', 
+      name: 'Languages', 
+      icon: 'language-outline', 
+      color: '#EC4899',
+      slug: 'languages',
+      courseCount: 15,
+      description: 'Learn new languages and communication skills',
+      isActive: true,
+    },
+  ];
+}
+
+// ✅ Helper function to extract categories from unknown response
+function extractCategoriesFromResponse(response: any): any[] {
+  // Check if response is null or undefined
+  if (!response) return [];
+  
+  // Case 1: Direct array
+  if (Array.isArray(response)) {
+    return response;
+  }
+  
+  // Case 2: Object with data property
+  if (response.data && Array.isArray(response.data)) {
+    return response.data;
+  }
+  
+  // Case 3: Object with success and data
+  if (response.success === true && response.data && Array.isArray(response.data)) {
+    return response.data;
+  }
+  
+  // Case 4: Object with categories property
+  if (response.categories && Array.isArray(response.categories)) {
+    return response.categories;
+  }
+  
+  // Case 5: Response might have a property that is an array
+  if (typeof response === 'object') {
+    for (const key in response) {
+      if (Array.isArray(response[key]) && response[key].length > 0) {
+        return response[key];
+      }
+    }
+  }
+  
+  // No categories found
+  return [];
+}
+
 export const homeService = {
+  // ✅ Get home data - categories from API, everything else from mock
   getHomeData: async (forceRefresh: boolean = false): Promise<HomeData> => {
     try {
+      // Check cache first
       if (!forceRefresh) {
         const cachedData = await cacheManager.get<HomeData>(CACHE_KEYS.HOME_DATA);
         if (cachedData) {
+          console.log('📦 Using cached home data');
           return cachedData;
         }
       }
 
-      // In production: const response = await apiClient.get('/api/home');
-      // const data = response.data;
+      // Start with mock data
+      const data: HomeData = { ...MOCK_DATA, categories: [] };
       
-      const data = MOCK_DATA;
+      // ✅ Fetch categories from backend API
+      try {
+        console.log('🌐 Fetching categories from backend...');
+        const response = await apiClient.get('/api/categories');
+        
+        // Extract categories from response using helper
+        const categoriesData = extractCategoriesFromResponse(response);
+        
+        if (categoriesData.length > 0) {
+          data.categories = categoriesData.map((cat: any) => ({
+            id: cat.id || cat._id,
+            name: cat.name || 'Unnamed Category',
+            slug: cat.slug || cat.name?.toLowerCase().replace(/\s+/g, '-') || 'uncategorized',
+            icon: cat.icon || 'book-outline',
+            color: cat.color || '#2563EB',
+            image: cat.image || cat.thumbnail,
+            courseCount: cat._count?.courses || cat.courseCount || 0,
+            description: cat.description || '',
+            isActive: cat.isActive !== undefined ? cat.isActive : true,
+          }));
+          console.log(`✅ Fetched ${data.categories.length} categories from backend`);
+        } else {
+          console.log('⚠️ No categories found in response, using mock data');
+          data.categories = getMockCategories();
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch categories from backend:', error);
+        data.categories = getMockCategories();
+        console.log('⚠️ Using mock categories (API failed)');
+      }
+
+      // Cache the data
       await cacheManager.set(CACHE_KEYS.HOME_DATA, data);
+      console.log(`💾 Home data cached with ${data.categories.length} categories`);
       return data;
+      
     } catch (error) {
-      console.error('Failed to fetch home data:', error);
+      console.error('❌ Failed to fetch home data:', error);
+      
+      // Try to get from cache
       const cachedData = await cacheManager.get<HomeData>(CACHE_KEYS.HOME_DATA);
       if (cachedData) {
+        console.log('📦 Using cached home data (API failed)');
         return cachedData;
       }
-      return MOCK_DATA;
+      
+      // Final fallback with mock categories
+      console.log('⚠️ Using mock data (no cache available)');
+      return {
+        ...MOCK_DATA,
+        categories: getMockCategories(),
+      };
     }
   },
 
+  // ✅ Get categories only from API
+  getCategories: async (): Promise<Category[]> => {
+    try {
+      console.log('🌐 Fetching categories from backend...');
+      const response = await apiClient.get('/api/categories');
+      
+      // Extract categories from response using helper
+      const categoriesData = extractCategoriesFromResponse(response);
+      
+      if (categoriesData.length === 0) {
+        console.log('⚠️ No categories found in response, using mock data');
+        return getMockCategories();
+      }
+      
+      const categories: Category[] = categoriesData.map((cat: any) => ({
+        id: cat.id || cat._id,
+        name: cat.name || 'Unnamed Category',
+        slug: cat.slug || cat.name?.toLowerCase().replace(/\s+/g, '-') || 'uncategorized',
+        icon: cat.icon || 'book-outline',
+        color: cat.color || '#2563EB',
+        image: cat.image || cat.thumbnail,
+        courseCount: cat._count?.courses || cat.courseCount || 0,
+        description: cat.description || '',
+        isActive: cat.isActive !== undefined ? cat.isActive : true,
+      }));
+      
+      console.log(`✅ Fetched ${categories.length} categories from backend`);
+      return categories;
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch categories:', error);
+      return getMockCategories();
+    }
+  },
+
+  // ✅ All other methods use mock data
   getRecommendedCourses: async (page: number = 1, limit: number = 10): Promise<RecommendedCourse[]> => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -293,15 +490,6 @@ export const homeService = {
     }
   },
 
-  getCategories: async (): Promise<Category[]> => {
-    try {
-      return MOCK_DATA.categories;
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-      return [];
-    }
-  },
-
   getContinueLearning: async (): Promise<ContinueLearningCourse[]> => {
     try {
       return MOCK_DATA.continueLearning;
@@ -329,7 +517,7 @@ export const homeService = {
     }
   },
 
-  getAchievements: async (): Promise<Achievement> => {
+  getAchievements: async (): Promise<Achievement | null> => {
     try {
       return MOCK_DATA.achievements;
     } catch (error) {
@@ -347,7 +535,7 @@ export const homeService = {
     }
   },
 
-  getUserProgress: async (): Promise<UserProgress> => {
+  getUserProgress: async (): Promise<UserProgress | null> => {
     try {
       return MOCK_DATA.userProgress;
     } catch (error) {
@@ -356,7 +544,7 @@ export const homeService = {
     }
   },
 
-  getNotifications: async (): Promise<Notification> => {
+  getNotifications: async (): Promise<Notification | null> => {
     try {
       return MOCK_DATA.notifications;
     } catch (error) {

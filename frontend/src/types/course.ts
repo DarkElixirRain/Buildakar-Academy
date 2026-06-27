@@ -1,24 +1,15 @@
 // types/course.ts
-
 export interface Lesson {
   id: string;
   order: number;
   title: string;
   duration: string;
-  /** The YouTube video ID, e.g. for https://www.youtube.com/watch?v=M7lc1UVf-VE it's 'M7lc1UVf-VE' */
-  youtubeId: string;
+  // New: Direct video URL
+  videoUrl?: string;
+  // Keep for backward compatibility
+  youtubeId?: string;
   completed: boolean;
   locked?: boolean;
-}
-
-export interface Comment {
-  id: string;
-  userName: string;
-  userAvatar: string;
-  text: string;
-  timestamp: string;
-  likes: number;
-  likedByMe?: boolean;
 }
 
 export interface CourseDetail {
@@ -32,4 +23,14 @@ export interface CourseDetail {
   studentsCount: number;
   lessons: Lesson[];
   comments: Comment[];
+}
+
+export interface Comment {
+  id: string;
+  userName: string;
+  userAvatar: string;
+  text: string;
+  timestamp: string;
+  likes: number;
+  likedByMe: boolean;
 }

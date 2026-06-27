@@ -1,18 +1,15 @@
 // app/_layout.tsx
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { useColorScheme, View } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, createContext, useContext } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { Text } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { useAuthStore } from '@/store/authStore';
+import React from 'react';
 
-// Create a Theme Context for your app
-import React, { createContext, useContext } from 'react';
-
-// ✅ Create a proper theme context
 const AppThemeContext = createContext({
   background: '#F8FAFC',
   surface: '#FFFFFF',
@@ -24,18 +21,14 @@ const AppThemeContext = createContext({
 
 export const useAppTheme = () => useContext(AppThemeContext);
 
-console.log('RootLayout loading...');
-
 export default function RootLayout() {
-  console.log('RootLayout rendering...');
-  
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
   const { isAuthenticated, initialized, user, checkAuth } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
-  // ✅ Theme values based on system theme
   const themeValues = {
     background: isDark ? '#0F172A' : '#F8FAFC',
     surface: isDark ? '#1E293B' : '#FFFFFF',
@@ -45,64 +38,60 @@ export default function RootLayout() {
     isDark,
   };
 
-  console.log('Auth state:', { isAuthenticated, initialized });
-
-  // Initialize auth on mount
   useEffect(() => {
-    console.log('Checking auth...');
     checkAuth().catch(err => {
       console.error('Auth check error:', err);
     });
   }, []);
 
-  // Handle navigation based on auth state
   useEffect(() => {
-    console.log('Navigation effect - initialized:', initialized, 'segments:', segments);
-    
-    if (!initialized) {
-      console.log('Not initialized yet, skipping navigation');
-      return;
-    }
+    if (!initialized) return;
 
     const currentPath = segments.join('/');
     const isInAuthGroup = currentPath.startsWith('(auth)');
     const isRoleSelection = currentPath.startsWith('(auth)/role-selection');
     const isRoot = currentPath === '' || currentPath === 'index';
 
-    console.log('Navigation check:', { 
-      currentPath, 
-      isAuthenticated, 
+    console.log('Navigation check:', {
+      currentPath,
+      isAuthenticated,
       isInAuthGroup,
       isRoleSelection,
       isRoot,
       hasCompletedOnboarding: user?.hasCompletedOnboarding
     });
 
-    // If not authenticated and not in auth group, redirect to login
+    // 1. Not authenticated → login
     if (!isAuthenticated && !isInAuthGroup) {
-      console.log('Redirecting to login...');
-      router.replace('/(auth)/login');
+      router.replace('/login' as const);
       return;
     }
 
-    // If authenticated but hasn't completed onboarding and not already on role-selection, redirect to role-selection
-    if (isAuthenticated && user && !user.hasCompletedOnboarding && !isRoleSelection) {
+    // 2. Authenticated but not onboarded → role selection
+    if (
+      isAuthenticated &&
+      user &&
+      !user.hasCompletedOnboarding &&
+      !isRoleSelection
+    ) {
       console.log('Redirecting to role-selection...');
       router.replace('/(auth)/role-selection');
       return;
     }
 
-    // If authenticated and has completed onboarding, redirect to tabs if in auth group or root
-    if (isAuthenticated && user?.hasCompletedOnboarding && (isInAuthGroup || isRoot)) {
+    // 3. Authenticated + onboarded → tabs
+    if (
+      isAuthenticated &&
+      user?.hasCompletedOnboarding &&
+      (isInAuthGroup || isRoot)
+    ) {
       console.log('Redirecting to tabs...');
       router.replace('/(tabs)');
       return;
     }
   }, [isAuthenticated, initialized, segments, user?.hasCompletedOnboarding]);
 
-  // Show splash screen while initializing
   if (!initialized) {
-    console.log('Showing splash screen...');
     return (
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <AppThemeContext.Provider value={themeValues}>
@@ -112,15 +101,13 @@ export default function RootLayout() {
     );
   }
 
-  console.log('Rendering main stack...');
-  
   try {
     return (
       <SafeAreaProvider>
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          {/* ✅ Wrap everything with AppThemeContext */}
           <AppThemeContext.Provider value={themeValues}>
-            <StatusBar style={isDark ? "light" : "dark"} />
+            <StatusBar style={isDark ? 'light' : 'dark'} />
+
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -138,7 +125,14 @@ export default function RootLayout() {
   } catch (error) {
     console.error('Error rendering stack:', error);
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#F8FAFC',
+        }}
+      >
         <Text style={{ color: '#0F172A' }}>Error loading app</Text>
         <Text style={{ color: '#64748B' }}>{String(error)}</Text>
       </View>

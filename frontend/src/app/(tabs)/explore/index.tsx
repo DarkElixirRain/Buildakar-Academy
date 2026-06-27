@@ -186,9 +186,7 @@ export default function TabTwoScreen() {
               <Text style={styles.headerTitle}>Explore Courses</Text>
               <Text style={styles.headerSubtitle}>Discover your next learning adventure</Text>
             </View>
-            <Pressable style={styles.filterButton}>
-              <Text style={styles.filterIcon}>⚙️</Text>
-            </Pressable>
+            
           </View>
 
           {/* Categories */}

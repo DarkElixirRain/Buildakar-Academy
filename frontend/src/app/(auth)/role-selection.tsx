@@ -89,7 +89,7 @@ export default function RoleSelectionScreen() {
   // useEffect(() => {
   //   if (initialized && isAuthenticated && user?.hasCompletedOnboarding && !hasRedirected.current) {
   //     hasRedirected.current = true;
-  //     router.replace('/(tabs)');
+  //     router.replace('/');
   //   }
   // }, [isAuthenticated, initialized, user?.hasCompletedOnboarding, router]);
 
