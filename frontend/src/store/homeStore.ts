@@ -365,8 +365,8 @@ export const useHomeStore = create<HomeState>()(
         if (currentData?.notifications) {
           const updatedData = { ...currentData };
           updatedData.notifications = {
-            ...updatedData.notifications,
-            unread: Math.max(0, updatedData.notifications.unread - 1),
+            ...currentData.notifications,
+            unread: Math.max(0, currentData.notifications.unread - 1),
           };
           set({ data: updatedData });
         }

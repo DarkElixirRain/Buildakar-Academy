@@ -25,6 +25,12 @@ enum Level {
   ADVANCED
 }
 
+enum CourseStatus {
+  DRAFT
+  UNDER_REVIEW
+  PUBLISHED
+}
+
 // ============= MODELS =============
 
 model User {
@@ -83,19 +89,38 @@ model Course {
   isPublished   Boolean  @default(false)
   isBestseller  Boolean  @default(false)
   isTrending    Boolean  @default(false)
+  status        CourseStatus @default(DRAFT)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   // Relations
-  instructor   User   @relation("InstructorCourses", fields: [instructorId], references: [id])
+  instructor   User     @relation("InstructorCourses", fields: [instructorId], references: [id])
   instructorId String
 
   category   Category @relation(fields: [categoryId], references: [id])
   categoryId String
 
-  lessons     Lesson[]
+  sections   Section[]
+  lessons    Lesson[]
   enrollments Enrollment[]
   reviews     Review[]
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  title     String
+  description String?
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  lessons   Lesson[]
+
+  @@index([courseId])
+  @@index([order])
 }
 
 model Lesson {
@@ -111,8 +136,10 @@ model Lesson {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  course   Course           @relation(fields: [courseId], references: [id])
+  course   Course   @relation(fields: [courseId], references: [id])
   courseId String
+  section   Section? @relation(fields: [sectionId], references: [id])
+  sectionId String?
   progress LessonProgress[]
 }
 

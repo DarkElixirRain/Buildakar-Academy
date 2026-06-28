@@ -4,13 +4,11 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Platform, Dimensions } from 'react-native';
-import { useTheme } from '@/context/themeContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  const { isDarkMode, colors } = useTheme();
 
   // Calculate responsive tab bar height
   const getTabBarHeight = () => {
@@ -107,20 +105,10 @@ export default function TabsLayout() {
           ),
         }}
       />
-
-      <Tabs.Screen
-        name="setting"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? 'settings' : 'settings-outline'} 
-              size={size || 24} 
-              color={color} 
-            />
-          ),
-        }}
-      />
+      
+      
+      
+      
     </Tabs>
   );
 }
