@@ -9,6 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 interface SearchBarProps {
   value: string;
@@ -31,6 +32,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [recentSearches, setRecentSearches] = useState(RECENT_SEARCHES);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { isDarkMode, colors } = useTheme();
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -73,28 +75,37 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <View className="w-full">
+    <View style={{ width: '100%', marginTop: 8, marginBottom: 16 }}>
       <Animated.View 
         className="relative"
         style={{ transform: [{ scale: scaleAnim }] }}
       >
         {/* Search Icon */}
         <View className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-          <Feather name="search" size={20} color="#94A3B8" />
+          <Feather name="search" size={20} color={colors.textSecondary} />
         </View>
 
         {/* Input */}
         <TextInput
-          className="w-full h-12 bg-white rounded-2xl pl-10 pr-20 text-[#0F172A] text-base border border-[#E2E8F0]"
-          style={{ 
-            shadowColor: '#0F172A',
+          style={{
+            width: '100%',
+            height: 48,
+            borderRadius: 16,
+            paddingLeft: 40,
+            paddingRight: 80,
+            fontSize: 16,
+            borderWidth: 1,
+            backgroundColor: colors.backgroundElement,
+            color: colors.text,
+            borderColor: colors.backgroundSelected,
+            shadowColor: colors.text,
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
+            shadowOpacity: isDarkMode ? 0.3 : 0.05,
             shadowRadius: 4,
             elevation: 2,
           }}
           placeholder="Search courses, skills, instructors..."
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textSecondary}
           value={value}
           onChangeText={onChangeText}
           onFocus={handleFocus}
@@ -110,23 +121,39 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               className="p-1.5"
               onPress={clearSearch}
             >
-              <Feather name="x" size={18} color="#94A3B8" />
+              <Feather name="x" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
 
           <TouchableOpacity 
-            className="p-1.5 bg-[#F1F5F9] rounded-full"
+            style={{
+              padding: 6,
+              borderRadius: 20,
+              backgroundColor: isDarkMode ? '#334155' : '#F1F5F9',
+            }}
             onPress={handleVoiceSearch}
           >
-            <Ionicons name="mic" size={18} color="#475569" />
+            <Ionicons name="mic" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </Animated.View>
 
       {/* Recent Searches */}
       {isFocused && recentSearches.length > 0 && (
-        <View className="mt-3 bg-white rounded-2xl border border-[#E2E8F0] p-3">
-          <Text className="text-[#64748B] text-sm font-medium mb-2">
+        <View style={{
+          marginTop: 12,
+          borderRadius: 16,
+          borderWidth: 1,
+          padding: 12,
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+        }}>
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '500',
+            marginBottom: 8,
+            color: colors.textSecondary,
+          }}>
             Recent Searches
           </Text>
           {recentSearches.map((search, index) => (
@@ -135,8 +162,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               className="py-2 flex-row items-center"
               onPress={() => handleRecentSearchPress(search)}
             >
-              <Feather name="clock" size={16} color="#94A3B8" />
-              <Text className="ml-3 text-[#0F172A] text-base flex-1">
+              <Feather name="clock" size={16} color={colors.textSecondary} />
+              <Text style={{
+                marginLeft: 12,
+                fontSize: 16,
+                flex: 1,
+                color: colors.text,
+              }}>
                 {search}
               </Text>
               <TouchableOpacity 
@@ -144,7 +176,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                   setRecentSearches(prev => prev.filter(s => s !== search));
                 }}
               >
-                <Feather name="x" size={16} color="#94A3B8" />
+                <Feather name="x" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             </TouchableOpacity>
           ))}
@@ -153,7 +185,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             className="mt-2 py-1"
             onPress={() => setRecentSearches([])}
           >
-            <Text className="text-[#2563EB] text-sm font-medium text-center">
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '500',
+              textAlign: 'center',
+              color: colors.primary,
+            }}>
               Clear All
             </Text>
           </TouchableOpacity>

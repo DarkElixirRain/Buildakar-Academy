@@ -1,7 +1,9 @@
+// app/(tabs)/explore.tsx
 import { ScrollView, StyleSheet, View, Text, Image, Pressable, TextInput } from 'react-native';
-import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/context/themeContext';
 import { HomeHeader } from '../../../components/home/HomeHeader';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 // Dummy image URLs (using picsum for random images)
 const DUMMY_IMAGES = {
@@ -15,7 +17,8 @@ const DUMMY_IMAGES = {
   cloud: 'https://picsum.photos/seed/cloud/400/200',
 };
 
-export default function TabTwoScreen() {
+export default function ExploreScreen() {
+  const { isDarkMode, colors } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -145,9 +148,12 @@ export default function TabTwoScreen() {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colors.background }]}>
       {/* Fixed Header */}
-      <View style={styles.fixedHeaderContainer}>
+      <View style={[styles.fixedHeaderContainer, { 
+        backgroundColor: colors.backgroundElement,
+        borderBottomColor: colors.backgroundSelected,
+      }]}>
         <HomeHeader 
           notificationCount={3} 
           onNotificationPress={() => {}} 
@@ -156,25 +162,28 @@ export default function TabTwoScreen() {
       
       {/* Scrollable Content */}
       <ScrollView 
-        style={styles.scrollView} 
+        style={[styles.scrollView, { backgroundColor: colors.background }]} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <ThemedView style={styles.container}>
-          {/* Search Bar */}
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          {/* Search Bar - with top margin for header gap */}
           <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
-              <Text style={styles.searchIcon}>🔍</Text>
+            <View style={[styles.searchBar, {
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.backgroundSelected,
+            }]}>
+              <Ionicons name="search" size={20} color={colors.textSecondary} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search courses..."
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery.length > 0 && (
                 <Pressable onPress={() => setSearchQuery('')}>
-                  <Text style={styles.clearIcon}>✕</Text>
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                 </Pressable>
               )}
             </View>
@@ -183,10 +192,11 @@ export default function TabTwoScreen() {
           {/* Header Section */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.headerTitle}>Explore Courses</Text>
-              <Text style={styles.headerSubtitle}>Discover your next learning adventure</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Explore Courses</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+                Discover your next learning adventure
+              </Text>
             </View>
-            
           </View>
 
           {/* Categories */}
@@ -201,13 +211,16 @@ export default function TabTwoScreen() {
                 key={category}
                 style={[
                   styles.categoryButton,
-                  selectedCategory === category && styles.categoryButtonActive
+                  { 
+                    backgroundColor: selectedCategory === category ? colors.primary : colors.backgroundElement,
+                    borderColor: selectedCategory === category ? colors.primary : colors.backgroundSelected,
+                  }
                 ]}
                 onPress={() => setSelectedCategory(category)}
               >
                 <Text style={[
                   styles.categoryText,
-                  selectedCategory === category && styles.categoryTextActive
+                  { color: selectedCategory === category ? '#FFFFFF' : colors.textSecondary }
                 ]}>
                   {category}
                 </Text>
@@ -217,7 +230,7 @@ export default function TabTwoScreen() {
 
           {/* Results Count */}
           <View style={styles.resultsContainer}>
-            <Text style={styles.resultsText}>
+            <Text style={[styles.resultsText, { color: colors.textSecondary }]}>
               {filteredCourses.length} courses found
             </Text>
           </View>
@@ -225,7 +238,11 @@ export default function TabTwoScreen() {
           {/* Course Grid */}
           <View style={styles.coursesGrid}>
             {filteredCourses.map((course) => (
-              <Pressable key={course.id} style={styles.courseCard}>
+              <Pressable key={course.id} style={[styles.courseCard, {
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+                shadowColor: isDarkMode ? '#000000' : '#000000',
+              }]}>
                 <Image source={{ uri: course.image }} style={styles.courseImage} />
                 
                 {/* Level Badge */}
@@ -234,40 +251,61 @@ export default function TabTwoScreen() {
                 </View>
 
                 <View style={styles.courseInfo}>
-                  <Text style={styles.courseTitle} numberOfLines={2}>
+                  <Text style={[styles.courseTitle, { color: colors.text }]} numberOfLines={2}>
                     {course.title}
                   </Text>
-                  <Text style={styles.courseProvider}>{course.provider}</Text>
+                  <Text style={[styles.courseProvider, { color: colors.textSecondary }]}>
+                    {course.provider}
+                  </Text>
                   
-                  <View style={styles.ratingContainer}>
+                  <View style={[styles.ratingContainer, {
+                    borderTopColor: colors.backgroundSelected,
+                    borderBottomColor: colors.backgroundSelected,
+                  }]}>
                     <View style={styles.ratingRow}>
                       <Text style={styles.starIcon}>⭐</Text>
-                      <Text style={styles.courseRating}>{course.rating}</Text>
-                      <Text style={styles.reviewCount}>({course.reviews.toLocaleString()} reviews)</Text>
+                      <Text style={[styles.courseRating, { color: colors.text }]}>
+                        {course.rating}
+                      </Text>
+                      <Text style={[styles.reviewCount, { color: colors.textSecondary }]}>
+                        ({course.reviews.toLocaleString()} reviews)
+                      </Text>
                     </View>
                     <View style={styles.studentsRow}>
-                      <Text style={styles.studentIcon}>👨‍🎓</Text>
-                      <Text style={styles.courseStudents}>{course.students} students</Text>
+                      <Ionicons name="people" size={14} color={colors.textSecondary} />
+                      <Text style={[styles.courseStudents, { color: colors.textSecondary }]}>
+                        {course.students} students
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.courseMeta}>
                     <View style={styles.metaItem}>
-                      <Text style={styles.metaIcon}>⏱️</Text>
-                      <Text style={styles.metaText}>{course.duration}</Text>
+                      <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                      <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                        {course.duration}
+                      </Text>
                     </View>
                     <View style={styles.metaItem}>
-                      <Text style={styles.metaIcon}>📚</Text>
-                      <Text style={styles.metaText}>{course.category}</Text>
+                      <Ionicons name="book-outline" size={14} color={colors.textSecondary} />
+                      <Text style={[styles.metaText, { color: colors.textSecondary }]}>
+                        {course.category}
+                      </Text>
                     </View>
                   </View>
 
-                  <View style={styles.courseFooter}>
+                  <View style={[styles.courseFooter, {
+                    borderTopColor: colors.backgroundSelected,
+                  }]}>
                     <View>
-                      <Text style={styles.priceLabel}>Price</Text>
-                      <Text style={styles.coursePrice}>{course.price}</Text>
+                      <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>
+                        Price
+                      </Text>
+                      <Text style={[styles.coursePrice, { color: colors.primary }]}>
+                        {course.price}
+                      </Text>
                     </View>
-                    <Pressable style={styles.enrollButton}>
+                    <Pressable style={[styles.enrollButton, { backgroundColor: colors.primary }]}>
                       <Text style={styles.enrollButtonText}>Enroll Now →</Text>
                     </Pressable>
                   </View>
@@ -278,7 +316,7 @@ export default function TabTwoScreen() {
 
           {/* Bottom spacing */}
           <View style={{ height: 40 }} />
-        </ThemedView>
+        </View>
       </ScrollView>
     </View>
   );
@@ -287,7 +325,6 @@ export default function TabTwoScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   fixedHeaderContainer: {
     position: 'absolute',
@@ -295,7 +332,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -304,49 +341,37 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   scrollContent: {
-    paddingTop: 80,
+    paddingTop: 90, // Increased padding to accommodate header with safe area
   },
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
   searchContainer: {
     marginBottom: 16,
+    marginTop: 8, // Added top margin for gap
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  searchIcon: {
-    fontSize: 18,
-    marginRight: 12,
-  },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1A202C',
     padding: 0,
-  },
-  clearIcon: {
-    fontSize: 16,
-    color: '#A0AEC0',
-    padding: 4,
+    marginLeft: 12,
   },
   header: {
     flexDirection: 'row',
@@ -357,25 +382,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1A202C',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#718096',
-  },
-  filterButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  filterIcon: {
-    fontSize: 20,
   },
   categoriesScroll: {
     marginBottom: 12,
@@ -387,42 +397,29 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#0056D2',
-    borderColor: '#0056D2',
   },
   categoryText: {
-    color: '#4A5568',
     fontSize: 14,
     fontWeight: '500',
-  },
-  categoryTextActive: {
-    color: '#FFFFFF',
   },
   resultsContainer: {
     marginBottom: 12,
   },
   resultsText: {
     fontSize: 13,
-    color: '#718096',
     fontWeight: '500',
   },
   coursesGrid: {
     gap: 16,
   },
   courseCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -432,7 +429,6 @@ const styles = StyleSheet.create({
   courseImage: {
     width: '100%',
     height: 180,
-    backgroundColor: '#EDF2F7',
   },
   levelBadge: {
     position: 'absolute',
@@ -441,7 +437,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#4CAF50',
   },
   levelText: {
     color: '#FFFFFF',
@@ -454,13 +449,11 @@ const styles = StyleSheet.create({
   courseTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1A202C',
     marginBottom: 4,
     lineHeight: 22,
   },
   courseProvider: {
     fontSize: 14,
-    color: '#718096',
     marginBottom: 12,
   },
   ratingContainer: {
@@ -471,7 +464,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#F7FAFC',
   },
   ratingRow: {
     flexDirection: 'row',
@@ -484,24 +476,18 @@ const styles = StyleSheet.create({
   courseRating: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1A202C',
     marginRight: 4,
   },
   reviewCount: {
     fontSize: 13,
-    color: '#A0AEC0',
   },
   studentsRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  studentIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
   courseStudents: {
     fontSize: 13,
-    color: '#718096',
+    marginLeft: 4,
   },
   courseMeta: {
     flexDirection: 'row',
@@ -512,13 +498,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  metaIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
   metaText: {
     fontSize: 13,
-    color: '#4A5568',
+    marginLeft: 4,
   },
   courseFooter: {
     flexDirection: 'row',
@@ -526,21 +508,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderColor: '#F7FAFC',
   },
   priceLabel: {
     fontSize: 11,
-    color: '#A0AEC0',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   coursePrice: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0056D2',
   },
   enrollButton: {
-    backgroundColor: '#0056D2',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,

@@ -120,8 +120,8 @@ export default function CategoriesPage() {
         
         console.log(`✅ Fetched ${categoriesData.length} categories`);
       } else {
-        console.log('⚠️ No categories found in response');
-        categoriesData = getMockCategories();
+        console.log('⚠️ No categories found in response - showing empty state');
+        categoriesData = [];
       }
       
       setCategories(categoriesData);
@@ -131,8 +131,8 @@ export default function CategoriesPage() {
         'Error',
         `Failed to load categories: ${error.message}`
       );
-      // Fallback mock data
-      setCategories(getMockCategories());
+      // Set empty array on error instead of mock data
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -142,87 +142,6 @@ export default function CategoriesPage() {
     setRefreshing(true);
     await fetchCategories();
     setRefreshing(false);
-  };
-
-  const getMockCategories = (): Category[] => {
-    return [
-      {
-        id: 'dev',
-        name: 'Development',
-        icon: 'code-slash',
-        color: '#2563EB',
-        image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop',
-        courseCount: 45,
-        description: 'Learn programming and software development',
-        popular: true,
-      },
-      {
-        id: 'ai',
-        name: 'AI & Machine Learning',
-        icon: 'bulb-outline',
-        color: '#7C3AED',
-        image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop',
-        courseCount: 32,
-        description: 'Artificial Intelligence and Machine Learning',
-        trending: true,
-      },
-      {
-        id: 'data',
-        name: 'Data Science',
-        icon: 'bar-chart-outline',
-        color: '#22C55E',
-        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop',
-        courseCount: 28,
-        description: 'Data analysis, visualization, and statistics',
-        popular: true,
-      },
-      {
-        id: 'design',
-        name: 'Design',
-        icon: 'color-palette-outline',
-        color: '#F59E0B',
-        image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=300&fit=crop',
-        courseCount: 38,
-        description: 'UI/UX, graphic design, and creative skills',
-      },
-      {
-        id: 'marketing',
-        name: 'Marketing',
-        icon: 'megaphone-outline',
-        color: '#EF4444',
-        image: 'https://images.unsplash.com/photo-1432889821006-4ba4fa9c2a00?w=400&h=300&fit=crop',
-        courseCount: 25,
-        description: 'Digital marketing, SEO, and social media',
-      },
-      {
-        id: 'business',
-        name: 'Business',
-        icon: 'briefcase-outline',
-        color: '#3B82F6',
-        image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&h=300&fit=crop',
-        courseCount: 30,
-        description: 'Entrepreneurship and business management',
-        popular: true,
-      },
-      {
-        id: 'finance',
-        name: 'Finance',
-        icon: 'cash-outline',
-        color: '#10B981',
-        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
-        courseCount: 20,
-        description: 'Financial planning and investment strategies',
-      },
-      {
-        id: 'languages',
-        name: 'Languages',
-        icon: 'language-outline',
-        color: '#EC4899',
-        image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=300&fit=crop',
-        courseCount: 15,
-        description: 'Learn new languages and communication skills',
-      },
-    ];
   };
 
   const filteredCategories = categories.filter(category =>
@@ -423,12 +342,14 @@ export default function CategoriesPage() {
                 ? `We couldn't find any categories matching "${searchQuery}"`
                 : "No categories available"}
             </Text>
-            <TouchableOpacity
-              className="mt-6 px-6 py-3 bg-[#2563EB] rounded-xl"
-              onPress={() => setSearchQuery('')}
-            >
-              <Text className="text-white font-semibold">Clear Search</Text>
-            </TouchableOpacity>
+            {searchQuery && (
+              <TouchableOpacity
+                className="mt-6 px-6 py-3 bg-[#2563EB] rounded-xl"
+                onPress={() => setSearchQuery('')}
+              >
+                <Text className="text-white font-semibold">Clear Search</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />

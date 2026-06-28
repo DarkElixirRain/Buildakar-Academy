@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Lesson } from '../../data/courseData';
+import { useTheme } from '@/context/themeContext';
 
 interface LessonsListProps {
   lessons: Lesson[];
@@ -15,6 +16,8 @@ export const LessonsList: React.FC<LessonsListProps> = ({
   activeLessonId,
   onSelectLesson,
 }) => {
+  const { isDarkMode, colors } = useTheme();
+
   const handlePress = (lesson: Lesson) => {
     if (lesson.locked) {
       Alert.alert('Lesson locked', 'Complete the previous lesson to unlock this one.');
@@ -24,7 +27,7 @@ export const LessonsList: React.FC<LessonsListProps> = ({
   };
 
   return (
-    <View>
+    <View style={{ backgroundColor: colors.background }}>
       {lessons.map((lesson, index) => {
         const isActive = lesson.id === activeLessonId;
         return (
@@ -32,46 +35,76 @@ export const LessonsList: React.FC<LessonsListProps> = ({
             key={lesson.id}
             onPress={() => handlePress(lesson)}
             activeOpacity={0.7}
-            className={`flex-row items-center px-4 py-3 border-b border-[#E2E8F0] ${
-              isActive ? 'bg-[#EFF6FF]' : 'bg-white'
-            }`}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.backgroundSelected,
+              backgroundColor: isActive 
+                ? (isDarkMode ? '#1E3A5F' : '#EFF6FF')
+                : colors.background,
+            }}
           >
             <View
-              className={`w-9 h-9 rounded-full items-center justify-center mr-3 ${
-                lesson.completed
-                  ? 'bg-[#16A34A]'
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12,
+                backgroundColor: lesson.completed
+                  ? '#16A34A'
                   : isActive
-                  ? 'bg-[#2563EB]'
+                  ? colors.primary
                   : lesson.locked
-                  ? 'bg-[#F1F5F9]'
-                  : 'bg-[#F1F5F9]'
-              }`}
+                  ? colors.backgroundSelected
+                  : colors.backgroundSelected,
+              }}
             >
               {lesson.completed ? (
                 <Ionicons name="checkmark" size={18} color="#FFFFFF" />
               ) : lesson.locked ? (
-                <Ionicons name="lock-closed" size={14} color="#94A3B8" />
+                <Ionicons name="lock-closed" size={14} color={colors.textSecondary} />
               ) : isActive ? (
                 <Ionicons name="play" size={14} color="#FFFFFF" />
               ) : (
-                <Text className="text-[#64748B] text-xs font-semibold">{index + 1}</Text>
+                <Text style={{
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: '600',
+                }}>{index + 1}</Text>
               )}
             </View>
 
             <View className="flex-1">
               <Text
-                className={`text-sm font-semibold ${
-                  lesson.locked ? 'text-[#94A3B8]' : 'text-[#0F172A]'
-                }`}
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: lesson.locked ? colors.textSecondary : colors.text,
+                }}
                 numberOfLines={2}
               >
                 {lesson.title}
               </Text>
-              <Text className="text-[#64748B] text-xs mt-0.5">{lesson.duration}</Text>
+              <Text style={{
+                color: colors.textSecondary,
+                fontSize: 12,
+                marginTop: 2,
+              }}>{lesson.duration}</Text>
             </View>
 
             {isActive && !lesson.completed && (
-              <View className="bg-[#2563EB] px-2 py-0.5 rounded-full ml-2">
+              <View style={{
+                backgroundColor: colors.primary,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 12,
+                marginLeft: 8,
+              }}>
                 <Text className="text-white text-[10px] font-semibold">Now Playing</Text>
               </View>
             )}

@@ -1,4 +1,3 @@
-// components/course/CustomVideoPlayer.tsx
 //
 // Custom video player for course lessons, built on `expo-video`.
 //
@@ -23,6 +22,7 @@ import {
 import { useEvent, useEventListener } from 'expo';
 import { useVideoPlayer, VideoView, type VideoSource } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -55,6 +55,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
   onEnd,
   topInset = 0,
 }) => {
+  const { colors, isDarkMode } = useTheme();
   const videoViewRef = useRef<any>(null);
   const appliedStartPosition = useRef(false);
 
@@ -195,8 +196,14 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
 
   const displayPercent = isScrubbing ? scrubPercent : duration > 0 ? currentTime / duration : 0;
 
+  // Theme-based colors for controls
+  const overlayBg = isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(15,23,42,0.45)';
+  const playButtonBg = isDarkMode ? '#FFFFFF' : '#FFFFFF';
+  const playButtonColor = isDarkMode ? '#0F172A' : '#0F172A';
+  const seekProgressColor = colors.primary;
+
   return (
-    <Pressable style={styles.container} onPress={toggleControls}>
+    <Pressable style={[styles.container, { backgroundColor: '#000000' }]} onPress={toggleControls}>
       <VideoView
         ref={videoViewRef}
         player={player}
@@ -222,7 +229,7 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
 
       {controlsVisible && status !== 'error' && (
         <View style={styles.overlay} pointerEvents="box-none">
-          <View style={[styles.topBar, { paddingTop: 8 + topInset }]}>
+          <View style={[styles.topBar, { paddingTop: 8 + topInset, backgroundColor: overlayBg }]}>
             {onBack && (
               <TouchableOpacity onPress={onBack} style={styles.iconButton} hitSlop={12}>
                 <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
@@ -240,15 +247,23 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
             <TouchableOpacity onPress={() => skip(-10)} style={styles.iconButton} hitSlop={12}>
               <Ionicons name="play-back" size={26} color="#FFFFFF" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handlePlayPause} style={styles.playButton} hitSlop={12}>
-              <Ionicons name={isPlaying ? 'pause' : 'play'} size={28} color="#0F172A" />
+            <TouchableOpacity 
+              onPress={handlePlayPause} 
+              style={[styles.playButton, { backgroundColor: playButtonBg }]} 
+              hitSlop={12}
+            >
+              <Ionicons 
+                name={isPlaying ? 'pause' : 'play'} 
+                size={28} 
+                color={playButtonColor} 
+              />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => skip(10)} style={styles.iconButton} hitSlop={12}>
               <Ionicons name="play-forward" size={26} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.bottomBar}>
+          <View style={[styles.bottomBar, { backgroundColor: overlayBg }]}>
             <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
             <View
               style={styles.seekTrack}
@@ -256,8 +271,13 @@ export const CustomVideoPlayer: React.FC<CustomVideoPlayerProps> = ({
               {...panResponder.panHandlers}
             >
               <View style={styles.seekTrackBg} />
-              <View style={[styles.seekTrackFill, { width: `${displayPercent * 100}%` }]} />
-              <View style={[styles.seekThumb, { left: `${displayPercent * 100}%` }]} />
+              <View style={[styles.seekTrackFill, { 
+                width: `${displayPercent * 100}%`,
+                backgroundColor: seekProgressColor 
+              }]} />
+              <View style={[styles.seekThumb, { 
+                left: `${displayPercent * 100}%` 
+              }]} />
             </View>
             <Text style={styles.timeText}>{formatTime(duration)}</Text>
             <TouchableOpacity onPress={toggleMute} style={styles.iconButton} hitSlop={12}>
@@ -299,7 +319,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingTop: 8,
-    backgroundColor: 'rgba(15,23,42,0.45)',
   },
   topBarTitle: {
     flex: 1,
@@ -332,7 +351,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -342,7 +360,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     gap: 6,
-    backgroundColor: 'rgba(15,23,42,0.45)',
   },
   timeText: {
     color: '#FFFFFF',
@@ -365,7 +382,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: 3,
     borderRadius: 2,
-    backgroundColor: '#2563EB',
   },
   seekThumb: {
     position: 'absolute',

@@ -16,22 +16,23 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 import { CustomVideoPlayer } from '../../components/course/CustomVideoPlayer';
 import { LessonsList } from '../../components/course/LessonsList';
 import { getCourseById, getLessonVideoSource } from '../../data/courseData';
 
 // Skeleton Components
-const Skeleton = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded-lg animate-pulse ${className}`} />
+const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded-lg animate-pulse ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonText = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded h-4 ${className}`} />
+const SkeletonText = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded h-4 ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonCircle = ({ size = 28 }: { size?: number }) => (
-  <View className="bg-[#E2E8F0] rounded-full" style={{ width: size, height: size }} />
+const SkeletonCircle = ({ size = 28, bgColor = '#E2E8F0' }: { size?: number; bgColor?: string }) => (
+  <View className="rounded-full" style={{ width: size, height: size, backgroundColor: bgColor }} />
 );
 
 type Tab = 'lessons' | 'overview' | 'notes' | 'comments';
@@ -54,6 +55,7 @@ export default function CourseScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  const { isDarkMode, colors } = useTheme();
 
   // Loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -291,14 +293,14 @@ export default function CourseScreen() {
         />
         <View className="flex-1 ml-3">
           <View className="flex-row items-center">
-            <Text className="text-[#0F172A] font-semibold text-sm">
+            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14 }}>
               {comment.userName}
             </Text>
-            <Text className="text-[#94A3B8] text-xs ml-2">
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 8 }}>
               {comment.timestamp}
             </Text>
           </View>
-          <Text className="text-[#475569] text-sm mt-0.5 leading-5">
+          <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2, lineHeight: 20 }}>
             {comment.text}
           </Text>
           <View className="flex-row items-center mt-1.5">
@@ -309,10 +311,10 @@ export default function CourseScreen() {
               <Ionicons
                 name={comment.isLiked ? 'heart' : 'heart-outline'}
                 size={16}
-                color={comment.isLiked ? '#EF4444' : '#94A3B8'}
+                color={comment.isLiked ? '#EF4444' : colors.textSecondary}
               />
               {comment.likes > 0 && (
-                <Text className="text-[#94A3B8] text-xs ml-1">
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>
                   {comment.likes}
                 </Text>
               )}
@@ -320,11 +322,11 @@ export default function CourseScreen() {
             
             {!isReply && (
               <>
-                <View className="w-px h-3 bg-[#E2E8F0] mx-3" />
+                <View style={{ width: 1, height: 12, backgroundColor: colors.backgroundSelected, marginHorizontal: 12 }} />
                 <TouchableOpacity
                   onPress={() => setIsReplying(isReplying === comment.id ? null : comment.id)}
                 >
-                  <Text className="text-[#64748B] text-xs font-medium">
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>
                     Reply
                   </Text>
                 </TouchableOpacity>
@@ -339,13 +341,22 @@ export default function CourseScreen() {
                 value={replyText}
                 onChangeText={setReplyText}
                 placeholder="Write a reply..."
-                placeholderTextColor="#94A3B8"
-                className="flex-1 bg-[#F1F5F9] rounded-lg px-3 py-2 text-sm"
+                placeholderTextColor={colors.textSecondary}
+                style={{
+                  flex: 1,
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 14,
+                  backgroundColor: colors.backgroundSelected,
+                  color: colors.text,
+                }}
                 multiline
               />
               <TouchableOpacity
                 onPress={() => handleAddReply(comment.id)}
-                className="ml-2 bg-[#2563EB] px-3 py-2 rounded-lg"
+                className="ml-2 px-3 py-2 rounded-lg"
+                style={{ backgroundColor: colors.primary }}
                 disabled={!replyText.trim()}
               >
                 <Text className="text-white text-sm font-semibold">Post</Text>
@@ -362,42 +373,43 @@ export default function CourseScreen() {
 
   // Loading Skeleton
   if (isLoading) {
+    const skeletonBg = isDarkMode ? '#1E293B' : '#E2E8F0';
     return (
-      <View className="flex-1 bg-white">
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <Stack.Screen options={{ headerShown: false }} />
         
         {/* Video Player Skeleton */}
         <View style={{ width, height: videoHeight, backgroundColor: '#1a1a1a' }}>
           <View className="absolute top-0 left-0 right-0 p-4" style={{ top: insets.top }}>
-            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="w-10 h-10 rounded-full" bgColor={skeletonBg} />
           </View>
           <View className="absolute inset-0 items-center justify-center">
-            <Skeleton className="w-16 h-16 rounded-full" />
+            <Skeleton className="w-16 h-16 rounded-full" bgColor={skeletonBg} />
           </View>
         </View>
 
         {/* Course Header Skeleton */}
-        <View className="px-4 pt-4 pb-3 border-b border-[#E2E8F0]">
-          <SkeletonText className="h-6 w-3/4 mb-2" />
+        <View className="px-4 pt-4 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
+          <SkeletonText className="h-6 w-3/4 mb-2" bgColor={skeletonBg} />
           <View className="flex-row items-center mt-2">
-            <SkeletonCircle size={28} />
-            <SkeletonText className="w-32 ml-2" />
-            <SkeletonText className="w-16 ml-auto" />
+            <SkeletonCircle size={28} bgColor={skeletonBg} />
+            <SkeletonText className="w-32 ml-2" bgColor={skeletonBg} />
+            <SkeletonText className="w-16 ml-auto" bgColor={skeletonBg} />
           </View>
           <View className="mt-3">
             <View className="flex-row justify-between mb-1">
-              <SkeletonText className="w-32" />
-              <SkeletonText className="w-12" />
+              <SkeletonText className="w-32" bgColor={skeletonBg} />
+              <SkeletonText className="w-12" bgColor={skeletonBg} />
             </View>
-            <Skeleton className="h-1.5 w-full" />
+            <Skeleton className="h-1.5 w-full" bgColor={skeletonBg} />
           </View>
         </View>
 
         {/* Tabs Skeleton */}
-        <View className="flex-row px-4 border-b border-[#E2E8F0]">
+        <View className="flex-row px-4" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
           {['lessons', 'overview', 'notes', 'comments'].map((tab) => (
             <View key={tab} className="mr-6 py-3">
-              <SkeletonText className="w-16 h-5" />
+              <SkeletonText className="w-16 h-5" bgColor={skeletonBg} />
             </View>
           ))}
         </View>
@@ -405,24 +417,28 @@ export default function CourseScreen() {
         {/* Content Skeleton */}
         <View className="px-4 py-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <View key={i} className="flex-row items-center py-3 border-b border-[#F1F5F9]">
-              <SkeletonCircle size={32} />
+            <View key={i} className="flex-row items-center py-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
+              <SkeletonCircle size={32} bgColor={skeletonBg} />
               <View className="flex-1 ml-3">
-                <SkeletonText className="w-3/4 h-4" />
-                <SkeletonText className="w-1/3 h-3 mt-1" />
+                <SkeletonText className="w-3/4 h-4" bgColor={skeletonBg} />
+                <SkeletonText className="w-1/3 h-3 mt-1" bgColor={skeletonBg} />
               </View>
-              <SkeletonCircle size={20} />
+              <SkeletonCircle size={20} bgColor={skeletonBg} />
             </View>
           ))}
         </View>
 
         {/* Bottom Bar Skeleton */}
         <View
-          className="flex-row items-center px-4 py-3 border-t border-[#E2E8F0] bg-white"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          className="flex-row items-center px-4 py-3 border-t"
+          style={{ 
+            paddingBottom: Math.max(insets.bottom, 12),
+            borderTopColor: colors.backgroundSelected,
+            backgroundColor: colors.backgroundElement 
+          }}
         >
-          <Skeleton className="flex-1 h-12 mr-3 rounded-full" />
-          <Skeleton className="flex-1 h-12 rounded-full" />
+          <Skeleton className="flex-1 h-12 mr-3 rounded-full" bgColor={skeletonBg} />
+          <Skeleton className="flex-1 h-12 rounded-full" bgColor={skeletonBg} />
         </View>
       </View>
     );
@@ -431,12 +447,13 @@ export default function CourseScreen() {
   // Handle case where course doesn't exist
   if (!course || !course.id || !course.lessons?.length) {
     return (
-      <View className="flex-1 bg-white items-center justify-center">
-        <Ionicons name="book-outline" size={64} color="#94A3B8" />
-        <Text className="text-lg text-gray-600 mt-4">Course not found</Text>
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <Ionicons name="book-outline" size={64} color={colors.textSecondary} />
+        <Text style={{ color: colors.textSecondary, fontSize: 18, marginTop: 16 }}>Course not found</Text>
         <TouchableOpacity 
           onPress={() => router.back()}
-          className="mt-6 px-6 py-3 bg-blue-500 rounded-lg"
+          className="mt-6 px-6 py-3 rounded-lg"
+          style={{ backgroundColor: colors.primary }}
         >
           <Text className="text-white font-semibold">Go Back</Text>
         </TouchableOpacity>
@@ -445,13 +462,13 @@ export default function CourseScreen() {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView 
         className="flex-1"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         showsVerticalScrollIndicator={false}
       >
@@ -471,8 +488,8 @@ export default function CourseScreen() {
         </View>
 
         {/* Rest of content */}
-        <View className="px-4 pt-4 pb-3 border-b border-[#E2E8F0]">
-          <Text className="text-[#0F172A] text-lg font-bold" numberOfLines={2}>
+        <View className="px-4 pt-4 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
+          <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }} numberOfLines={2}>
             {course.title}
           </Text>
 
@@ -481,34 +498,34 @@ export default function CourseScreen() {
               source={{ uri: course.instructorAvatar }}
               className="w-7 h-7 rounded-full mr-2"
             />
-            <Text className="text-[#64748B] text-sm flex-1" numberOfLines={1}>
+            <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1 }} numberOfLines={1}>
               {course.instructor}
             </Text>
             <Ionicons name="star" size={14} color="#F59E0B" />
-            <Text className="text-[#0F172A] text-xs font-semibold ml-1">{course.rating}</Text>
-            <Text className="text-[#64748B] text-xs ml-2">
+            <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginLeft: 4 }}>{course.rating}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 8 }}>
               {course.studentsCount.toLocaleString()} students
             </Text>
           </View>
 
           <View className="mt-3">
             <View className="flex-row justify-between mb-1">
-              <Text className="text-[#64748B] text-xs">
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                 {completedCount} of {lessons.length} lessons complete
               </Text>
-              <Text className="text-[#2563EB] text-xs font-semibold">{overallProgress}%</Text>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>{overallProgress}%</Text>
             </View>
-            <View className="w-full h-1.5 bg-[#F1F5F9] rounded-full overflow-hidden">
+            <View className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: colors.backgroundSelected }}>
               <View
-                className="h-full bg-[#2563EB] rounded-full"
-                style={{ width: `${overallProgress}%` }}
+                className="h-full rounded-full"
+                style={{ width: `${overallProgress}%`, backgroundColor: colors.primary }}
               />
             </View>
           </View>
         </View>
 
         {/* Tabs */}
-        <View className="flex-row px-4 border-b border-[#E2E8F0]">
+        <View className="flex-row px-4" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
           {(['lessons', 'overview', 'notes', 'comments'] as Tab[]).map((tab) => (
             <TouchableOpacity
               key={tab}
@@ -545,10 +562,10 @@ export default function CourseScreen() {
 
         {activeTab === 'overview' && (
           <View className="px-4 py-4">
-            <Text className="text-[#0F172A] text-sm font-bold mb-2">About this course</Text>
-            <Text className="text-[#475569] text-sm leading-5 mb-4">{course.description}</Text>
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>About this course</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 16 }}>{course.description}</Text>
 
-            <Text className="text-[#0F172A] text-sm font-bold mb-2">What you'll learn</Text>
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>What you'll learn</Text>
             {course.whatYouWillLearn.map((point, i) => (
               <View key={i} className="flex-row items-start mb-2">
                 <Ionicons
@@ -557,7 +574,7 @@ export default function CourseScreen() {
                   color="#16A34A"
                   style={{ marginTop: 2, marginRight: 8 }}
                 />
-                <Text className="text-[#475569] text-sm flex-1 leading-5">{point}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>{point}</Text>
               </View>
             ))}
           </View>
@@ -565,19 +582,26 @@ export default function CourseScreen() {
 
         {activeTab === 'notes' && (
           <View className="px-4 py-4">
-            <Text className="text-[#0F172A] text-sm font-bold mb-2">
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>
               Your notes for "{activeLesson?.title}"
             </Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
               placeholder="Jot down anything worth remembering from this lesson..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textSecondary}
               multiline
               textAlignVertical="top"
-              className="bg-[#F1F5F9] rounded-xl p-3 text-sm text-[#0F172A] min-h-[140px]"
+              style={{
+                borderRadius: 12,
+                padding: 12,
+                fontSize: 14,
+                minHeight: 140,
+                backgroundColor: colors.backgroundSelected,
+                color: colors.text,
+              }}
             />
-            <Text className="text-[#94A3B8] text-xs mt-2">
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>
               Notes are kept on this screen only for now — save them to AsyncStorage or your
               backend to persist across sessions.
             </Text>
@@ -597,15 +621,24 @@ export default function CourseScreen() {
                     value={newComment}
                     onChangeText={setNewComment}
                     placeholder="Ask a question or share your thoughts..."
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={colors.textSecondary}
                     multiline
                     numberOfLines={3}
-                    className="bg-[#F1F5F9] rounded-xl px-3 py-2 text-sm text-[#0F172A] max-h-24"
+                    style={{
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      fontSize: 14,
+                      maxHeight: 96,
+                      backgroundColor: colors.backgroundSelected,
+                      color: colors.text,
+                    }}
                   />
                 </View>
                 <TouchableOpacity
                   onPress={handleAddComment}
-                  className="bg-[#2563EB] w-10 h-10 rounded-full items-center justify-center"
+                  className="w-10 h-10 rounded-full items-center justify-center"
+                  style={{ backgroundColor: colors.primary }}
                   disabled={!newComment.trim()}
                   activeOpacity={0.7}
                 >
@@ -619,11 +652,11 @@ export default function CourseScreen() {
                   comments.map(comment => renderComment(comment))
                 ) : (
                   <View className="items-center py-8">
-                    <Ionicons name="chatbubbles-outline" size={48} color="#94A3B8" />
-                    <Text className="text-[#0F172A] text-lg font-bold mt-4">
+                    <Ionicons name="chatbubbles-outline" size={48} color={colors.textSecondary} />
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginTop: 16 }}>
                       No Comments Yet
                     </Text>
-                    <Text className="text-[#64748B] text-center mt-1">
+                    <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
                       Be the first to ask a question or share your thoughts
                     </Text>
                   </View>
@@ -636,19 +669,25 @@ export default function CourseScreen() {
 
       {/* Sticky bottom action bar */}
       <View
-        className="flex-row items-center px-4 py-3 border-t border-[#E2E8F0] bg-white"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        className="flex-row items-center px-4 py-3 border-t"
+        style={{
+          paddingBottom: Math.max(insets.bottom, 12),
+          borderTopColor: colors.backgroundSelected,
+          backgroundColor: colors.backgroundElement,
+        }}
       >
         <TouchableOpacity
           onPress={handleMarkComplete}
           disabled={isActiveCompleted}
           className={`flex-1 mr-3 py-3 rounded-full items-center border ${
-            isActiveCompleted ? 'border-[#16A34A] bg-[#F0FDF4]' : 'border-[#E2E8F0] bg-white'
+            isActiveCompleted 
+              ? 'border-[#16A34A] bg-[#F0FDF4]' 
+              : isDarkMode ? 'border-[#334155] bg-[#1E293B]' : 'border-[#E2E8F0] bg-white'
           }`}
         >
           <Text
             className={`text-sm font-semibold ${
-              isActiveCompleted ? 'text-[#16A34A]' : 'text-[#0F172A]'
+              isActiveCompleted ? 'text-[#16A34A]' : isDarkMode ? 'text-white' : 'text-[#0F172A]'
             }`}
           >
             {isActiveCompleted ? 'Completed' : 'Mark as Complete'}
@@ -659,12 +698,12 @@ export default function CourseScreen() {
           onPress={handleNext}
           disabled={!nextLesson}
           className={`flex-1 py-3 rounded-full items-center flex-row justify-center ${
-            nextLesson ? 'bg-[#2563EB]' : 'bg-[#E2E8F0]'
+            nextLesson ? 'bg-[#2563EB]' : isDarkMode ? 'bg-[#334155]' : 'bg-[#E2E8F0]'
           }`}
         >
           <Text
             className={`text-sm font-semibold mr-1 ${
-              nextLesson ? 'text-white' : 'text-[#94A3B8]'
+              nextLesson ? 'text-white' : isDarkMode ? 'text-[#64748B]' : 'text-[#94A3B8]'
             }`}
           >
             {nextLesson ? 'Next Lesson' : 'Course Complete'}

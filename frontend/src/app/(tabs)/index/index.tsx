@@ -6,23 +6,23 @@ import {
   RefreshControl,
   SafeAreaView,
   Dimensions,
+  Text,
+  TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { router } from "expo-router";
 import { useAuthStore } from "@/store/authStore";
 import { useHomeStore } from "@/store/homeStore";
+import { useTheme } from "@/context/themeContext";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { SearchBar } from "@/components/home/SearchBar";
-import { LearningProgress } from "@/components/home/LearningProgress";
 import { ContinueLearning } from "@/components/home/ContinueLearning";
 import { FeaturedCourses } from "@/components/home/FeaturedCourses";
 import { Categories } from "@/components/home/Categories";
 import { RecommendedCourses } from "@/components/home/RecommendedCourses";
 import { PopularCourses } from "@/components/home/PopularCourses";
-import { LearningPaths } from "@/components/home/LearningPaths";
 import { LiveClasses } from "@/components/home/LiveClasses";
-import { Achievements } from "@/components/home/Achievements";
 import { TopInstructors } from "@/components/home/TopInstructors";
 import { RecentlyViewed } from "@/components/home/RecentlyViewed";
 import { LoadingSkeleton } from "@/components/home/LoadingSkeleton";
@@ -34,6 +34,7 @@ const { width } = Dimensions.get("window");
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const { isDarkMode, colors } = useTheme();
   const {
     loading,
     refreshing,
@@ -85,7 +86,7 @@ export default function HomeScreen() {
     router.push("/(my-learning)" as any);
   };
 
-  // ✅ For courses that are already enrolled (Continue Learning, Recently Viewed)
+  // For courses that are already enrolled (Continue Learning, Recently Viewed)
   // Navigate directly to the course player
   const handleCoursePress = (courseId: string) => {
     router.push({
@@ -94,7 +95,7 @@ export default function HomeScreen() {
     } as any);
   };
 
-  // ✅ For courses that haven't been started yet (Recommended, Featured, Popular)
+  // For courses that haven't been started yet (Recommended, Featured, Popular)
   // Navigate to course details page first
   const handleCourseDetailsPress = (courseId: string) => {
     router.push({
@@ -103,22 +104,18 @@ export default function HomeScreen() {
     } as any);
   };
 
-  // FIXED: Handle category press with slug instead of ID
+  // Handle category press with slug
   const handleCategoryPress = (categoryId: string) => {
-    // Find the category to get its name/slug
     const category = categories?.find((cat) => cat.id === categoryId);
     if (category) {
-      // Convert category name to slug (e.g., "Development" -> "development" or "dev")
-      const slug = category.name.toLowerCase().replace(/\s+/g, "-");
-      // Navigate to /categories/slug (without parentheses)
+      const slug = category.slug || category.name.toLowerCase().replace(/\s+/g, "-");
       router.push(`/categories/${slug}` as any);
     } else {
-      // Fallback: navigate to categories page
       router.push("/categories" as any);
     }
   };
 
-  // FIXED: Handle See All for different sections
+  // Handle See All for different sections
   const handleSeeAll = (section: string) => {
     if (section === "categories") {
       router.push("/categories" as any);
@@ -150,7 +147,6 @@ export default function HomeScreen() {
     router.push("/(achievements)" as any);
   };
 
-  // FIXED: Handle instructor press with proper navigation
   const handleInstructorPress = (instructorId: string) => {
     router.push(`/instructor/${instructorId}` as any);
   };
@@ -162,13 +158,15 @@ export default function HomeScreen() {
     } as any);
   };
 
+  const statusBarStyle = isDarkMode ? 'light' : 'dark';
+
   if (loading && !data) {
     return <LoadingSkeleton />;
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <ErrorState
           message={error}
           onRetry={() => {
@@ -180,9 +178,9 @@ export default function HomeScreen() {
     );
   }
 
-  if (!data || !recommendedCourses || recommendedCourses.length === 0) {
+  if (!data) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <HomeHeader
           notificationCount={notifications?.unread || 0}
           onNotificationPress={handleNotificationPress}
@@ -198,8 +196,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <StatusBar style="dark" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={statusBarStyle} />
 
       <HomeHeader
         notificationCount={notifications?.unread || 0}
@@ -212,91 +210,109 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563EB"
-            colors={["#2563EB"]}
+            tintColor={colors.text}
+            colors={[colors.text]}
           />
         }
         contentContainerStyle={{
           paddingBottom: insets.bottom + 80,
         }}
       >
-        <View className="px-4 space-y-6">
-          {/* Search Bar */}
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSearch={handleSearch}
-          />
+        <View style={{ paddingHorizontal: 16, backgroundColor: colors.background }}>
+          {/* Search Bar - with margin bottom */}
+          <View style={{ marginBottom: 16 }}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSearch={handleSearch}
+            />
+          </View>
 
-          {/* Continue Learning Section - Direct to player */}
+          {/* Continue Learning Section - with margin bottom */}
           {continueLearning && continueLearning.length > 0 && (
-            <ContinueLearning
-              courses={continueLearning}
-              onCoursePress={handleCoursePress}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <ContinueLearning
+                courses={continueLearning}
+                onCoursePress={handleCoursePress}
+              />
+            </View>
           )}
 
-          {/* Featured Courses Carousel - Course details first */}
+          {/* Featured Courses Carousel - with margin bottom */}
           {featuredCourses && featuredCourses.length > 0 && (
-            <FeaturedCourses
-              courses={featuredCourses}
-              onCoursePress={handleCourseDetailsPress}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <FeaturedCourses
+                courses={featuredCourses}
+                onCoursePress={handleCourseDetailsPress}
+              />
+            </View>
           )}
 
-          {/* Categories Section */}
+          {/* Categories Section - with margin bottom */}
           {categories && categories.length > 0 && (
-            <Categories
-              categories={categories}
-              onCategoryPress={handleCategoryPress}
-              onSeeAll={() => handleSeeAll("categories")}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <Categories
+                categories={categories}
+                onCategoryPress={handleCategoryPress}
+                onSeeAll={() => handleSeeAll("categories")}
+              />
+            </View>
           )}
 
-          {/* ✅ Recommended For You - Course details first */}
+          {/* Recommended For You - with margin bottom */}
           {recommendedCourses && recommendedCourses.length > 0 && (
-            <RecommendedCourses
-              courses={recommendedCourses}
-              onCoursePress={handleCourseDetailsPress} // ✅ Changed from handleCoursePress
-              onSeeAll={() => handleSeeAll("recommended")}
-              onLoadMore={loadMoreRecommendations}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <RecommendedCourses
+                courses={recommendedCourses}
+                onCoursePress={handleCourseDetailsPress}
+                onSeeAll={() => handleSeeAll("recommended")}
+                onLoadMore={loadMoreRecommendations}
+              />
+            </View>
           )}
 
-          {/* Popular Courses - Course details first */}
+          {/* Popular Courses - with margin bottom */}
           {popularCourses && popularCourses.length > 0 && (
-            <PopularCourses
-              courses={popularCourses}
-              onCoursePress={handleCourseDetailsPress}
-              onSeeAll={() => handleSeeAll("popular")}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <PopularCourses
+                courses={popularCourses}
+                onCoursePress={handleCourseDetailsPress}
+                onSeeAll={() => handleSeeAll("popular")}
+              />
+            </View>
           )}
 
-          {/* Upcoming Live Classes */}
+          {/* Upcoming Live Classes - with margin bottom */}
           {liveClasses && liveClasses.length > 0 && (
-            <LiveClasses
-              classes={liveClasses}
-              onJoinPress={handleLiveClassJoin}
-              onSeeAll={() => handleSeeAll("live")}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <LiveClasses
+                classes={liveClasses}
+                onJoinPress={handleLiveClassJoin}
+                onSeeAll={() => handleSeeAll("live")}
+              />
+            </View>
           )}
 
-          {/* Top Instructors */}
+          {/* Top Instructors - with margin bottom */}
           {topInstructors && topInstructors.length > 0 && (
-            <TopInstructors
-              instructors={topInstructors}
-              onFollowPress={handleInstructorFollow}
-              onInstructorPress={handleInstructorPress}
-              onSeeAll={() => handleSeeAll("instructors")}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <TopInstructors
+                instructors={topInstructors}
+                onFollowPress={handleInstructorFollow}
+                onInstructorPress={handleInstructorPress}
+                onSeeAll={() => handleSeeAll("instructors")}
+              />
+            </View>
           )}
 
-          {/* Recently Viewed - Direct to player */}
+          {/* Recently Viewed - with margin bottom */}
           {recentlyViewed && recentlyViewed.length > 0 && (
-            <RecentlyViewed
-              courses={recentlyViewed}
-              onCoursePress={handleCoursePress}
-            />
+            <View style={{ marginBottom: 24 }}>
+              <RecentlyViewed
+                courses={recentlyViewed}
+                onCoursePress={handleCoursePress}
+              />
+            </View>
           )}
         </View>
       </ScrollView>

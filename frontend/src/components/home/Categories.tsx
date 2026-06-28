@@ -3,11 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
-
-// API Configuration
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 interface Category {
   id: string;
@@ -30,18 +28,6 @@ interface CategoriesProps {
   onSeeAll?: () => void;
 }
 
-// Fallback images for categories
-const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1432889821006-4ba4fa9c2a00?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=300&fit=crop',
-];
-
 // Map category names to slugs
 const getCategorySlug = (name: string): string => {
   return name.toLowerCase().replace(/\s+/g, '-');
@@ -60,15 +46,21 @@ export const Categories: React.FC<CategoriesProps> = ({
   onSeeAll,
 }) => {
   const [loading, setLoading] = useState(false);
+  const { isDarkMode, colors } = useTheme();
 
-  // Process categories with proper data
-  const processedCategories = categories.map((cat, index) => ({
+  // Debug: Log categories received
+  console.log('📦 Categories received in component:', categories?.length || 0);
+  console.log('📦 Categories data:', JSON.stringify(categories, null, 2));
+
+  // Process categories with proper data - only use real data, no fallbacks
+  const processedCategories = categories?.map((cat, index) => ({
     ...cat,
     slug: cat.slug || getCategorySlug(cat.name),
     courseCount: cat._count?.courses || cat.courseCount || 0,
     color: cat.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
-    image: cat.image || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
-  }));
+    // Only use image if it exists, otherwise leave undefined
+    image: cat.image,
+  })) || [];
 
   // Handle See All press
   const handleSeeAll = () => {
@@ -94,9 +86,9 @@ export const Categories: React.FC<CategoriesProps> = ({
   // If no categories, show empty state
   if (!categories || categories.length === 0) {
     return (
-      <View className="w-full">
+      <View style={{ width: '100%' }}>
         <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-[#0F172A] text-xl font-bold">
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text }}>
             Categories
           </Text>
           <TouchableOpacity 
@@ -104,15 +96,22 @@ export const Categories: React.FC<CategoriesProps> = ({
             className="flex-row items-center"
             activeOpacity={0.7}
           >
-            <Text className="text-[#2563EB] text-sm font-semibold">
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
               See All
             </Text>
-            <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </TouchableOpacity>
         </View>
-        <View className="items-center py-8 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0]">
-          <Ionicons name="book-outline" size={40} color="#94A3B8" />
-          <Text className="text-[#64748B] text-sm mt-2">
+        <View style={{
+          alignItems: 'center',
+          paddingVertical: 32,
+          borderRadius: 16,
+          borderWidth: 1,
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+        }}>
+          <Ionicons name="book-outline" size={40} color={colors.textSecondary} />
+          <Text style={{ fontSize: 14, marginTop: 8, color: colors.textSecondary }}>
             No categories available
           </Text>
         </View>
@@ -121,9 +120,9 @@ export const Categories: React.FC<CategoriesProps> = ({
   }
 
   return (
-    <View className="w-full">
+    <View style={{ width: '100%' }}>
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-[#0F172A] text-xl font-bold">
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text }}>
           Categories
         </Text>
         <TouchableOpacity 
@@ -131,10 +130,10 @@ export const Categories: React.FC<CategoriesProps> = ({
           className="flex-row items-center"
           activeOpacity={0.7}
         >
-          <Text className="text-[#2563EB] text-sm font-semibold">
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
             See All
           </Text>
-          <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -147,7 +146,7 @@ export const Categories: React.FC<CategoriesProps> = ({
         snapToAlignment="start"
       >
         {processedCategories.map((category, index) => {
-          const color = category.color;
+          const color = category.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
           const imageUrl = category.image;
 
           return (
@@ -167,12 +166,21 @@ export const Categories: React.FC<CategoriesProps> = ({
                   elevation: 6,
                 }}
               >
-                {/* Category Image */}
-                <Image
-                  source={{ uri: imageUrl }}
-                  className="w-full h-28"
-                  resizeMode="cover"
-                />
+                {/* Category Image - Only show if image exists */}
+                {imageUrl ? (
+                  <Image
+                    source={{ uri: imageUrl }}
+                    className="w-full h-28"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View 
+                    className="w-full h-28 items-center justify-center"
+                    style={{ backgroundColor: `${color}30` }}
+                  >
+                    <Ionicons name="book-outline" size={32} color={color} />
+                  </View>
+                )}
                 
                 {/* Gradient Overlay */}
                 <View 

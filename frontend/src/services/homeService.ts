@@ -117,7 +117,7 @@ const MOCK_DATA: HomeData = {
       isTrending: true,
     },
   ],
-  categories: [],
+  categories: [], // ✅ Empty array - no mock categories
   continueLearning: [
     {
       id: '10',
@@ -228,114 +228,42 @@ const MOCK_DATA: HomeData = {
   ],
 };
 
-// ✅ Helper function for mock categories
-function getMockCategories(): Category[] {
-  return [
-    { 
-      id: 'dev', 
-      name: 'Development', 
-      icon: 'code-slash', 
-      color: '#2563EB',
-      slug: 'development',
-      courseCount: 45,
-      description: 'Learn programming and software development',
-      isActive: true,
-    },
-    { 
-      id: 'ai', 
-      name: 'AI & Machine Learning', 
-      icon: 'bulb-outline', 
-      color: '#7C3AED',
-      slug: 'ai-machine-learning',
-      courseCount: 32,
-      description: 'Artificial Intelligence and Machine Learning',
-      isActive: true,
-    },
-    { 
-      id: 'data', 
-      name: 'Data Science', 
-      icon: 'bar-chart-outline', 
-      color: '#22C55E',
-      slug: 'data-science',
-      courseCount: 28,
-      description: 'Data analysis, visualization, and statistics',
-      isActive: true,
-    },
-    { 
-      id: 'design', 
-      name: 'Design', 
-      icon: 'color-palette-outline', 
-      color: '#F59E0B',
-      slug: 'design',
-      courseCount: 38,
-      description: 'UI/UX, graphic design, and creative skills',
-      isActive: true,
-    },
-    { 
-      id: 'marketing', 
-      name: 'Marketing', 
-      icon: 'megaphone-outline', 
-      color: '#EF4444',
-      slug: 'marketing',
-      courseCount: 25,
-      description: 'Digital marketing, SEO, and social media',
-      isActive: true,
-    },
-    { 
-      id: 'business', 
-      name: 'Business', 
-      icon: 'briefcase-outline', 
-      color: '#3B82F6',
-      slug: 'business',
-      courseCount: 30,
-      description: 'Entrepreneurship and business management',
-      isActive: true,
-    },
-    { 
-      id: 'finance', 
-      name: 'Finance', 
-      icon: 'cash-outline', 
-      color: '#10B981',
-      slug: 'finance',
-      courseCount: 20,
-      description: 'Financial planning and investment strategies',
-      isActive: true,
-    },
-    { 
-      id: 'languages', 
-      name: 'Languages', 
-      icon: 'language-outline', 
-      color: '#EC4899',
-      slug: 'languages',
-      courseCount: 15,
-      description: 'Learn new languages and communication skills',
-      isActive: true,
-    },
-  ];
-}
-
 // ✅ Helper function to extract categories from unknown response
 function extractCategoriesFromResponse(response: any): any[] {
-  // Check if response is null or undefined
-  if (!response) return [];
+  console.log('🔍 Extracting categories from response:', JSON.stringify(response, null, 2));
   
-  // Case 1: Direct array
+  // Check if response is null or undefined
+  if (!response) {
+    console.log('⚠️ Response is null or undefined');
+    return [];
+  }
+  
+  // Case 1: Response has success and data (our API format)
+  if (response.success === true && response.data) {
+    if (Array.isArray(response.data)) {
+      console.log('✅ Found categories in response.data (array)');
+      return response.data;
+    } else if (response.data.categories && Array.isArray(response.data.categories)) {
+      console.log('✅ Found categories in response.data.categories');
+      return response.data.categories;
+    }
+  }
+  
+  // Case 2: Response has data property directly
+  if (response.data && Array.isArray(response.data)) {
+    console.log('✅ Found categories in response.data');
+    return response.data;
+  }
+  
+  // Case 3: Response is directly an array
   if (Array.isArray(response)) {
+    console.log('✅ Response is directly an array');
     return response;
   }
   
-  // Case 2: Object with data property
-  if (response.data && Array.isArray(response.data)) {
-    return response.data;
-  }
-  
-  // Case 3: Object with success and data
-  if (response.success === true && response.data && Array.isArray(response.data)) {
-    return response.data;
-  }
-  
-  // Case 4: Object with categories property
+  // Case 4: Response has categories property
   if (response.categories && Array.isArray(response.categories)) {
+    console.log('✅ Found categories in response.categories');
     return response.categories;
   }
   
@@ -343,12 +271,13 @@ function extractCategoriesFromResponse(response: any): any[] {
   if (typeof response === 'object') {
     for (const key in response) {
       if (Array.isArray(response[key]) && response[key].length > 0) {
+        console.log(`✅ Found categories in response.${key}`);
         return response[key];
       }
     }
   }
   
-  // No categories found
+  console.log('⚠️ No categories found in response');
   return [];
 }
 
@@ -365,38 +294,46 @@ export const homeService = {
         }
       }
 
-      // Start with mock data
+      // Start with mock data (categories empty)
       const data: HomeData = { ...MOCK_DATA, categories: [] };
       
-      // ✅ Fetch categories from backend API
+      // ✅ Fetch categories from backend API - FIXED: Added /api prefix
       try {
         console.log('🌐 Fetching categories from backend...');
-        const response = await apiClient.get('/api/categories');
+        const response = await apiClient.get('/api/categories'); // ✅ Fixed: added /api
+        console.log('📥 Raw API response:', JSON.stringify(response, null, 2));
         
         // Extract categories from response using helper
         const categoriesData = extractCategoriesFromResponse(response);
+        console.log('📊 Extracted categories count:', categoriesData.length);
         
         if (categoriesData.length > 0) {
           data.categories = categoriesData.map((cat: any) => ({
-            id: cat.id || cat._id,
+            id: cat.id || cat._id || String(cat.id),
             name: cat.name || 'Unnamed Category',
             slug: cat.slug || cat.name?.toLowerCase().replace(/\s+/g, '-') || 'uncategorized',
             icon: cat.icon || 'book-outline',
             color: cat.color || '#2563EB',
-            image: cat.image || cat.thumbnail,
+            image: cat.image || cat.thumbnail || null,
             courseCount: cat._count?.courses || cat.courseCount || 0,
             description: cat.description || '',
             isActive: cat.isActive !== undefined ? cat.isActive : true,
           }));
           console.log(`✅ Fetched ${data.categories.length} categories from backend`);
+          console.log('✅ Categories:', JSON.stringify(data.categories, null, 2));
         } else {
-          console.log('⚠️ No categories found in response, using mock data');
-          data.categories = getMockCategories();
+          console.log('⚠️ No categories found in response');
+          data.categories = [];
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Failed to fetch categories from backend:', error);
-        data.categories = getMockCategories();
-        console.log('⚠️ Using mock categories (API failed)');
+        console.error('❌ Error details:', error.message);
+        if (error.response) {
+          console.error('❌ Response data:', error.response.data);
+          console.error('❌ Response status:', error.response.status);
+        }
+        data.categories = [];
+        console.log('⚠️ No categories available (API failed)');
       }
 
       // Cache the data
@@ -414,47 +351,55 @@ export const homeService = {
         return cachedData;
       }
       
-      // Final fallback with mock categories
+      // Final fallback - no mock categories
       console.log('⚠️ Using mock data (no cache available)');
       return {
         ...MOCK_DATA,
-        categories: getMockCategories(),
+        categories: [],
       };
     }
   },
 
-  // ✅ Get categories only from API
+  // ✅ Get categories only from API - no mock fallback
   getCategories: async (): Promise<Category[]> => {
     try {
       console.log('🌐 Fetching categories from backend...');
-      const response = await apiClient.get('/api/categories');
+      const response = await apiClient.get('/api/categories'); // ✅ Fixed: added /api
+      console.log('📥 Raw API response:', JSON.stringify(response, null, 2));
       
       // Extract categories from response using helper
       const categoriesData = extractCategoriesFromResponse(response);
+      console.log('📊 Extracted categories count:', categoriesData.length);
       
       if (categoriesData.length === 0) {
-        console.log('⚠️ No categories found in response, using mock data');
-        return getMockCategories();
+        console.log('⚠️ No categories found in response');
+        return [];
       }
       
       const categories: Category[] = categoriesData.map((cat: any) => ({
-        id: cat.id || cat._id,
+        id: cat.id || cat._id || String(cat.id),
         name: cat.name || 'Unnamed Category',
         slug: cat.slug || cat.name?.toLowerCase().replace(/\s+/g, '-') || 'uncategorized',
         icon: cat.icon || 'book-outline',
         color: cat.color || '#2563EB',
-        image: cat.image || cat.thumbnail,
+        image: cat.image || cat.thumbnail || null,
         courseCount: cat._count?.courses || cat.courseCount || 0,
         description: cat.description || '',
         isActive: cat.isActive !== undefined ? cat.isActive : true,
       }));
       
       console.log(`✅ Fetched ${categories.length} categories from backend`);
+      console.log('✅ Categories:', JSON.stringify(categories, null, 2));
       return categories;
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to fetch categories:', error);
-      return getMockCategories();
+      console.error('❌ Error details:', error.message);
+      if (error.response) {
+        console.error('❌ Response data:', error.response.data);
+        console.error('❌ Response status:', error.response.status);
+      }
+      return [];
     }
   },
 

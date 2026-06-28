@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/themeContext';
 
 interface Course {
   id: string;
@@ -23,6 +24,7 @@ export const ContinueLearning: React.FC<ContinueLearningProps> = ({
   onCoursePress,
 }) => {
   const router = useRouter();
+  const { isDarkMode, colors } = useTheme();
 
   const handleCoursePress = (courseId: string) => {
     try {
@@ -50,13 +52,13 @@ export const ContinueLearning: React.FC<ContinueLearningProps> = ({
   };
 
   return (
-    <View className="w-full">
+    <View style={{ width: '100%' }}>
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-[#0F172A] text-xl font-bold">
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text }}>
           Continue Learning
         </Text>
         <TouchableOpacity onPress={handleSeeAll}>
-          <Text className="text-[#2563EB] text-sm font-semibold">
+          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
             See All
           </Text>
         </TouchableOpacity>
@@ -71,16 +73,22 @@ export const ContinueLearning: React.FC<ContinueLearningProps> = ({
         {courses.map((course) => (
           <TouchableOpacity
             key={course.id}
-            className="w-64 mr-4 bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden"
-            onPress={() => handleCoursePress(course.id)}
-            activeOpacity={0.8}
             style={{
-              shadowColor: '#0F172A',
+              width: 256,
+              marginRight: 16,
+              borderRadius: 16,
+              borderWidth: 1,
+              overflow: 'hidden',
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.backgroundSelected,
+              shadowColor: isDarkMode ? '#000000' : '#0F172A',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
+              shadowOpacity: isDarkMode ? 0.3 : 0.05,
               shadowRadius: 4,
               elevation: 2,
             }}
+            onPress={() => handleCoursePress(course.id)}
+            activeOpacity={0.8}
           >
             <View className="relative">
               <Image 
@@ -96,29 +104,57 @@ export const ContinueLearning: React.FC<ContinueLearningProps> = ({
             </View>
 
             <View className="p-3">
-              <Text className="text-[#0F172A] font-semibold text-sm mb-0.5" numberOfLines={1}>
+              <Text style={{ 
+                fontWeight: '600', 
+                fontSize: 14, 
+                marginBottom: 2, 
+                color: colors.text 
+              }} numberOfLines={1}>
                 {course.title}
               </Text>
-              <Text className="text-[#64748B] text-xs mb-2" numberOfLines={1}>
+              <Text style={{ 
+                fontSize: 12, 
+                marginBottom: 8, 
+                color: colors.textSecondary 
+              }} numberOfLines={1}>
                 {course.instructor}
               </Text>
 
               <View className="flex-row items-center justify-between">
                 <View className="flex-1 mr-2">
-                  <View className="w-full h-1.5 bg-[#F1F5F9] rounded-full overflow-hidden">
+                  <View style={{
+                    width: '100%',
+                    height: 6,
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                    backgroundColor: isDarkMode ? '#334155' : '#F1F5F9',
+                  }}>
                     <View 
-                      className="h-full bg-[#2563EB] rounded-full"
-                      style={{ width: `${course.progress}%` }}
+                      style={{
+                        height: '100%',
+                        borderRadius: 3,
+                        backgroundColor: colors.primary,
+                        width: `${course.progress}%`,
+                      }}
                     />
                   </View>
                 </View>
-                <Text className="text-[#64748B] text-xs font-medium">
+                <Text style={{ 
+                  fontSize: 12, 
+                  fontWeight: '500', 
+                  color: colors.textSecondary 
+                }}>
                   {course.progress}%
                 </Text>
               </View>
 
               <TouchableOpacity 
-                className="mt-2.5 bg-[#2563EB] py-1.5 rounded-full"
+                style={{
+                  marginTop: 10,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  backgroundColor: colors.primary,
+                }}
                 onPress={(e) => {
                   e.stopPropagation();
                   handleCoursePress(course.id);

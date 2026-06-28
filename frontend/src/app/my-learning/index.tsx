@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -42,20 +43,21 @@ interface LearningStats {
 }
 
 // Skeleton Components
-const Skeleton = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded-lg animate-pulse ${className}`} />
+const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded-lg animate-pulse ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonText = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded h-4 ${className}`} />
+const SkeletonText = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded h-4 ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonCircle = ({ size = 28 }: { size?: number }) => (
-  <View className="bg-[#E2E8F0] rounded-full" style={{ width: size, height: size }} />
+const SkeletonCircle = ({ size = 28, bgColor = '#E2E8F0' }: { size?: number; bgColor?: string }) => (
+  <View className="rounded-full" style={{ width: size, height: size, backgroundColor: bgColor }} />
 );
 
 export default function MyLearningScreen() {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [courses, setCourses] = useState<LearningCourse[]>([]);
@@ -182,14 +184,12 @@ export default function MyLearningScreen() {
   const getFilteredCourses = () => {
     let filtered = courses;
     
-    // Apply filter
     if (activeFilter === 'in-progress') {
       filtered = filtered.filter(c => c.progress < 100 && c.progress > 0);
     } else if (activeFilter === 'completed') {
       filtered = filtered.filter(c => c.progress === 100);
     }
     
-    // Apply search
     if (searchQuery) {
       filtered = filtered.filter(c => 
         c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -202,19 +202,22 @@ export default function MyLearningScreen() {
 
   const renderCourseItem = ({ item }: { item: LearningCourse }) => {
     const isCompleted = item.progress === 100;
+    const skeletonBg = isDarkMode ? '#1E293B' : '#E2E8F0';
     
     return (
       <TouchableOpacity
-        className="mb-4 bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden"
-        onPress={() => handleCoursePress(item.id)}
-        activeOpacity={0.8}
+        className="rounded-2xl border overflow-hidden mb-4"
         style={{
-          shadowColor: '#0F172A',
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+          shadowColor: isDarkMode ? '#000000' : '#0F172A',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDarkMode ? 0.3 : 0.05,
           shadowRadius: 4,
           elevation: 2,
         }}
+        onPress={() => handleCoursePress(item.id)}
+        activeOpacity={0.8}
       >
         <View className="flex-row">
           {/* Thumbnail */}
@@ -248,10 +251,10 @@ export default function MyLearningScreen() {
           <View className="flex-1 p-3">
             <View className="flex-row items-start justify-between">
               <View className="flex-1">
-                <Text className="text-[#0F172A] font-semibold text-sm" numberOfLines={1}>
+                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14 }} numberOfLines={1}>
                   {item.title}
                 </Text>
-                <Text className="text-[#64748B] text-xs mt-0.5" numberOfLines={1}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
                   {item.instructor}
                 </Text>
               </View>
@@ -263,34 +266,35 @@ export default function MyLearningScreen() {
             </View>
 
             <View className="flex-row items-center mt-1.5">
-              <View className="bg-[#EFF6FF] px-2 py-0.5 rounded-full">
-                <Text className="text-[#2563EB] text-[10px] font-medium">
+              <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: isDarkMode ? '#1E3A5F' : '#EFF6FF' }}>
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '500' }}>
                   {item.category}
                 </Text>
               </View>
-              <View className="w-px h-3 bg-[#E2E8F0] mx-2" />
-              <Text className="text-[#94A3B8] text-[10px]">
+              <View className="w-px h-3 mx-2" style={{ backgroundColor: colors.backgroundSelected }} />
+              <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                 {item.completedLessons}/{item.totalLessons} lessons
               </Text>
             </View>
 
             <View className="flex-row items-center justify-between mt-2">
               <View className="flex-row items-center">
-                <Ionicons name="time-outline" size={12} color="#94A3B8" />
-                <Text className="text-[#94A3B8] text-[10px] ml-1">
+                <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 10, marginLeft: 4 }}>
                   {isCompleted ? 'Completed' : item.remainingTime} left
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <Ionicons name="calendar-outline" size={12} color="#94A3B8" />
-                <Text className="text-[#94A3B8] text-[10px] ml-1">
+                <Ionicons name="calendar-outline" size={12} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 10, marginLeft: 4 }}>
                   {item.lastAccessed}
                 </Text>
               </View>
             </View>
 
             <TouchableOpacity 
-              className={`mt-2 py-1.5 rounded-full ${isCompleted ? 'bg-[#16A34A]' : 'bg-[#2563EB]'}`}
+              className={`mt-2 py-1.5 rounded-full ${isCompleted ? 'bg-[#16A34A]' : ''}`}
+              style={{ backgroundColor: isCompleted ? '#16A34A' : colors.primary }}
               onPress={(e) => {
                 e.stopPropagation();
                 handleCoursePress(item.id);
@@ -309,25 +313,32 @@ export default function MyLearningScreen() {
 
   // Loading Skeleton
   if (loading) {
+    const skeletonBg = isDarkMode ? '#1E293B' : '#E2E8F0';
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-        <StatusBar style="dark" />
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
         
         {/* Header Skeleton */}
-        <View className="flex-row items-center px-4 py-3 bg-white border-b border-[#E2E8F0]">
-          <SkeletonCircle size={40} />
-          <SkeletonText className="w-32 h-6 ml-2" />
-          <SkeletonText className="w-8 h-8 rounded-full ml-auto" />
+        <View className="flex-row items-center px-4 py-3 border-b" style={{
+          backgroundColor: colors.backgroundElement,
+          borderBottomColor: colors.backgroundSelected,
+        }}>
+          <SkeletonCircle size={40} bgColor={skeletonBg} />
+          <SkeletonText className="w-32 h-6 ml-2" bgColor={skeletonBg} />
+          <SkeletonText className="w-8 h-8 rounded-full ml-auto" bgColor={skeletonBg} />
         </View>
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Stats Skeleton */}
           <View className="flex-row px-4 pt-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <View key={i} className="flex-1 bg-white rounded-xl p-3 border border-[#E2E8F0]">
-                <Skeleton className="w-8 h-8 rounded-full" />
-                <SkeletonText className="w-12 h-5 mt-2" />
-                <SkeletonText className="w-16 h-3 mt-1" />
+              <View key={i} className="flex-1 rounded-xl p-3 border" style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+              }}>
+                <Skeleton className="w-8 h-8 rounded-full" bgColor={skeletonBg} />
+                <SkeletonText className="w-12 h-5 mt-2" bgColor={skeletonBg} />
+                <SkeletonText className="w-16 h-3 mt-1" bgColor={skeletonBg} />
               </View>
             ))}
           </View>
@@ -335,32 +346,35 @@ export default function MyLearningScreen() {
           {/* Filters Skeleton */}
           <View className="flex-row px-4 mt-4 gap-2">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="flex-1 h-10 rounded-full" />
+              <Skeleton key={i} className="flex-1 h-10 rounded-full" bgColor={skeletonBg} />
             ))}
           </View>
 
           {/* Search Skeleton */}
           <View className="px-4 mt-4">
-            <Skeleton className="h-11 rounded-xl" />
+            <Skeleton className="h-11 rounded-xl" bgColor={skeletonBg} />
           </View>
 
           {/* Course Cards Skeleton */}
           <View className="px-4 pt-4">
             {[1, 2, 3].map((i) => (
-              <View key={i} className="flex-row bg-white rounded-2xl mb-4 border border-[#E2E8F0] overflow-hidden">
-                <Skeleton className="w-32 h-32" />
+              <View key={i} className="flex-row rounded-2xl mb-4 border overflow-hidden" style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+              }}>
+                <Skeleton className="w-32 h-32" bgColor={skeletonBg} />
                 <View className="flex-1 p-3">
-                  <SkeletonText className="w-3/4 h-5" />
-                  <SkeletonText className="w-1/2 h-4 mt-1" />
+                  <SkeletonText className="w-3/4 h-5" bgColor={skeletonBg} />
+                  <SkeletonText className="w-1/2 h-4 mt-1" bgColor={skeletonBg} />
                   <View className="flex-row items-center mt-1.5">
-                    <SkeletonText className="w-16 h-4" />
-                    <SkeletonText className="w-20 h-4 ml-2" />
+                    <SkeletonText className="w-16 h-4" bgColor={skeletonBg} />
+                    <SkeletonText className="w-20 h-4 ml-2" bgColor={skeletonBg} />
                   </View>
                   <View className="flex-row items-center mt-2">
-                    <SkeletonText className="w-20 h-3" />
-                    <SkeletonText className="w-20 h-3 ml-2" />
+                    <SkeletonText className="w-20 h-3" bgColor={skeletonBg} />
+                    <SkeletonText className="w-20 h-3 ml-2" bgColor={skeletonBg} />
                   </View>
-                  <Skeleton className="w-full h-8 rounded-full mt-2" />
+                  <Skeleton className="w-full h-8 rounded-full mt-2" bgColor={skeletonBg} />
                 </View>
               </View>
             ))}
@@ -373,23 +387,30 @@ export default function MyLearningScreen() {
   const filteredCourses = getFilteredCourses();
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-white border-b border-[#E2E8F0]">
+      <View className="flex-row items-center px-4 py-3 border-b" style={{
+        backgroundColor: colors.backgroundElement,
+        borderBottomColor: colors.backgroundSelected,
+      }}>
         <TouchableOpacity
           onPress={handleBack}
-          className="w-10 h-10 rounded-full bg-[#F1F5F9] items-center justify-center"
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundSelected }}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color="#0F172A" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text className="text-[#0F172A] text-lg font-bold ml-2 flex-1">
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginLeft: 8, flex: 1 }}>
           My Learning
         </Text>
-        <TouchableOpacity className="w-10 h-10 rounded-full bg-[#F1F5F9] items-center justify-center">
-          <Ionicons name="settings-outline" size={20} color="#0F172A" />
+        <TouchableOpacity 
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundSelected }}
+        >
+          <Ionicons name="settings-outline" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -401,8 +422,8 @@ export default function MyLearningScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563EB"
-            colors={["#2563EB"]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         contentContainerStyle={{
@@ -416,33 +437,45 @@ export default function MyLearningScreen() {
             {/* Stats Cards */}
             {stats && (
               <View className="flex-row gap-3 mb-4">
-                <View className="flex-1 bg-white rounded-xl p-3 border border-[#E2E8F0]">
-                  <Ionicons name="book-outline" size={20} color="#2563EB" />
-                  <Text className="text-[#0F172A] font-bold text-lg mt-1">
+                <View className="flex-1 rounded-xl p-3 border" style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.backgroundSelected,
+                }}>
+                  <Ionicons name="book-outline" size={20} color={colors.primary} />
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 18, marginTop: 4 }}>
                     {stats.totalCourses}
                   </Text>
-                  <Text className="text-[#64748B] text-xs">Total Courses</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Total Courses</Text>
                 </View>
-                <View className="flex-1 bg-white rounded-xl p-3 border border-[#E2E8F0]">
+                <View className="flex-1 rounded-xl p-3 border" style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.backgroundSelected,
+                }}>
                   <Ionicons name="time-outline" size={20} color="#7C3AED" />
-                  <Text className="text-[#0F172A] font-bold text-lg mt-1">
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 18, marginTop: 4 }}>
                     {stats.totalHours}h
                   </Text>
-                  <Text className="text-[#64748B] text-xs">Hours Learned</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Hours Learned</Text>
                 </View>
-                <View className="flex-1 bg-white rounded-xl p-3 border border-[#E2E8F0]">
+                <View className="flex-1 rounded-xl p-3 border" style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.backgroundSelected,
+                }}>
                   <Ionicons name="ribbon-outline" size={20} color="#F59E0B" />
-                  <Text className="text-[#0F172A] font-bold text-lg mt-1">
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 18, marginTop: 4 }}>
                     {stats.certificates}
                   </Text>
-                  <Text className="text-[#64748B] text-xs">Certificates</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Certificates</Text>
                 </View>
-                <View className="flex-1 bg-white rounded-xl p-3 border border-[#E2E8F0]">
+                <View className="flex-1 rounded-xl p-3 border" style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.backgroundSelected,
+                }}>
                   <Ionicons name="flame-outline" size={20} color="#EF4444" />
-                  <Text className="text-[#0F172A] font-bold text-lg mt-1">
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 18, marginTop: 4 }}>
                     {stats.streak}
                   </Text>
-                  <Text className="text-[#64748B] text-xs">Day Streak</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Day Streak</Text>
                 </View>
               </View>
             )}
@@ -459,15 +492,22 @@ export default function MyLearningScreen() {
                   onPress={() => setActiveFilter(filter.key as any)}
                   className={`flex-1 py-2.5 rounded-full ${
                     activeFilter === filter.key
-                      ? 'bg-[#2563EB]'
-                      : 'bg-white border border-[#E2E8F0]'
+                      ? ''
+                      : 'border'
                   }`}
+                  style={{
+                    backgroundColor: activeFilter === filter.key ? colors.primary : 'transparent',
+                    borderColor: colors.backgroundSelected,
+                  }}
                   activeOpacity={0.7}
                 >
                   <Text
-                    className={`text-center text-sm font-medium ${
-                      activeFilter === filter.key ? 'text-white' : 'text-[#64748B]'
-                    }`}
+                    style={{
+                      textAlign: 'center',
+                      fontSize: 14,
+                      fontWeight: '500',
+                      color: activeFilter === filter.key ? '#FFFFFF' : colors.textSecondary,
+                    }}
                   >
                     {filter.label}
                   </Text>
@@ -477,18 +517,22 @@ export default function MyLearningScreen() {
 
             {/* Search Bar */}
             <View className="mb-4">
-              <View className="flex-row items-center bg-white rounded-xl px-3 border border-[#E2E8F0]">
-                <Ionicons name="search-outline" size={20} color="#94A3B8" />
+              <View className="flex-row items-center rounded-xl px-3 border" style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+              }}>
+                <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
                 <TextInput
-                  className="flex-1 py-2.5 px-2 text-[#0F172A] text-sm"
+                  className="flex-1 py-2.5 px-2 text-sm"
+                  style={{ color: colors.text }}
                   placeholder="Search your courses..."
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textSecondary}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                    <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -497,10 +541,10 @@ export default function MyLearningScreen() {
             {/* Results count */}
             {filteredCourses.length > 0 && (
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-[#64748B] text-sm">
+                <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                   {filteredCourses.length} courses
                 </Text>
-                <Text className="text-[#94A3B8] text-xs">
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                   {filteredCourses.filter(c => c.progress === 100).length} completed
                 </Text>
               </View>
@@ -509,13 +553,13 @@ export default function MyLearningScreen() {
         }
         ListEmptyComponent={
           <View className="items-center py-16">
-            <View className="w-24 h-24 rounded-full bg-[#F1F5F9] items-center justify-center mb-4">
-              <Ionicons name="book-outline" size={48} color="#94A3B8" />
+            <View className="w-24 h-24 rounded-full items-center justify-center mb-4" style={{ backgroundColor: colors.backgroundSelected }}>
+              <Ionicons name="book-outline" size={48} color={colors.textSecondary} />
             </View>
-            <Text className="text-[#0F172A] text-xl font-bold">
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
               No Courses Found
             </Text>
-            <Text className="text-[#64748B] text-center mt-1 px-8">
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 4, paddingHorizontal: 32 }}>
               {activeFilter === 'all' 
                 ? "You haven't enrolled in any courses yet"
                 : activeFilter === 'in-progress'
@@ -523,7 +567,8 @@ export default function MyLearningScreen() {
                 : "You haven't completed any courses yet"}
             </Text>
             <TouchableOpacity
-              className="mt-6 bg-[#2563EB] px-6 py-3 rounded-xl"
+              className="mt-6 px-6 py-3 rounded-xl"
+              style={{ backgroundColor: colors.primary }}
               onPress={() => router.push('/explore' as any)}
               activeOpacity={0.8}
             >
