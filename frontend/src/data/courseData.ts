@@ -69,8 +69,8 @@ export interface CourseDetail {
  * below, so the screen still works while you're filling these in.
  * ────────────────────────────────────────────────────────────────────── */
 export const LESSON_VIDEO_MAP: Record<string, VideoSource> = {
-   'lesson-1': require('../../assets/videos/lesson-1.mp4'),
-   'lesson-2': require('../../assets/videos/lesson-2.mp4'),
+  // 'lesson-1': require('../../assets/videos/lesson-1.mp4'),
+  // 'lesson-2': require('../../assets/videos/lesson-2.mp4'),
   // 'lesson-3': require('../assets/videos/lesson-3.mp4'),
 };
 
