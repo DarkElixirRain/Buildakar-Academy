@@ -159,7 +159,7 @@ const validateConfirmPassword = (password: string, confirmPassword: string): str
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signup, loading, isAuthenticated, initialized } = useAuthStore();
+  const { signup, loading, isAuthenticated, initialized, requiresRoleSelection, user } = useAuthStore();
   const hasRedirected = useRef(false);
 
   // Form state - matching the User interface and signup function signature
@@ -184,9 +184,14 @@ export default function SignupScreen() {
   useEffect(() => {
     if (initialized && isAuthenticated && !hasRedirected.current) {
       hasRedirected.current = true;
-      router.replace('/(tabs)');
+
+      if (requiresRoleSelection && !user?.hasCompletedOnboarding) {
+        router.replace('/(auth)/role-selection');
+      } else {
+        router.replace('/(tabs)' as any);
+      }
     }
-  }, [isAuthenticated, initialized, router]);
+  }, [isAuthenticated, initialized, requiresRoleSelection, user?.hasCompletedOnboarding, router]);
 
   // Reset redirect ref when not authenticated
   useEffect(() => {
@@ -266,7 +271,7 @@ export default function SignupScreen() {
         if (response.data?.success) {
           const { user, token } = response.data.data;
           // Use existing auth store to set state and persist
-          useAuthStore.setState({ user, token, isAuthenticated: true, initialized: true });
+          useAuthStore.setState({ user, token, isAuthenticated: true, initialized: true, requiresRoleSelection: true });
         } else {
           throw new Error(response.data?.message || 'Google sign-up failed');
         }

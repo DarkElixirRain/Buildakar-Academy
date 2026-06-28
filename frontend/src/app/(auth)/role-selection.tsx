@@ -1,5 +1,5 @@
 // app/(auth)/role-selection.tsx
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -73,7 +73,7 @@ const CustomButton: React.FC<{
 
 export default function RoleSelectionScreen() {
   const router = useRouter();
-  const { updateRole, user, loading, isAuthenticated, initialized } = useAuthStore();
+  const { updateRole, user, loading, isAuthenticated, initialized, requiresRoleSelection } = useAuthStore();
   const hasRedirected = useRef(false);
 
   const [selectedRole, setSelectedRole] = useState<SignupRole>('STUDENT');
@@ -83,15 +83,17 @@ export default function RoleSelectionScreen() {
   const isTablet = width >= 768;
   const cardPadding = isSmallDevice ? 16 : isTablet ? 32 : 24;
 
-  // Check if already authenticated and redirect
-  // Note: We only redirect if the user has already completed onboarding
-  // If they're authenticated but haven't completed onboarding, they stay here
-  // useEffect(() => {
-  //   if (initialized && isAuthenticated && user?.hasCompletedOnboarding && !hasRedirected.current) {
-  //     hasRedirected.current = true;
-  //     router.replace('/');
-  //   }
-  // }, [isAuthenticated, initialized, user?.hasCompletedOnboarding, router]);
+  useEffect(() => {
+    if (
+      initialized &&
+      isAuthenticated &&
+      (!requiresRoleSelection || user?.hasCompletedOnboarding) &&
+      !hasRedirected.current
+    ) {
+      hasRedirected.current = true;
+      router.replace('/(tabs)' as any);
+    }
+  }, [initialized, isAuthenticated, requiresRoleSelection, user?.hasCompletedOnboarding, router]);
 
   // Show loading while checking auth state
   if (!initialized) {

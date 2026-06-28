@@ -138,7 +138,7 @@ const validatePassword = (password: string): string | null => {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, loading, isAuthenticated, initialized } = useAuthStore();
+  const { login, loading, isAuthenticated, initialized, requiresRoleSelection, user } = useAuthStore();
   const hasRedirected = useRef(false);
 
   const [email, setEmail] = useState('');
@@ -155,9 +155,14 @@ export default function LoginScreen() {
   useEffect(() => {
     if (initialized && isAuthenticated && !hasRedirected.current) {
       hasRedirected.current = true;
-      router.replace('/(tabs)');
+
+      if (requiresRoleSelection && !user?.hasCompletedOnboarding) {
+        router.replace('/(auth)/role-selection');
+      } else {
+        router.replace('/(tabs)' as any);
+      }
     }
-  }, [isAuthenticated, initialized, router]);
+  }, [isAuthenticated, initialized, requiresRoleSelection, user?.hasCompletedOnboarding, router]);
 
   // Reset redirect ref when not authenticated
   useEffect(() => {

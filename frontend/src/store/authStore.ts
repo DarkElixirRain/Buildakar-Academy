@@ -70,6 +70,7 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   initialized: boolean;
+  requiresRoleSelection: boolean;
   login: (email: string, password: string) => Promise<LoginResponse>;
   signup: (
     email: string,
@@ -84,6 +85,7 @@ interface AuthState {
   refreshUser: () => Promise<User | null>;
   setUser: (user: User | null) => void;
   setInitialized: () => void;
+  setPendingRoleSelection: (value: boolean) => void;
   clearAuth: () => void;
   getDisplayName: () => string;
   getInitials: () => string;
@@ -98,6 +100,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       loading: false,
       initialized: false,
+      requiresRoleSelection: false,
 
       login: async (email: string, password: string): Promise<LoginResponse> => {
         set({ loading: true });
@@ -114,6 +117,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               loading: false,
               initialized: true,
+              requiresRoleSelection: false,
             });
 
             return { user, token };
@@ -154,6 +158,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               loading: false,
               initialized: true,
+              requiresRoleSelection: true,
             });
 
             return { user, token };
@@ -199,6 +204,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           loading: false,
           initialized: true,
+          requiresRoleSelection: false,
         });
 
         try {
@@ -216,6 +222,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           loading: false,
           initialized: true,
+          requiresRoleSelection: false,
         });
 
         try {
@@ -240,6 +247,7 @@ export const useAuthStore = create<AuthState>()(
                 user: response.data.data,
                 isAuthenticated: true,
                 initialized: true,
+                requiresRoleSelection: get().requiresRoleSelection,
               });
               return;
             }
@@ -249,6 +257,7 @@ export const useAuthStore = create<AuthState>()(
               token: null,
               isAuthenticated: false,
               initialized: true,
+              requiresRoleSelection: false,
             });
             try {
               const storage = getStorage();
@@ -268,6 +277,7 @@ export const useAuthStore = create<AuthState>()(
                 user: response.data.data,
                 isAuthenticated: true,
                 initialized: true,
+                requiresRoleSelection: get().requiresRoleSelection,
               });
               return;
             }
@@ -277,6 +287,7 @@ export const useAuthStore = create<AuthState>()(
               token: null,
               isAuthenticated: false,
               initialized: true,
+              requiresRoleSelection: false,
             });
             try {
               const storage = getStorage();
@@ -292,6 +303,7 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           isAuthenticated: false,
           initialized: true,
+          requiresRoleSelection: false,
         });
       },
 
@@ -327,6 +339,10 @@ export const useAuthStore = create<AuthState>()(
         set({ initialized: true });
       },
 
+      setPendingRoleSelection: (value: boolean) => {
+        set({ requiresRoleSelection: value });
+      },
+
       updateRole: async (role: SignupRole): Promise<User> => {
         const { token } = get();
         
@@ -347,6 +363,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               user,
               loading: false,
+              requiresRoleSelection: false,
             });
             
             return user;
@@ -412,6 +429,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
+        requiresRoleSelection: state.requiresRoleSelection,
       }),
     }
   )

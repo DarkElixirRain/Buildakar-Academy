@@ -25,7 +25,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  const { isAuthenticated, initialized, user, checkAuth } = useAuthStore();
+  const { isAuthenticated, initialized, user, checkAuth, requiresRoleSelection } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -58,7 +58,8 @@ export default function RootLayout() {
       isInAuthGroup,
       isRoleSelection,
       isRoot,
-      hasCompletedOnboarding: user?.hasCompletedOnboarding
+      hasCompletedOnboarding: user?.hasCompletedOnboarding,
+      requiresRoleSelection,
     });
 
     // 1. Not authenticated → login
@@ -72,6 +73,7 @@ export default function RootLayout() {
       isAuthenticated &&
       user &&
       !user.hasCompletedOnboarding &&
+      requiresRoleSelection &&
       !isRoleSelection
     ) {
       console.log('Redirecting to role-selection...');
@@ -89,7 +91,7 @@ export default function RootLayout() {
       router.replace('/(tabs)' as any);
       return;
     }
-  }, [isAuthenticated, initialized, segments, user?.hasCompletedOnboarding]);
+  }, [isAuthenticated, initialized, requiresRoleSelection, segments, user?.hasCompletedOnboarding]);
 
   if (!initialized) {
     return (
