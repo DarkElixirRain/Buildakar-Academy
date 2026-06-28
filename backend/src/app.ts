@@ -5,6 +5,9 @@ import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { config } from './config';
 import categoryRoutes from './routes/category.routes';
+import courseRoutes from './routes/course.routes';
+import sectionRoutes from './routes/section.routes';
+import lessonRoutes from './routes/lesson.routes';
 
 const app = express();
 
@@ -56,6 +59,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api', sectionRoutes);
+app.use('/api', lessonRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {

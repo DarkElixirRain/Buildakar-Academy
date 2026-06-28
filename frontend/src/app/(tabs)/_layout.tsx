@@ -4,11 +4,14 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Platform, Dimensions } from 'react-native';
+import { useAuthStore } from '@/store/authStore';
 
 const { width, height } = Dimensions.get('window');
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
+  const isInstructor = user?.role === 'INSTRUCTOR';
 
   // Calculate responsive tab bar height
   const getTabBarHeight = () => {
@@ -103,9 +106,21 @@ export default function TabsLayout() {
         }}
       />
       
-      
-      
-      
+      {isInstructor && (
+        <Tabs.Screen
+          name="instructor"
+          options={{
+            title: 'Teach',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons 
+                name={focused ? 'school' : 'school-outline'} 
+                size={size || 24} 
+                color={color} 
+              />
+            ),
+          }}
+        />
+      )}
     </Tabs>
   );
 }
