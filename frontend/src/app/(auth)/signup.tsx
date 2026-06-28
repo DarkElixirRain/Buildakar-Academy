@@ -1,4 +1,4 @@
-// app/(auth)/signup.tsx
+// frontend/src/app/(auth)/signup.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -18,10 +18,11 @@ import { useAuthStore } from '@/store/authStore';
 import googleAuth from '@/lib/googleAuth';
 import api from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
 
-// Simple custom input component to avoid dependency issues
+// Simple custom input component
 const CustomInput: React.FC<{
   label: string;
   value: string;
@@ -31,6 +32,8 @@ const CustomInput: React.FC<{
   error?: string | null;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  colors: any;
+  isDarkMode: boolean;
 }> = ({
   label,
   value,
@@ -40,20 +43,22 @@ const CustomInput: React.FC<{
   error = null,
   autoCapitalize = 'none',
   keyboardType = 'default',
+  colors,
+  isDarkMode,
 }) => {
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 6 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 6 }}>
         {label}
       </Text>
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
+        backgroundColor: colors.backgroundElement,
         borderWidth: 1,
-        borderColor: error ? '#ef4444' : '#e2e8f0',
+        borderColor: error ? '#ef4444' : colors.backgroundSelected,
         borderRadius: 12,
         paddingHorizontal: 12,
         paddingVertical: 2,
@@ -63,10 +68,10 @@ const CustomInput: React.FC<{
             flex: 1,
             paddingVertical: 10,
             fontSize: 16,
-            color: '#0f172a',
+            color: colors.text,
           }}
           placeholder={placeholder}
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={colors.textSecondary}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry && !showPassword}
@@ -78,7 +83,7 @@ const CustomInput: React.FC<{
             <Ionicons 
               name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
               size={20} 
-              color="#64748b" 
+              color={colors.textSecondary} 
             />
           </TouchableOpacity>
         )}
@@ -96,14 +101,15 @@ const CustomButton: React.FC<{
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-}> = ({ title, onPress, loading = false, disabled = false }) => {
+  colors: any;
+}> = ({ title, onPress, loading = false, disabled = false, colors }) => {
   return (
     <TouchableOpacity
       style={{
         width: '100%',
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: disabled || loading ? '#94a3b8' : '#0a53d6',
+        backgroundColor: disabled || loading ? colors.textSecondary : colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -160,9 +166,10 @@ const validateConfirmPassword = (password: string, confirmPassword: string): str
 export default function SignupScreen() {
   const router = useRouter();
   const { signup, loading, isAuthenticated, initialized, requiresRoleSelection, user } = useAuthStore();
+  const { colors, isDarkMode } = useTheme();
   const hasRedirected = useRef(false);
 
-  // Form state - matching the User interface and signup function signature
+  // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -203,9 +210,9 @@ export default function SignupScreen() {
   // Show loading while checking auth state
   if (!initialized) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0a53d6" />
-        <Text style={{ marginTop: 16, color: '#64748b', fontSize: 14, fontWeight: '500' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
           Loading...
         </Text>
       </SafeAreaView>
@@ -238,8 +245,7 @@ export default function SignupScreen() {
     }
 
     try {
-      // Call signup from auth store - matches the signature:
-      // signup: (email: string, firstName: string, lastName: string, password: string)
+      // Call signup from auth store
       const result = await signup(
         email.trim().toLowerCase(),
         firstName.trim(),
@@ -285,7 +291,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -306,11 +312,11 @@ export default function SignupScreen() {
                   width: 80, 
                   height: 80, 
                   borderRadius: 40, 
-                  backgroundColor: '#dbeafe', 
+                  backgroundColor: isDarkMode ? 'rgba(37, 99, 235, 0.2)' : '#dbeafe', 
                   alignItems: 'center', 
                   justifyContent: 'center' 
                 }}>
-                  <Ionicons name="person-add-outline" size={32} color="#0a53d6" />
+                  <Ionicons name="person-add-outline" size={32} color={colors.primary} />
                 </View>
               </View>
 
@@ -318,7 +324,7 @@ export default function SignupScreen() {
               <Text 
                 style={{
                   fontWeight: 'bold',
-                  color: '#0f172a',
+                  color: colors.text,
                   textAlign: 'center',
                   marginBottom: 8,
                   fontSize: isSmallDevice ? 24 : 32,
@@ -328,7 +334,7 @@ export default function SignupScreen() {
               </Text>
               <Text 
                 style={{
-                  color: '#64748b',
+                  color: colors.textSecondary,
                   textAlign: 'center',
                   marginBottom: 24,
                   paddingHorizontal: 16,
@@ -338,18 +344,18 @@ export default function SignupScreen() {
                 Join Buildakar and start your high-performance learning journey today.
               </Text>
 
-              {/* Main White Card Container */}
+              {/* Main Card Container */}
               <View 
                 style={{
                   width: '100%',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: colors.backgroundElement,
                   borderRadius: 24,
                   borderWidth: 1,
-                  borderColor: '#f1f5f9',
+                  borderColor: colors.backgroundSelected,
                   padding: cardPadding,
-                  shadowColor: '#0f172a',
+                  shadowColor: isDarkMode ? '#000000' : '#0f172a',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: isDarkMode ? 0.2 : 0.05,
                   shadowRadius: 4,
                   elevation: 4,
                 }}
@@ -357,9 +363,9 @@ export default function SignupScreen() {
                 {/* General Error Message */}
                 {generalError && (
                   <View style={{ 
-                    backgroundColor: '#fef2f2', 
+                    backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', 
                     borderWidth: 1, 
-                    borderColor: '#fecaca', 
+                    borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#fecaca', 
                     borderRadius: 12, 
                     padding: 12, 
                     marginBottom: 16 
@@ -384,6 +390,8 @@ export default function SignupScreen() {
                   }}
                   error={firstNameError}
                   autoCapitalize="words"
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Last Name */}
@@ -397,6 +405,8 @@ export default function SignupScreen() {
                   }}
                   error={lastNameError}
                   autoCapitalize="words"
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Email Address */}
@@ -411,6 +421,8 @@ export default function SignupScreen() {
                   error={emailError}
                   autoCapitalize="none"
                   keyboardType="email-address"
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Password */}
@@ -424,6 +436,8 @@ export default function SignupScreen() {
                   }}
                   error={passwordError}
                   secureTextEntry
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Confirm Password */}
@@ -437,15 +451,17 @@ export default function SignupScreen() {
                   }}
                   error={confirmPasswordError}
                   secureTextEntry
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Terms and Conditions */}
                 <View style={{ marginTop: -8, marginBottom: 20 }}>
-                  <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
                     By creating an account, you agree to our{' '}
-                    <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Terms of Service</Text>
+                    <Text style={{ color: colors.primary, fontWeight: '600' }}>Terms of Service</Text>
                     {' '}and{' '}
-                    <Text style={{ color: '#0a53d6', fontWeight: '600' }}>Privacy Policy</Text>
+                    <Text style={{ color: colors.primary, fontWeight: '600' }}>Privacy Policy</Text>
                   </Text>
                 </View>
 
@@ -455,22 +471,23 @@ export default function SignupScreen() {
                     title="Create Account"
                     onPress={handleSignUp}
                     loading={loading}
+                    colors={colors}
                   />
                 </View>
 
                 {/* Divider */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                  <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.backgroundSelected }} />
                   <Text style={{ 
                     fontWeight: 'bold', 
-                    color: '#94a3b8', 
+                    color: colors.textSecondary, 
                     letterSpacing: 1, 
                     paddingHorizontal: 12, 
                     fontSize: isSmallDevice ? 9 : 11 
                   }}>
                     or sign up with
                   </Text>
-                  <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.backgroundSelected }} />
                 </View>
 
                 {/* Social Sign Up Buttons */}
@@ -483,9 +500,9 @@ export default function SignupScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderWidth: 1,
-                      borderColor: '#e2e8f0',
+                      borderColor: colors.backgroundSelected,
                       borderRadius: 12,
-                      backgroundColor: '#ffffff',
+                      backgroundColor: colors.backgroundElement,
                       paddingVertical: isSmallDevice ? 10 : 14,
                     }}
                     onPress={() => handleSocialSignUp('Google')}
@@ -493,7 +510,7 @@ export default function SignupScreen() {
                     <Ionicons name="logo-google" size={isSmallDevice ? 16 : 18} color="#ea4335" />
                     <Text style={{ 
                       fontWeight: 'bold', 
-                      color: '#0f172a', 
+                      color: colors.text, 
                       marginLeft: 8, 
                       fontSize: isSmallDevice ? 12 : 14 
                     }}>
@@ -511,14 +528,14 @@ export default function SignupScreen() {
                 justifyContent: 'center', 
                 flexWrap: 'wrap' 
               }}>
-                <Text style={{ color: '#475569', fontSize: isSmallDevice ? 13 : 15 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: isSmallDevice ? 13 : 15 }}>
                   Already have an account?{' '}
                 </Text>
                 <Link href="/(auth)/login" asChild>
                   <TouchableOpacity>
                     <Text style={{ 
                       fontWeight: 'bold', 
-                      color: '#0a53d6', 
+                      color: colors.primary, 
                       fontSize: isSmallDevice ? 13 : 15 
                     }}>
                       Sign In

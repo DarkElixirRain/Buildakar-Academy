@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width - 32;
@@ -37,6 +38,7 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const { isDarkMode, colors } = useTheme();
 
   React.useEffect(() => {
     const interval = setInterval(() => {
@@ -53,7 +55,12 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
 
   const renderItem = ({ item }: { item: FeaturedCourse }) => (
     <TouchableOpacity
-      className="w-[350px] mr-4 rounded-3xl overflow-hidden"
+      style={{
+        width: 350,
+        marginRight: 16,
+        borderRadius: 24,
+        overflow: 'hidden',
+      }}
       onPress={() => onCoursePress(item.id)}
       activeOpacity={0.9}
     >
@@ -110,8 +117,13 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
   const useNativeDriver = Platform.OS !== 'web';
 
   return (
-    <View className="w-full">
-      <Text className="text-[#0F172A] text-xl font-bold mb-3">
+    <View style={{ width: '100%', marginBottom: 16 }}>
+      <Text style={{ 
+        fontSize: 20, 
+        fontWeight: 'bold', 
+        marginBottom: 12, 
+        color: colors.text 
+      }}>
         Featured Courses
       </Text>
 
@@ -128,7 +140,7 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { 
-            useNativeDriver: useNativeDriver, // ✅ Use platform-specific value
+            useNativeDriver: useNativeDriver,
           }
         )}
         scrollEventThrottle={16}
@@ -156,8 +168,11 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
           return (
             <Animated.View
               key={index}
-              className="h-1.5 rounded-full bg-[#2563EB] mx-1"
               style={{
+                height: 6,
+                borderRadius: 3,
+                marginHorizontal: 4,
+                backgroundColor: colors.primary,
                 width: dotWidth,
                 opacity,
               }}

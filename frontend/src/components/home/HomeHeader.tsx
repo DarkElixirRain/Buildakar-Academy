@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useAuthStore } from '@/store/authStore';
+import { useTheme } from '@/context/themeContext';
 
 interface HomeHeaderProps {
   notificationCount: number;
@@ -18,13 +19,20 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onSearchPress,
 }) => {
   const { user, isAuthenticated, getDisplayName, getInitials } = useAuthStore();
+  const { isDarkMode, colors } = useTheme();
   
   const displayName = getDisplayName();
   const initials = getInitials();
   const greeting = getGreeting();
 
   return (
-    <View className="px-4 py-4 bg-white border-b border-[#E2E8F0]">
+    <View style={{
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      backgroundColor: colors.background,
+      borderBottomColor: colors.backgroundElement,
+    }}>
       <View className="flex-row items-center justify-between">
         {/* Left: Avatar and Greeting */}
         <View className="flex-row items-center space-x-3">
@@ -45,32 +53,64 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           </TouchableOpacity>
 
           <View>
-            <Text className="text-[#64748B] text-sm font-medium">
+            <Text style={{ 
+              fontSize: 14, 
+              fontWeight: '500', 
+              color: colors.textSecondary 
+            }}>
               {greeting} 👋
             </Text>
-            <Text className="text-[#0F172A] text-xl font-bold">
+            <Text style={{ 
+              fontSize: 20, 
+              fontWeight: 'bold', 
+              color: colors.text 
+            }}>
               {displayName}
             </Text>
-            
           </View>
         </View>
 
         {/* Right: Actions */}
         <View className="flex-row items-center space-x-3">
           <TouchableOpacity 
-            className="w-10 h-10 rounded-full bg-[#F1F5F9] items-center justify-center"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.backgroundElement,
+            }}
             onPress={onSearchPress}
           >
-            <Feather name="search" size={20} color="#475569" />
+            <Feather name="search" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity 
-            className="relative w-10 h-10 rounded-full bg-[#F1F5F9] items-center justify-center"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.backgroundElement,
+              position: 'relative',
+            }}
             onPress={onNotificationPress}
           >
-            <Ionicons name="notifications-outline" size={22} color="#475569" />
+            <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
             {notificationCount > 0 && (
-              <View className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#2563EB] items-center justify-center">
+              <View style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.primary,
+              }}>
                 <Text className="text-white text-xs font-bold">
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </Text>

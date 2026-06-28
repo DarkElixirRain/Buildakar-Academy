@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/context/themeContext';
 
 interface Course {
   id: string;
@@ -37,6 +38,7 @@ export const RecommendedCourses: React.FC<RecommendedCoursesProps> = ({
   onLoadMore,
 }) => {
   const [savedCourses, setSavedCourses] = useState<Set<string>>(new Set());
+  const { isDarkMode, colors } = useTheme();
 
   const toggleSave = (courseId: string) => {
     setSavedCourses(prev => {
@@ -55,16 +57,22 @@ export const RecommendedCourses: React.FC<RecommendedCoursesProps> = ({
 
     return (
       <TouchableOpacity
-        className="w-64 mr-4 bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden"
-        onPress={() => onCoursePress(item.id)}
-        activeOpacity={0.8}
         style={{
-          shadowColor: '#0F172A',
+          width: 256,
+          marginRight: 16,
+          borderRadius: 16,
+          borderWidth: 1,
+          overflow: 'hidden',
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+          shadowColor: isDarkMode ? '#000000' : '#0F172A',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDarkMode ? 0.3 : 0.05,
           shadowRadius: 4,
           elevation: 2,
         }}
+        onPress={() => onCoursePress(item.id)}
+        activeOpacity={0.8}
       >
         {/* Thumbnail */}
         <View className="relative">
@@ -82,31 +90,52 @@ export const RecommendedCourses: React.FC<RecommendedCoursesProps> = ({
             <Ionicons 
               name={isSaved ? 'bookmark' : 'bookmark-outline'} 
               size={18} 
-              color={isSaved ? '#2563EB' : '#475569'} 
+              color={isSaved ? colors.primary : colors.textSecondary} 
             />
           </TouchableOpacity>
         </View>
 
         {/* Content */}
         <View className="p-3">
-          <Text className="text-[#0F172A] font-semibold text-sm mb-0.5" numberOfLines={1}>
+          <Text style={{
+            fontWeight: '600',
+            fontSize: 14,
+            marginBottom: 2,
+            color: colors.text,
+          }} numberOfLines={1}>
             {item.title}
           </Text>
-          <Text className="text-[#64748B] text-xs mb-1.5">
+          <Text style={{
+            fontSize: 12,
+            marginBottom: 6,
+            color: colors.textSecondary,
+          }}>
             {item.instructor}
           </Text>
 
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
               <Ionicons name="star" size={14} color="#FBBF24" />
-              <Text className="text-[#0F172A] text-xs font-medium ml-0.5">
+              <Text style={{
+                fontSize: 12,
+                fontWeight: '500',
+                marginLeft: 2,
+                color: colors.text,
+              }}>
                 {item.rating.toFixed(1)}
               </Text>
-              <Text className="text-[#94A3B8] text-xs ml-1">
+              <Text style={{
+                fontSize: 12,
+                marginLeft: 4,
+                color: colors.textSecondary,
+              }}>
                 ({item.students.toLocaleString()})
               </Text>
             </View>
-            <Text className="text-[#94A3B8] text-xs">
+            <Text style={{
+              fontSize: 12,
+              color: colors.textSecondary,
+            }}>
               {item.duration}
             </Text>
           </View>
@@ -116,13 +145,21 @@ export const RecommendedCourses: React.FC<RecommendedCoursesProps> = ({
   };
 
   return (
-    <View className="w-full">
+    <View style={{ width: '100%' }}>
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-[#0F172A] text-xl font-bold">
+        <Text style={{
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        }}>
           Recommended For You
         </Text>
         <TouchableOpacity onPress={onSeeAll}>
-          <Text className="text-[#2563EB] text-sm font-semibold">
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.primary,
+          }}>
             See All
           </Text>
         </TouchableOpacity>
@@ -140,7 +177,7 @@ export const RecommendedCourses: React.FC<RecommendedCoursesProps> = ({
         ListFooterComponent={
           onLoadMore ? (
             <View className="w-16 items-center justify-center">
-              <ActivityIndicator color="#2563EB" />
+              <ActivityIndicator color={colors.primary} />
             </View>
           ) : null
         }

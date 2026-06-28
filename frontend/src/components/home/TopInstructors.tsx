@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 export interface Instructor {
   id: string;
@@ -29,6 +30,7 @@ export const TopInstructors: React.FC<TopInstructorsProps> = ({
   onSeeAll,
 }) => {
   const [following, setFollowing] = React.useState<Set<string>>(new Set());
+  const { isDarkMode, colors } = useTheme();
 
   const handleFollow = (id: string) => {
     setFollowing(prev => {
@@ -44,13 +46,21 @@ export const TopInstructors: React.FC<TopInstructorsProps> = ({
   };
 
   return (
-    <View className="w-full">
+    <View style={{ width: '100%' }}>
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-[#0F172A] text-xl font-bold">
+        <Text style={{
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        }}>
           Top Instructors
         </Text>
         <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
-          <Text className="text-[#2563EB] text-sm font-semibold">
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.primary,
+          }}>
             See All
           </Text>
         </TouchableOpacity>
@@ -67,52 +77,83 @@ export const TopInstructors: React.FC<TopInstructorsProps> = ({
           return (
             <TouchableOpacity
               key={instructor.id}
-              className="w-48 mr-4 bg-white rounded-2xl border border-[#E2E8F0] p-4 items-center"
-              onPress={() => onInstructorPress(instructor.id)}
-              activeOpacity={0.8}
               style={{
-                shadowColor: '#0F172A',
+                width: 192,
+                marginRight: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                padding: 16,
+                alignItems: 'center',
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+                shadowColor: isDarkMode ? '#000000' : '#0F172A',
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
+                shadowOpacity: isDarkMode ? 0.3 : 0.05,
                 shadowRadius: 4,
                 elevation: 2,
               }}
+              onPress={() => onInstructorPress(instructor.id)}
+              activeOpacity={0.8}
             >
               <Image 
                 source={{ uri: instructor.photo }}
                 className="w-16 h-16 rounded-full mb-2"
               />
               
-              <Text className="text-[#0F172A] font-bold text-sm text-center">
+              <Text style={{
+                fontWeight: 'bold',
+                fontSize: 14,
+                textAlign: 'center',
+                color: colors.text,
+              }}>
                 {instructor.name}
               </Text>
-              <Text className="text-[#64748B] text-xs text-center mb-1">
+              <Text style={{
+                fontSize: 12,
+                textAlign: 'center',
+                marginBottom: 4,
+                color: colors.textSecondary,
+              }}>
                 {instructor.expertise}
               </Text>
 
               <View className="flex-row items-center mb-3">
                 <Ionicons name="star" size={14} color="#FBBF24" />
-                <Text className="text-[#0F172A] text-xs font-medium ml-0.5">
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: '500',
+                  marginLeft: 2,
+                  color: colors.text,
+                }}>
                   {instructor.rating.toFixed(1)}
                 </Text>
                 {instructor.studentsCount && (
-                  <Text className="text-[#94A3B8] text-xs ml-1">
+                  <Text style={{
+                    fontSize: 12,
+                    marginLeft: 4,
+                    color: colors.textSecondary,
+                  }}>
                     • {instructor.studentsCount.toLocaleString()} students
                   </Text>
                 )}
               </View>
 
               <TouchableOpacity 
-                className={`py-1.5 px-4 rounded-full border ${
-                  isFollowing 
-                    ? 'bg-transparent border-[#2563EB]' 
-                    : 'bg-[#2563EB] border-[#2563EB]'
-                }`}
+                style={{
+                  paddingVertical: 6,
+                  paddingHorizontal: 16,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  backgroundColor: isFollowing ? 'transparent' : colors.primary,
+                  borderColor: isFollowing ? colors.primary : colors.primary,
+                }}
                 onPress={() => handleFollow(instructor.id)}
               >
-                <Text className={`text-xs font-bold ${
-                  isFollowing ? 'text-[#2563EB]' : 'text-white'
-                }`}>
+                <Text style={{
+                  fontSize: 12,
+                  fontWeight: 'bold',
+                  color: isFollowing ? colors.primary : '#FFFFFF',
+                }}>
                   {isFollowing ? 'Following' : 'Follow'}
                 </Text>
               </TouchableOpacity>

@@ -1,42 +1,22 @@
-// app/_layout.tsx
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+// frontend/src/app/_layout.tsx
+import { DarkTheme, DefaultTheme, ThemeProvider as ExpoThemeProvider } from 'expo-router';
 import { useColorScheme, View } from 'react-native';
-import { useEffect, createContext, useContext } from 'react';
+import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { Text } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { useAuthStore } from '@/store/authStore';
+import { ThemeProvider, useTheme } from '@/context/themeContext';
 import React from 'react';
 
-const AppThemeContext = createContext({
-  background: '#F8FAFC',
-  surface: '#FFFFFF',
-  text: '#0F172A',
-  textSecondary: '#64748B',
-  border: '#E2E8F0',
-  isDark: false,
-});
-
-export const useAppTheme = () => useContext(AppThemeContext);
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
+// App wrapper that uses the theme context
+function AppContent() {
+  const { isDarkMode, colors } = useTheme();
   const { isAuthenticated, initialized, user, checkAuth, requiresRoleSelection } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
-
-  const themeValues = {
-    background: isDark ? '#0F172A' : '#F8FAFC',
-    surface: isDark ? '#1E293B' : '#FFFFFF',
-    text: isDark ? '#F8FAFC' : '#0F172A',
-    textSecondary: isDark ? '#94A3B8' : '#64748B',
-    border: isDark ? '#334155' : '#E2E8F0',
-    isDark,
-  };
 
   useEffect(() => {
     checkAuth().catch(err => {
@@ -94,50 +74,31 @@ export default function RootLayout() {
   }, [isAuthenticated, initialized, requiresRoleSelection, segments, user?.hasCompletedOnboarding]);
 
   if (!initialized) {
-    return (
-      <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-        <AppThemeContext.Provider value={themeValues}>
-          <AnimatedSplashOverlay />
-        </AppThemeContext.Provider>
-      </ThemeProvider>
-    );
+    return <AnimatedSplashOverlay />;
   }
 
-  try {
-    return (
-      <SafeAreaProvider>
-        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          <AppThemeContext.Provider value={themeValues}>
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: themeValues.background },
-                animation: 'slide_from_right',
-              }}
-            >
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
-          </AppThemeContext.Provider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    );
-  } catch (error) {
-    console.error('Error rendering stack:', error);
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#F8FAFC',
+  return (
+    <SafeAreaProvider>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
         }}
       >
-        <Text style={{ color: '#0F172A' }}>Error loading app</Text>
-        <Text style={{ color: '#64748B' }}>{String(error)}</Text>
-      </View>
-    );
-  }
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+    </SafeAreaProvider>
+  );
+}
+
+// Main layout with ThemeProvider
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }

@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 interface PopularCourse {
   id: string;
@@ -24,14 +25,24 @@ export const PopularCourses: React.FC<PopularCoursesProps> = ({
   onCoursePress,
   onSeeAll,
 }) => {
+  const { isDarkMode, colors } = useTheme();
+
   return (
-    <View className="w-full">
+    <View style={{ width: '100%' }}>
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-[#0F172A] text-xl font-bold">
+        <Text style={{
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: colors.text,
+        }}>
           Popular Courses
         </Text>
         <TouchableOpacity onPress={onSeeAll}>
-          <Text className="text-[#2563EB] text-sm font-semibold">
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.primary,
+          }}>
             See All
           </Text>
         </TouchableOpacity>
@@ -45,16 +56,22 @@ export const PopularCourses: React.FC<PopularCoursesProps> = ({
         {courses.map((course) => (
           <TouchableOpacity
             key={course.id}
-            className="w-56 mr-4 bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden"
-            onPress={() => onCoursePress(course.id)}
-            activeOpacity={0.8}
             style={{
-              shadowColor: '#0F172A',
+              width: 224,
+              marginRight: 16,
+              borderRadius: 16,
+              borderWidth: 1,
+              overflow: 'hidden',
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.backgroundSelected,
+              shadowColor: isDarkMode ? '#000000' : '#0F172A',
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
+              shadowOpacity: isDarkMode ? 0.3 : 0.05,
               shadowRadius: 4,
               elevation: 2,
             }}
+            onPress={() => onCoursePress(course.id)}
+            activeOpacity={0.8}
           >
             <View className="relative">
               <Image 
@@ -74,20 +91,38 @@ export const PopularCourses: React.FC<PopularCoursesProps> = ({
             </View>
 
             <View className="p-3">
-              <Text className="text-[#0F172A] font-semibold text-sm mb-0.5" numberOfLines={1}>
+              <Text style={{
+                fontWeight: '600',
+                fontSize: 14,
+                marginBottom: 2,
+                color: colors.text,
+              }} numberOfLines={1}>
                 {course.title}
               </Text>
-              <Text className="text-[#64748B] text-xs mb-1.5">
+              <Text style={{
+                fontSize: 12,
+                marginBottom: 6,
+                color: colors.textSecondary,
+              }}>
                 {course.instructor}
               </Text>
 
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   <Ionicons name="star" size={14} color="#FBBF24" />
-                  <Text className="text-[#0F172A] text-xs font-medium ml-0.5">
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '500',
+                    marginLeft: 2,
+                    color: colors.text,
+                  }}>
                     {course.rating.toFixed(1)}
                   </Text>
-                  <Text className="text-[#94A3B8] text-xs ml-1">
+                  <Text style={{
+                    fontSize: 12,
+                    marginLeft: 4,
+                    color: colors.textSecondary,
+                  }}>
                     ({course.students.toLocaleString()})
                   </Text>
                 </View>

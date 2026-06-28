@@ -1,7 +1,9 @@
+// components/common/AuthInput.tsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, TextInputProps, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { cn } from '@/lib/cn';
+import { useTheme } from '@/context/themeContext';
 
 interface AuthInputProps extends TextInputProps {
   label: string;
@@ -15,31 +17,54 @@ export const AuthInput = React.forwardRef<TextInput, AuthInputProps>(
   ({ label, iconName, error, isPassword = false, rightElement, ...props }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const { colors, isDarkMode } = useTheme();
 
     const isSecure = isPassword && !showPassword;
+
+    // Theme-based colors
+    const labelColor = colors.text;
+    const inputBgColor = isDarkMode ? colors.backgroundElement : '#f1f5f9';
+    const inputTextColor = colors.text;
+    const placeholderColor = colors.textSecondary;
+    const iconColor = error ? '#ef4444' : isFocused ? colors.primary : colors.textSecondary;
+    const borderColor = error ? '#ef4444' : isFocused ? colors.primary : 'transparent';
+    const errorColor = '#ef4444';
 
     return (
       <View className="w-full mb-4">
         {/* Label Row */}
         <View className="flex-row justify-between items-center mb-1.5">
-          <Text className="text-[14px] font-semibold text-[#1e293b]">{label}</Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: labelColor }}>
+            {label}
+          </Text>
           {rightElement}
         </View>
 
         {/* Input Wrapper */}
         <View
-          className={cn(
-            'flex-row items-center bg-[#f1f5f9] border border-transparent rounded-[12px] px-3.5 py-3 h-[52px]',
-            isFocused && 'border-[#0a53d6] bg-white shadow-sm',
-            error && 'border-red-500 bg-red-50/10'
-          )}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: inputBgColor,
+            borderWidth: 1,
+            borderColor: borderColor,
+            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            height: 52,
+            shadowColor: isFocused ? colors.primary : 'transparent',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: isFocused ? 0.1 : 0,
+            shadowRadius: 4,
+            elevation: isFocused ? 2 : 0,
+          }}
         >
           {/* Left Icon */}
           <View className="mr-3">
             <Feather
               name={iconName as any}
               size={20}
-              color={error ? '#ef4444' : isFocused ? '#0a53d6' : '#64748b'}
+              color={iconColor}
             />
           </View>
 
@@ -47,13 +72,17 @@ export const AuthInput = React.forwardRef<TextInput, AuthInputProps>(
           <TextInput
             ref={ref}
             secureTextEntry={isSecure}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={placeholderColor}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className="flex-1 text-[#0f172a] text-[15px] p-0 m-0 h-full"
             style={{
-              outlineStyle: 'none', // Remove web outline
-            } as any}
+              flex: 1,
+              color: inputTextColor,
+              fontSize: 15,
+              padding: 0,
+              margin: 0,
+              height: '100%',
+            }}
             {...props}
           />
 
@@ -67,7 +96,7 @@ export const AuthInput = React.forwardRef<TextInput, AuthInputProps>(
               <Feather
                 name={showPassword ? 'eye-off' : 'eye'}
                 size={20}
-                color="#64748b"
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           )}
@@ -75,7 +104,9 @@ export const AuthInput = React.forwardRef<TextInput, AuthInputProps>(
 
         {/* Inline Error Message */}
         {error && (
-          <Text className="text-red-500 text-[12px] mt-1.5 ml-1 font-medium">{error}</Text>
+          <Text style={{ color: errorColor, fontSize: 12, marginTop: 6, marginLeft: 4, fontWeight: '500' }}>
+            {error}
+          </Text>
         )}
       </View>
     );

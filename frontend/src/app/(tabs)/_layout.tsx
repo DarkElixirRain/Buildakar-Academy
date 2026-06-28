@@ -1,14 +1,16 @@
-// app/(tabs)/_layout.tsx
+// app/(tabs)/_layout.tsx (with className approach)
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Platform, Dimensions } from 'react-native';
+import { useTheme } from '@/context/themeContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, colors } = useTheme();
 
   // Calculate responsive tab bar height
   const getTabBarHeight = () => {
@@ -22,23 +24,23 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.background,
           borderTopWidth: 1,
-          borderTopColor: '#E2E8F0',
+          borderTopColor: colors.backgroundElement,
           height: getTabBarHeight(),
           paddingTop: 8,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
           paddingHorizontal: 4,
-          shadowColor: '#0F172A',
+          shadowColor: colors.text,
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDarkMode ? 0.3 : 0.05,
           shadowRadius: 4,
           elevation: 4,
           position: 'relative',
           bottom: 0,
         },
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '500',
@@ -95,17 +97,30 @@ export default function TabsLayout() {
                 color={color} 
               />
               {/* Live indicator dot */}
-              <View className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2 border-white">
+              <View 
+                className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2"
+                style={{ borderColor: colors.background }}
+              >
                 <View className="absolute inset-0 rounded-full animate-pulse" />
               </View>
             </View>
           ),
         }}
       />
-      
-      
-      
-      
+
+      <Tabs.Screen
+        name="setting"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? 'settings' : 'settings-outline'} 
+              size={size || 24} 
+              color={color} 
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

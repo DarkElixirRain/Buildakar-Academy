@@ -14,6 +14,7 @@ import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/context/themeContext';
 
 interface Instructor {
   id: string;
@@ -107,6 +108,7 @@ const MOCK_COURSES = [
 export default function InstructorProfileScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { isDarkMode, colors } = useTheme();
   const [instructor, setInstructor] = useState<Instructor | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState<'courses' | 'about' | 'reviews'>('courses');
@@ -148,64 +150,70 @@ export default function InstructorProfileScreen() {
 
   if (!instructor) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC] items-center justify-center">
-        <Text className="text-[#64748B]">Loading...</Text>
+      <SafeAreaView className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <Text style={{ color: colors.textSecondary }}>Loading...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header with Back Button */}
         <View className="absolute top-0 left-0 right-0 z-10 px-4 pt-4 flex-row justify-between">
           <TouchableOpacity
-            className="w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+            className="w-10 h-10 rounded-full items-center justify-center"
+            style={{ backgroundColor: isDarkMode ? 'rgba(30,41,59,0.9)' : 'rgba(255,255,255,0.9)' }}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={22} color="#0F172A" />
+            <Ionicons name="arrow-back" size={22} color={isDarkMode ? '#F1F5F9' : '#0F172A'} />
           </TouchableOpacity>
           <TouchableOpacity
-            className="w-10 h-10 rounded-full bg-white/90 items-center justify-center"
+            className="w-10 h-10 rounded-full items-center justify-center"
+            style={{ backgroundColor: isDarkMode ? 'rgba(30,41,59,0.9)' : 'rgba(255,255,255,0.9)' }}
             onPress={handleShare}
           >
-            <Ionicons name="share-outline" size={22} color="#0F172A" />
+            <Ionicons name="share-outline" size={22} color={isDarkMode ? '#F1F5F9' : '#0F172A'} />
           </TouchableOpacity>
         </View>
 
         {/* Profile Header */}
-        <View className="bg-white px-4 pt-12 pb-6 border-b border-[#E2E8F0]">
+        <View className="px-4 pt-12 pb-6" style={{ 
+          backgroundColor: colors.backgroundElement,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.backgroundSelected,
+        }}>
           <View className="items-center">
             <Image
               source={{ uri: instructor.photo }}
               className="w-24 h-24 rounded-full mb-4"
             />
             
-            <Text className="text-[#0F172A] text-2xl font-bold">
+            <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>
               {instructor.name}
             </Text>
-            <Text className="text-[#64748B] text-base mt-0.5">
+            <Text style={{ color: colors.textSecondary, fontSize: 16, marginTop: 2 }}>
               {instructor.expertise}
             </Text>
 
             <View className="flex-row items-center mt-2 space-x-4">
               <View className="flex-row items-center">
                 <Ionicons name="star" size={16} color="#FBBF24" />
-                <Text className="text-[#0F172A] font-semibold ml-1">
+                <Text style={{ color: colors.text, fontWeight: '600', marginLeft: 4 }}>
                   {instructor.rating.toFixed(1)}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <Ionicons name="people" size={16} color="#94A3B8" />
-                <Text className="text-[#64748B] ml-1">
+                <Ionicons name="people" size={16} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, marginLeft: 4 }}>
                   {instructor.studentsCount.toLocaleString()} students
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <Ionicons name="book" size={16} color="#94A3B8" />
-                <Text className="text-[#64748B] ml-1">
+                <Ionicons name="book" size={16} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, marginLeft: 4 }}>
                   {instructor.coursesCount} courses
                 </Text>
               </View>
@@ -215,23 +223,35 @@ export default function InstructorProfileScreen() {
             <View className="flex-row items-center mt-4 space-x-3">
               <TouchableOpacity
                 className={`flex-1 py-2.5 rounded-xl ${
-                  isFollowing ? 'bg-transparent border border-[#2563EB]' : 'bg-[#2563EB]'
+                  isFollowing 
+                    ? 'border' 
+                    : ''
                 }`}
+                style={{
+                  backgroundColor: isFollowing ? 'transparent' : colors.primary,
+                  borderColor: colors.primary,
+                }}
                 onPress={handleFollow}
               >
                 <Text
-                  className={`text-center font-bold ${
-                    isFollowing ? 'text-[#2563EB]' : 'text-white'
-                  }`}
+                  style={{
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    color: isFollowing ? colors.primary : '#FFFFFF',
+                  }}
                 >
                   {isFollowing ? 'Following' : 'Follow'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="flex-1 py-2.5 rounded-xl bg-[#EFF6FF] border border-[#2563EB]"
+                className="flex-1 py-2.5 rounded-xl border"
+                style={{
+                  backgroundColor: isDarkMode ? 'rgba(96,165,250,0.1)' : '#EFF6FF',
+                  borderColor: colors.primary,
+                }}
                 onPress={() => console.log('Message instructor')}
               >
-                <Text className="text-[#2563EB] text-center font-bold">
+                <Text style={{ textAlign: 'center', fontWeight: 'bold', color: colors.primary }}>
                   Message
                 </Text>
               </TouchableOpacity>
@@ -242,7 +262,8 @@ export default function InstructorProfileScreen() {
               <View className="flex-row items-center mt-4 space-x-3">
                 {instructor.socialLinks.youtube && (
                   <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-[#FF0000]/10 items-center justify-center"
+                    className="w-10 h-10 rounded-full items-center justify-center"
+                    style={{ backgroundColor: isDarkMode ? 'rgba(255,0,0,0.2)' : 'rgba(255,0,0,0.1)' }}
                     onPress={() => handleSocialLink(instructor.socialLinks!.youtube!)}
                   >
                     <Ionicons name="logo-youtube" size={20} color="#FF0000" />
@@ -250,7 +271,8 @@ export default function InstructorProfileScreen() {
                 )}
                 {instructor.socialLinks.twitter && (
                   <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-[#1DA1F2]/10 items-center justify-center"
+                    className="w-10 h-10 rounded-full items-center justify-center"
+                    style={{ backgroundColor: isDarkMode ? 'rgba(29,161,242,0.2)' : 'rgba(29,161,242,0.1)' }}
                     onPress={() => handleSocialLink(instructor.socialLinks!.twitter!)}
                   >
                     <Ionicons name="logo-twitter" size={20} color="#1DA1F2" />
@@ -258,7 +280,8 @@ export default function InstructorProfileScreen() {
                 )}
                 {instructor.socialLinks.linkedin && (
                   <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-[#0A66C2]/10 items-center justify-center"
+                    className="w-10 h-10 rounded-full items-center justify-center"
+                    style={{ backgroundColor: isDarkMode ? 'rgba(10,102,194,0.2)' : 'rgba(10,102,194,0.1)' }}
                     onPress={() => handleSocialLink(instructor.socialLinks!.linkedin!)}
                   >
                     <Ionicons name="logo-linkedin" size={20} color="#0A66C2" />
@@ -266,10 +289,11 @@ export default function InstructorProfileScreen() {
                 )}
                 {instructor.socialLinks.website && (
                   <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-[#2563EB]/10 items-center justify-center"
+                    className="w-10 h-10 rounded-full items-center justify-center"
+                    style={{ backgroundColor: isDarkMode ? 'rgba(96,165,250,0.2)' : 'rgba(37,99,235,0.1)' }}
                     onPress={() => handleSocialLink(instructor.socialLinks!.website!)}
                   >
-                    <Ionicons name="globe-outline" size={20} color="#2563EB" />
+                    <Ionicons name="globe-outline" size={20} color={colors.primary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -278,42 +302,53 @@ export default function InstructorProfileScreen() {
         </View>
 
         {/* Stats */}
-        <View className="bg-white px-4 py-4 border-b border-[#E2E8F0]">
+        <View className="px-4 py-4" style={{ 
+          backgroundColor: colors.backgroundElement,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.backgroundSelected,
+        }}>
           <View className="flex-row justify-around">
             <View className="items-center">
-              <Text className="text-[#0F172A] text-xl font-bold">
+              <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
                 {instructor.studentsCount.toLocaleString()}
               </Text>
-              <Text className="text-[#64748B] text-xs">Students</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Students</Text>
             </View>
             <View className="items-center">
-              <Text className="text-[#0F172A] text-xl font-bold">
+              <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
                 {instructor.coursesCount}
               </Text>
-              <Text className="text-[#64748B] text-xs">Courses</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Courses</Text>
             </View>
             <View className="items-center">
-              <Text className="text-[#0F172A] text-xl font-bold">
+              <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
                 {instructor.totalRevenue || 'N/A'}
               </Text>
-              <Text className="text-[#64748B] text-xs">Revenue</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Revenue</Text>
             </View>
           </View>
         </View>
 
         {/* Tabs */}
-        <View className="bg-white px-4 border-b border-[#E2E8F0]">
+        <View className="px-4" style={{ 
+          backgroundColor: colors.backgroundElement,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.backgroundSelected,
+        }}>
           <View className="flex-row">
             {['courses', 'about', 'reviews'].map((tab) => (
               <TouchableOpacity
                 key={tab}
-                className={`py-3 px-4 ${activeTab === tab ? 'border-b-2 border-[#2563EB]' : ''}`}
+                className={`py-3 px-4 ${activeTab === tab ? 'border-b-2' : ''}`}
+                style={{ borderColor: activeTab === tab ? colors.primary : 'transparent' }}
                 onPress={() => setActiveTab(tab as 'courses' | 'about' | 'reviews')}
               >
                 <Text
-                  className={`text-sm font-medium ${
-                    activeTab === tab ? 'text-[#2563EB]' : 'text-[#64748B]'
-                  }`}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '500',
+                    color: activeTab === tab ? colors.primary : colors.textSecondary,
+                  }}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </Text>
@@ -326,13 +361,17 @@ export default function InstructorProfileScreen() {
         <View className="p-4">
           {activeTab === 'courses' && (
             <View>
-              <Text className="text-[#0F172A] text-lg font-bold mb-4">
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
                 Courses by {instructor.name}
               </Text>
               {MOCK_COURSES.map((course) => (
                 <TouchableOpacity
                   key={course.id}
-                  className="bg-white rounded-xl border border-[#E2E8F0] mb-3 overflow-hidden"
+                  className="rounded-xl border mb-3 overflow-hidden"
+                  style={{
+                    backgroundColor: colors.backgroundElement,
+                    borderColor: colors.backgroundSelected,
+                  }}
                   onPress={() => handleCoursePress(course.id)}
                 >
                   <Image
@@ -341,20 +380,20 @@ export default function InstructorProfileScreen() {
                     resizeMode="cover"
                   />
                   <View className="p-3">
-                    <Text className="text-[#0F172A] font-semibold text-base" numberOfLines={1}>
+                    <Text style={{ color: colors.text, fontWeight: '600', fontSize: 16 }} numberOfLines={1}>
                       {course.title}
                     </Text>
                     <View className="flex-row items-center mt-1 justify-between">
                       <View className="flex-row items-center">
                         <Ionicons name="star" size={14} color="#FBBF24" />
-                        <Text className="text-[#0F172A] text-xs font-medium ml-0.5">
+                        <Text style={{ color: colors.text, fontSize: 12, fontWeight: '500', marginLeft: 2 }}>
                           {course.rating.toFixed(1)}
                         </Text>
-                        <Text className="text-[#94A3B8] text-xs ml-1">
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>
                           ({course.students.toLocaleString()})
                         </Text>
                       </View>
-                      <Text className="text-[#2563EB] font-bold text-sm">
+                      <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 14 }}>
                         ${course.price}
                       </Text>
                     </View>
@@ -365,14 +404,21 @@ export default function InstructorProfileScreen() {
           )}
 
           {activeTab === 'about' && (
-            <View className="bg-white rounded-xl border border-[#E2E8F0] p-4">
-              <Text className="text-[#0F172A] text-lg font-bold mb-3">About</Text>
-              <Text className="text-[#64748B] leading-5">{instructor.bio}</Text>
+            <View className="rounded-xl border p-4" style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.backgroundSelected,
+            }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+                About
+              </Text>
+              <Text style={{ color: colors.textSecondary, lineHeight: 20 }}>
+                {instructor.bio}
+              </Text>
               
-              <View className="mt-4 pt-4 border-t border-[#E2E8F0]">
+              <View className="mt-4 pt-4" style={{ borderTopWidth: 1, borderTopColor: colors.backgroundSelected }}>
                 <View className="flex-row items-center mb-2">
-                  <Ionicons name="calendar-outline" size={18} color="#94A3B8" />
-                  <Text className="text-[#64748B] text-sm ml-2">
+                  <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginLeft: 8 }}>
                     Joined {new Date(instructor.joinDate || '').toLocaleDateString('en-US', {
                       month: 'long',
                       year: 'numeric',
@@ -380,8 +426,8 @@ export default function InstructorProfileScreen() {
                   </Text>
                 </View>
                 <View className="flex-row items-center">
-                  <Ionicons name="trophy-outline" size={18} color="#94A3B8" />
-                  <Text className="text-[#64748B] text-sm ml-2">
+                  <Ionicons name="trophy-outline" size={18} color={colors.textSecondary} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginLeft: 8 }}>
                     {instructor.studentsCount.toLocaleString()} students taught
                   </Text>
                 </View>
@@ -390,17 +436,25 @@ export default function InstructorProfileScreen() {
           )}
 
           {activeTab === 'reviews' && (
-            <View className="bg-white rounded-xl border border-[#E2E8F0] p-4">
-              <Text className="text-[#0F172A] text-lg font-bold mb-4">Reviews</Text>
+            <View className="rounded-xl border p-4" style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.backgroundSelected,
+            }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
+                Reviews
+              </Text>
               {[1, 2, 3].map((review) => (
-                <View key={review} className="mb-4 pb-4 border-b border-[#E2E8F0]">
+                <View key={review} className="mb-4 pb-4" style={{ 
+                  borderBottomWidth: review < 3 ? 1 : 0,
+                  borderBottomColor: colors.backgroundSelected,
+                }}>
                   <View className="flex-row items-center">
                     <Image
                       source={{ uri: `https://randomuser.me/api/portraits/men/${review}.jpg` }}
                       className="w-10 h-10 rounded-full"
                     />
                     <View className="ml-3 flex-1">
-                      <Text className="text-[#0F172A] font-semibold text-sm">
+                      <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14 }}>
                         Student {review}
                       </Text>
                       <View className="flex-row items-center">
@@ -415,7 +469,7 @@ export default function InstructorProfileScreen() {
                       </View>
                     </View>
                   </View>
-                  <Text className="text-[#64748B] text-sm mt-2">
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 8 }}>
                     Great instructor! Very clear explanations and practical examples.
                   </Text>
                 </View>

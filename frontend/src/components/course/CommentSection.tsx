@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Comment } from '../../types/course';
+import { useTheme } from '@/context/themeContext';
 
 interface CommentsSectionProps {
   comments: Comment[];
@@ -25,6 +26,7 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
   onToggleLike,
 }) => {
   const [text, setText] = useState('');
+  const { isDarkMode, colors } = useTheme();
 
   const handleSend = () => {
     const trimmed = text.trim();
@@ -35,12 +37,12 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{ paddingTop: 12, paddingBottom: 16 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -50,9 +52,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={32}
-                color="#94A3B8"
+                color={colors.textSecondary}
               />
-              <Text className="text-[#64748B] text-sm mt-2">
+              <Text style={{
+                color: colors.textSecondary,
+                fontSize: 14,
+                marginTop: 8,
+              }}>
                 No comments yet. Be the first to comment.
               </Text>
             </View>
@@ -65,14 +71,26 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                 />
                 <View className="flex-1">
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-[#0F172A] font-semibold text-sm">
+                    <Text style={{
+                      color: colors.text,
+                      fontWeight: '600',
+                      fontSize: 14,
+                    }}>
                       {comment.userName}
                     </Text>
-                    <Text className="text-[#94A3B8] text-xs">
+                    <Text style={{
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                    }}>
                       {comment.timestamp}
                     </Text>
                   </View>
-                  <Text className="text-[#334155] text-sm mt-1 leading-5">
+                  <Text style={{
+                    color: isDarkMode ? '#E2E8F0' : '#334155',
+                    fontSize: 14,
+                    marginTop: 4,
+                    lineHeight: 20,
+                  }}>
                     {comment.text}
                   </Text>
                   <TouchableOpacity
@@ -83,9 +101,13 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
                     <Ionicons
                       name={comment.likedByMe ? 'heart' : 'heart-outline'}
                       size={14}
-                      color={comment.likedByMe ? '#EF4444' : '#94A3B8'}
+                      color={comment.likedByMe ? '#EF4444' : colors.textSecondary}
                     />
-                    <Text className="text-[#94A3B8] text-xs ml-1">
+                    <Text style={{
+                      color: colors.textSecondary,
+                      fontSize: 12,
+                      marginLeft: 4,
+                    }}>
                       {comment.likes}
                     </Text>
                   </TouchableOpacity>
@@ -96,24 +118,50 @@ export const CommentsSection: React.FC<CommentsSectionProps> = ({
         </View>
       </ScrollView>
 
-      <View className="flex-row items-center px-4 py-3 border-t border-[#E2E8F0] bg-white">
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: colors.backgroundSelected,
+        backgroundColor: colors.backgroundElement,
+      }}>
         <TextInput
           value={text}
           onChangeText={setText}
           placeholder="Add a comment..."
-          placeholderTextColor="#94A3B8"
-          className="flex-1 bg-[#F1F5F9] rounded-full px-4 py-2.5 text-sm text-[#0F172A] mr-2"
+          placeholderTextColor={colors.textSecondary}
+          style={{
+            flex: 1,
+            borderRadius: 20,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            fontSize: 14,
+            marginRight: 8,
+            backgroundColor: colors.backgroundSelected,
+            color: colors.text,
+          }}
           multiline
         />
         <TouchableOpacity
           onPress={handleSend}
           disabled={!text.trim()}
-          className={`w-10 h-10 rounded-full items-center justify-center ${
-            text.trim() ? 'bg-[#2563EB]' : 'bg-[#CBD5E1]'
-          }`}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: text.trim() ? colors.primary : colors.backgroundSelected,
+          }}
           activeOpacity={0.7}
         >
-          <Ionicons name="send" size={16} color="#FFFFFF" />
+          <Ionicons 
+            name="send" 
+            size={16} 
+            color={text.trim() ? '#FFFFFF' : colors.textSecondary} 
+          />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

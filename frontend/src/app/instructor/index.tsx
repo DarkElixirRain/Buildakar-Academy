@@ -16,6 +16,7 @@ import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/context/themeContext';
 
 interface Instructor {
   id: string;
@@ -120,6 +121,7 @@ const MOCK_INSTRUCTORS: Instructor[] = [
 export default function InstructorsScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
+  const { isDarkMode, colors } = useTheme();
   const [instructors, setInstructors] = useState<Instructor[]>(MOCK_INSTRUCTORS);
   const [filteredInstructors, setFilteredInstructors] = useState<Instructor[]>(MOCK_INSTRUCTORS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -216,16 +218,18 @@ export default function InstructorsScreen() {
 
     return (
       <TouchableOpacity
-        className="bg-white rounded-2xl border border-[#E2E8F0] p-4 mb-4"
-        onPress={() => handleInstructorPress(item.id)}
-        activeOpacity={0.8}
+        className="rounded-2xl border p-4 mb-4"
         style={{
-          shadowColor: '#0F172A',
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+          shadowColor: isDarkMode ? '#000000' : '#0F172A',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDarkMode ? 0.3 : 0.05,
           shadowRadius: 4,
           elevation: 2,
         }}
+        onPress={() => handleInstructorPress(item.id)}
+        activeOpacity={0.8}
       >
         <View className="flex-row items-start">
           <Image
@@ -234,53 +238,59 @@ export default function InstructorsScreen() {
           />
           <View className="flex-1">
             <View className="flex-row items-center justify-between">
-              <Text className="text-[#0F172A] font-bold text-base flex-1 mr-2">
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, flex: 1, marginRight: 8 }}>
                 {item.name}
               </Text>
               <TouchableOpacity
                 className={`px-3 py-1 rounded-full border ${
                   isFollowing
-                    ? 'bg-transparent border-[#2563EB]'
-                    : 'bg-[#2563EB] border-[#2563EB]'
+                    ? 'bg-transparent'
+                    : ''
                 }`}
+                style={{
+                  borderColor: colors.primary,
+                  backgroundColor: isFollowing ? 'transparent' : colors.primary,
+                }}
                 onPress={() => handleFollow(item.id)}
               >
                 <Text
-                  className={`text-xs font-bold ${
-                    isFollowing ? 'text-[#2563EB]' : 'text-white'
-                  }`}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 'bold',
+                    color: isFollowing ? colors.primary : '#FFFFFF',
+                  }}
                 >
                   {isFollowing ? 'Following' : 'Follow'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <Text className="text-[#64748B] text-sm mt-0.5">
+            <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
               {item.expertise}
             </Text>
 
             <View className="flex-row items-center mt-1 space-x-3">
               <View className="flex-row items-center">
                 <Ionicons name="star" size={14} color="#FBBF24" />
-                <Text className="text-[#0F172A] text-xs font-medium ml-0.5">
+                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '500', marginLeft: 2 }}>
                   {item.rating.toFixed(1)}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <Ionicons name="people" size={14} color="#94A3B8" />
-                <Text className="text-[#64748B] text-xs ml-0.5">
+                <Ionicons name="people" size={14} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 2 }}>
                   {item.studentsCount.toLocaleString()} students
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <Ionicons name="book" size={14} color="#94A3B8" />
-                <Text className="text-[#64748B] text-xs ml-0.5">
+                <Ionicons name="book" size={14} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 2 }}>
                   {item.coursesCount} courses
                 </Text>
               </View>
             </View>
 
-            <Text className="text-[#64748B] text-xs mt-1.5 line-clamp-2">
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6 }} numberOfLines={2}>
               {item.bio}
             </Text>
           </View>
@@ -293,11 +303,15 @@ export default function InstructorsScreen() {
   const SortOptions = () => (
     <View className="flex-row items-center space-x-2 ml-2">
       <TouchableOpacity
-        className="flex-row items-center bg-white rounded-full px-3 py-1.5 border border-[#E2E8F0]"
+        className="flex-row items-center rounded-full px-3 py-1.5 border"
+        style={{
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+        }}
         onPress={() => setShowSortModal(!showSortModal)}
       >
-        <Ionicons name="options-outline" size={16} color="#475569" />
-        <Text className="text-[#475569] text-xs ml-1">
+        <Ionicons name="options-outline" size={16} color={colors.textSecondary} />
+        <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>
           {sortBy === 'popular' ? 'Popular' : sortBy === 'rating' ? 'Top Rated' : 'Newest'}
         </Text>
       </TouchableOpacity>
@@ -306,14 +320,24 @@ export default function InstructorsScreen() {
 
   // Sort Modal
   const SortModal = () => (
-    <View className="absolute top-12 right-0 bg-white rounded-xl border border-[#E2E8F0] p-2 z-10 w-40 shadow-lg">
+    <View className="absolute top-12 right-0 rounded-xl border p-2 z-10 w-40 shadow-lg"
+      style={{
+        backgroundColor: colors.backgroundElement,
+        borderColor: colors.backgroundSelected,
+      }}
+    >
       {['popular', 'rating', 'newest'].map((type) => (
         <TouchableOpacity
           key={type}
           className={`px-3 py-2 rounded-lg ${sortBy === type ? 'bg-[#EFF6FF]' : ''}`}
+          style={{ backgroundColor: sortBy === type ? (isDarkMode ? '#1E3A5F' : '#EFF6FF') : 'transparent' }}
           onPress={() => handleSort(type as 'popular' | 'rating' | 'newest')}
         >
-          <Text className={`text-sm ${sortBy === type ? 'text-[#2563EB] font-bold' : 'text-[#475569]'}`}>
+          <Text style={{
+            fontSize: 14,
+            color: sortBy === type ? colors.primary : colors.textSecondary,
+            fontWeight: sortBy === type ? 'bold' : 'normal',
+          }}>
             {type === 'popular' ? 'Most Popular' : type === 'rating' ? 'Top Rated' : 'Newest'}
           </Text>
         </TouchableOpacity>
@@ -322,41 +346,49 @@ export default function InstructorsScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
       {/* Header */}
-      <View className="px-4 pt-4 pb-2 bg-white border-b border-[#E2E8F0]">
+      <View className="px-4 pt-4 pb-2 border-b" style={{
+        backgroundColor: colors.backgroundElement,
+        borderBottomColor: colors.backgroundSelected,
+      }}>
         <View className="flex-row items-center justify-between">
           <TouchableOpacity onPress={() => router.back()} className="p-1">
-            <Ionicons name="arrow-back" size={24} color="#0F172A" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text className="text-[#0F172A] text-xl font-bold">Top Instructors</Text>
+          <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
+            Top Instructors
+          </Text>
           <TouchableOpacity className="p-1">
-            <Ionicons name="notifications-outline" size={24} color="#0F172A" />
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
-        <View className="flex-row items-center bg-[#F1F5F9] rounded-xl px-3 py-2 mt-3">
-          <Ionicons name="search" size={20} color="#94A3B8" />
+        <View className="flex-row items-center rounded-xl px-3 py-2 mt-3" style={{
+          backgroundColor: colors.backgroundSelected,
+        }}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
-            className="flex-1 ml-2 text-[#0F172A] text-sm"
+            className="flex-1 ml-2 text-sm"
+            style={{ color: colors.text }}
             placeholder="Search instructors..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={handleSearch}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => handleSearch('')}>
-              <Ionicons name="close-circle" size={20} color="#94A3B8" />
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Filter Row */}
         <View className="flex-row items-center justify-between mt-3">
-          <Text className="text-[#64748B] text-xs">
+          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
             {filteredInstructors.length} instructors
           </Text>
           <View className="relative">
@@ -373,13 +405,20 @@ export default function InstructorsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 80 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563EB" />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
         }
         ListEmptyComponent={
           <View className="items-center justify-center py-10">
-            <Ionicons name="people" size={64} color="#CBD5E1" />
-            <Text className="text-[#0F172A] text-lg font-bold mt-4">No Instructors Found</Text>
-            <Text className="text-[#64748B] text-sm mt-1 text-center">
+            <Ionicons name="people" size={64} color={colors.textSecondary} />
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginTop: 16 }}>
+              No Instructors Found
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4, textAlign: 'center' }}>
               Try adjusting your search terms
             </Text>
           </View>
@@ -387,7 +426,7 @@ export default function InstructorsScreen() {
         ListFooterComponent={
           loading ? (
             <View className="py-4">
-              <ActivityIndicator color="#2563EB" />
+              <ActivityIndicator color={colors.primary} />
             </View>
           ) : null
         }

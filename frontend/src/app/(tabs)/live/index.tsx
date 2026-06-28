@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/context/themeContext';
 import { HomeHeader } from '@/components/home/HomeHeader';
 
 const { width } = Dimensions.get('window');
@@ -43,20 +44,21 @@ interface LiveClass {
 }
 
 // Skeleton Components
-const Skeleton = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded-lg animate-pulse ${className}`} />
+const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded-lg animate-pulse ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonText = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded h-4 ${className}`} />
+const SkeletonText = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded h-4 ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonCircle = ({ size = 28 }: { size?: number }) => (
-  <View className="bg-[#E2E8F0] rounded-full" style={{ width: size, height: size }} />
+const SkeletonCircle = ({ size = 28, bgColor = '#E2E8F0' }: { size?: number; bgColor?: string }) => (
+  <View className="rounded-full" style={{ width: size, height: size, backgroundColor: bgColor }} />
 );
 
 export default function LiveScreen() {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
@@ -301,11 +303,11 @@ export default function LiveScreen() {
       case 'live':
         return '#EF4444';
       case 'upcoming':
-        return '#2563EB';
+        return colors.primary;
       case 'ended':
-        return '#94A3B8';
+        return colors.textSecondary;
       default:
-        return '#94A3B8';
+        return colors.textSecondary;
     }
   };
 
@@ -329,16 +331,18 @@ export default function LiveScreen() {
     
     return (
       <TouchableOpacity
-        className="mb-4 bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden"
-        onPress={() => handleClassPress(item)}
-        activeOpacity={0.8}
+        className="rounded-2xl border overflow-hidden mb-4"
         style={{
-          shadowColor: '#0F172A',
+          backgroundColor: colors.backgroundElement,
+          borderColor: colors.backgroundSelected,
+          shadowColor: isDarkMode ? '#000000' : '#0F172A',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDarkMode ? 0.3 : 0.05,
           shadowRadius: 4,
           elevation: 2,
         }}
+        onPress={() => handleClassPress(item)}
+        activeOpacity={0.8}
       >
         <View className="relative">
           <Image
@@ -383,7 +387,7 @@ export default function LiveScreen() {
         <View className="p-4">
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="text-[#0F172A] font-bold text-base" numberOfLines={1}>
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }} numberOfLines={1}>
                 {item.title}
               </Text>
               <View className="flex-row items-center mt-1">
@@ -391,7 +395,7 @@ export default function LiveScreen() {
                   source={{ uri: item.instructorAvatar }}
                   className="w-5 h-5 rounded-full mr-1.5"
                 />
-                <Text className="text-[#64748B] text-sm" numberOfLines={1}>
+                <Text style={{ color: colors.textSecondary, fontSize: 14 }} numberOfLines={1}>
                   {item.instructor}
                 </Text>
               </View>
@@ -403,36 +407,36 @@ export default function LiveScreen() {
               <Ionicons 
                 name={item.isFavorite ? 'heart' : 'heart-outline'} 
                 size={22} 
-                color={item.isFavorite ? '#EF4444' : '#94A3B8'} 
+                color={item.isFavorite ? '#EF4444' : colors.textSecondary} 
               />
             </TouchableOpacity>
           </View>
 
           <View className="flex-row items-center flex-wrap mt-2">
             <View className="flex-row items-center mr-3">
-              <Ionicons name="calendar-outline" size={14} color="#94A3B8" />
-              <Text className="text-[#64748B] text-xs ml-1">{item.date}</Text>
+              <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>{item.date}</Text>
             </View>
             <View className="flex-row items-center mr-3">
-              <Ionicons name="time-outline" size={14} color="#94A3B8" />
-              <Text className="text-[#64748B] text-xs ml-1">{item.time}</Text>
+              <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>{item.time}</Text>
             </View>
             <View className="flex-row items-center">
-              <Ionicons name="hourglass-outline" size={14} color="#94A3B8" />
-              <Text className="text-[#64748B] text-xs ml-1">{item.duration}</Text>
+              <Ionicons name="hourglass-outline" size={14} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>{item.duration}</Text>
             </View>
           </View>
 
           <View className="flex-row items-center justify-between mt-3">
             <View className="flex-row items-center">
-              <View className="bg-[#EFF6FF] px-2 py-0.5 rounded-full">
-                <Text className="text-[#2563EB] text-[10px] font-medium">
+              <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: isDarkMode ? '#1E3A5F' : '#EFF6FF' }}>
+                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '500' }}>
                   {item.category}
                 </Text>
               </View>
-              <View className="w-px h-3 bg-[#E2E8F0] mx-2" />
-              <View className="bg-[#F1F5F9] px-2 py-0.5 rounded-full">
-                <Text className="text-[#64748B] text-[10px] font-medium">
+              <View className="w-px h-3 mx-2" style={{ backgroundColor: colors.backgroundSelected }} />
+              <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.backgroundSelected }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 10, fontWeight: '500' }}>
                   {item.level}
                 </Text>
               </View>
@@ -440,7 +444,8 @@ export default function LiveScreen() {
             
             {!isEnded && (
               <TouchableOpacity
-                className={`px-4 py-1.5 rounded-full ${isLive ? 'bg-[#EF4444]' : 'bg-[#2563EB]'}`}
+                className="px-4 py-1.5 rounded-full"
+                style={{ backgroundColor: isLive ? '#EF4444' : colors.primary }}
                 onPress={() => handleJoinClass(item.id)}
                 activeOpacity={0.7}
               >
@@ -457,59 +462,66 @@ export default function LiveScreen() {
 
   // Loading Skeleton
   if (loading) {
+    const skeletonBg = isDarkMode ? '#1E293B' : '#E2E8F0';
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-        <StatusBar style="dark" />
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
         
         {/* HomeHeader Skeleton */}
-        <View className="px-4 py-3 bg-white border-b border-[#E2E8F0]">
+        <View className="px-4 py-3 border-b" style={{
+          backgroundColor: colors.backgroundElement,
+          borderBottomColor: colors.backgroundSelected,
+        }}>
           <View className="flex-row items-center justify-between">
-            <SkeletonText className="w-32 h-6" />
+            <SkeletonText className="w-32 h-6" bgColor={skeletonBg} />
             <View className="flex-row items-center">
-              <SkeletonCircle size={40} />
-              <SkeletonCircle size={40} />
+              <SkeletonCircle size={40} bgColor={skeletonBg} />
+              <SkeletonCircle size={40} bgColor={skeletonBg} />
             </View>
           </View>
-          <SkeletonText className="w-48 h-4 mt-1" />
+          <SkeletonText className="w-48 h-4 mt-1" bgColor={skeletonBg} />
         </View>
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Filters Skeleton */}
           <View className="flex-row px-4 pt-4 gap-2">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="flex-1 h-10 rounded-full" />
+              <Skeleton key={i} className="flex-1 h-10 rounded-full" bgColor={skeletonBg} />
             ))}
           </View>
 
           {/* Search Skeleton */}
           <View className="px-4 mt-4">
-            <Skeleton className="h-11 rounded-xl" />
+            <Skeleton className="h-11 rounded-xl" bgColor={skeletonBg} />
           </View>
 
           {/* Live Now Banner Skeleton */}
           <View className="px-4 mt-4">
-            <Skeleton className="w-full h-32 rounded-2xl" />
+            <Skeleton className="w-full h-32 rounded-2xl" bgColor={skeletonBg} />
           </View>
 
           {/* Class Cards Skeleton */}
           <View className="px-4 pt-4">
             {[1, 2].map((i) => (
-              <View key={i} className="bg-white rounded-2xl mb-4 border border-[#E2E8F0] overflow-hidden">
-                <Skeleton className="w-full h-48" />
+              <View key={i} className="rounded-2xl mb-4 border overflow-hidden" style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+              }}>
+                <Skeleton className="w-full h-48" bgColor={skeletonBg} />
                 <View className="p-4">
-                  <SkeletonText className="w-3/4 h-5" />
+                  <SkeletonText className="w-3/4 h-5" bgColor={skeletonBg} />
                   <View className="flex-row items-center mt-1">
-                    <SkeletonCircle size={20} />
-                    <SkeletonText className="w-32 h-4 ml-1.5" />
+                    <SkeletonCircle size={20} bgColor={skeletonBg} />
+                    <SkeletonText className="w-32 h-4 ml-1.5" bgColor={skeletonBg} />
                   </View>
                   <View className="flex-row items-center mt-2">
-                    <SkeletonText className="w-16 h-3" />
-                    <SkeletonText className="w-16 h-3 ml-3" />
-                    <SkeletonText className="w-16 h-3 ml-3" />
+                    <SkeletonText className="w-16 h-3" bgColor={skeletonBg} />
+                    <SkeletonText className="w-16 h-3 ml-3" bgColor={skeletonBg} />
+                    <SkeletonText className="w-16 h-3 ml-3" bgColor={skeletonBg} />
                   </View>
                   <View className="flex-row items-center justify-between mt-3">
-                    <SkeletonText className="w-20 h-4" />
-                    <SkeletonText className="w-24 h-8 rounded-full" />
+                    <SkeletonText className="w-20 h-4" bgColor={skeletonBg} />
+                    <SkeletonText className="w-24 h-8 rounded-full" bgColor={skeletonBg} />
                   </View>
                 </View>
               </View>
@@ -524,12 +536,12 @@ export default function LiveScreen() {
   const liveClassesNow = liveClasses.filter(c => c.status === 'live');
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
       {/* HomeHeader */}
       <HomeHeader
-        notificationCount={3} // You can get this from your notification store
+        notificationCount={3}
         onNotificationPress={handleNotificationPress}
       />
 
@@ -541,8 +553,8 @@ export default function LiveScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563EB"
-            colors={["#2563EB"]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         contentContainerStyle={{
@@ -566,15 +578,22 @@ export default function LiveScreen() {
                   onPress={() => setActiveFilter(filter.key as any)}
                   className={`flex-1 py-2.5 rounded-full ${
                     activeFilter === filter.key
-                      ? 'bg-[#2563EB]'
-                      : 'bg-white border border-[#E2E8F0]'
+                      ? ''
+                      : 'border'
                   }`}
+                  style={{
+                    backgroundColor: activeFilter === filter.key ? colors.primary : 'transparent',
+                    borderColor: colors.backgroundSelected,
+                  }}
                   activeOpacity={0.7}
                 >
                   <Text
-                    className={`text-center text-sm font-medium ${
-                      activeFilter === filter.key ? 'text-white' : 'text-[#64748B]'
-                    }`}
+                    style={{
+                      textAlign: 'center',
+                      fontSize: 14,
+                      fontWeight: '500',
+                      color: activeFilter === filter.key ? '#FFFFFF' : colors.textSecondary,
+                    }}
                   >
                     {filter.label}
                   </Text>
@@ -584,18 +603,22 @@ export default function LiveScreen() {
 
             {/* Search Bar */}
             <View className="mb-4">
-              <View className="flex-row items-center bg-white rounded-xl px-3 border border-[#E2E8F0]">
-                <Ionicons name="search-outline" size={20} color="#94A3B8" />
+              <View className="flex-row items-center rounded-xl px-3 border" style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+              }}>
+                <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
                 <TextInput
-                  className="flex-1 py-2.5 px-2 text-[#0F172A] text-sm"
+                  className="flex-1 py-2.5 px-2 text-sm"
+                  style={{ color: colors.text }}
                   placeholder="Search live classes..."
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textSecondary}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                    <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -638,10 +661,10 @@ export default function LiveScreen() {
             {/* Results count */}
             {filteredClasses.length > 0 && (
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="text-[#64748B] text-sm">
+                <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                   {filteredClasses.length} classes found
                 </Text>
-                <Text className="text-[#94A3B8] text-xs">
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                   {filteredClasses.filter(c => c.status === 'live').length} live now
                 </Text>
               </View>
@@ -650,13 +673,13 @@ export default function LiveScreen() {
         }
         ListEmptyComponent={
           <View className="items-center py-16">
-            <View className="w-24 h-24 rounded-full bg-[#F1F5F9] items-center justify-center mb-4">
-              <Ionicons name="videocam-outline" size={48} color="#94A3B8" />
+            <View className="w-24 h-24 rounded-full items-center justify-center mb-4" style={{ backgroundColor: colors.backgroundSelected }}>
+              <Ionicons name="videocam-outline" size={48} color={colors.textSecondary} />
             </View>
-            <Text className="text-[#0F172A] text-xl font-bold">
+            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
               No Live Classes Found
             </Text>
-            <Text className="text-[#64748B] text-center mt-1 px-8">
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 4, paddingHorizontal: 32 }}>
               {searchQuery 
                 ? `No classes matching "${searchQuery}"`
                 : activeFilter === 'live'
@@ -668,7 +691,8 @@ export default function LiveScreen() {
                 : "No live classes available at the moment"}
             </Text>
             <TouchableOpacity
-              className="mt-6 bg-[#2563EB] px-6 py-3 rounded-xl"
+              className="mt-6 px-6 py-3 rounded-xl"
+              style={{ backgroundColor: colors.primary }}
               onPress={() => {
                 setSearchQuery('');
                 setActiveFilter('all');
@@ -690,10 +714,13 @@ export default function LiveScreen() {
           onRequestClose={() => setModalVisible(false)}
         >
           <View className="flex-1 bg-black/50 justify-end">
-            <View className="bg-white rounded-t-3xl" style={{ maxHeight: '90%' }}>
+            <View className="rounded-t-3xl" style={{ 
+              backgroundColor: colors.background,
+              maxHeight: '90%' 
+            }}>
               <View className="p-4">
                 <View className="items-center mb-4">
-                  <View className="w-12 h-1 bg-[#E2E8F0] rounded-full" />
+                  <View className="w-12 h-1 rounded-full" style={{ backgroundColor: colors.backgroundSelected }} />
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false}>
@@ -706,7 +733,7 @@ export default function LiveScreen() {
                   <View className="mt-4">
                     <View className="flex-row items-center justify-between">
                       <View className="flex-1">
-                        <Text className="text-[#0F172A] text-xl font-bold">
+                        <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
                           {selectedClass.title}
                         </Text>
                       </View>
@@ -717,7 +744,7 @@ export default function LiveScreen() {
                         <Ionicons 
                           name={selectedClass.isFavorite ? 'heart' : 'heart-outline'} 
                           size={28} 
-                          color={selectedClass.isFavorite ? '#EF4444' : '#94A3B8'} 
+                          color={selectedClass.isFavorite ? '#EF4444' : colors.textSecondary} 
                         />
                       </TouchableOpacity>
                     </View>
@@ -727,60 +754,60 @@ export default function LiveScreen() {
                         source={{ uri: selectedClass.instructorAvatar }}
                         className="w-8 h-8 rounded-full mr-2"
                       />
-                      <Text className="text-[#64748B] font-medium">
+                      <Text style={{ color: colors.textSecondary, fontWeight: '500' }}>
                         {selectedClass.instructor}
                       </Text>
                     </View>
 
                     <View className="flex-row items-center flex-wrap mt-3">
-                      <View className="bg-[#EFF6FF] px-3 py-1 rounded-full mr-2">
-                        <Text className="text-[#2563EB] text-xs font-medium">
+                      <View className="px-3 py-1 rounded-full mr-2" style={{ backgroundColor: isDarkMode ? '#1E3A5F' : '#EFF6FF' }}>
+                        <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '500' }}>
                           {selectedClass.category}
                         </Text>
                       </View>
-                      <View className="bg-[#F1F5F9] px-3 py-1 rounded-full">
-                        <Text className="text-[#64748B] text-xs font-medium">
+                      <View className="px-3 py-1 rounded-full" style={{ backgroundColor: colors.backgroundSelected }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>
                           {selectedClass.level}
                         </Text>
                       </View>
                     </View>
 
-                    <View className="flex-row items-center mt-3 bg-[#F8FAFC] p-3 rounded-xl">
+                    <View className="flex-row items-center mt-3 p-3 rounded-xl" style={{ backgroundColor: colors.backgroundSelected }}>
                       <View className="flex-1">
                         <View className="flex-row items-center">
-                          <Ionicons name="calendar-outline" size={16} color="#64748B" />
-                          <Text className="text-[#64748B] text-sm ml-1">
+                          <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+                          <Text style={{ color: colors.textSecondary, fontSize: 14, marginLeft: 4 }}>
                             {selectedClass.date} at {selectedClass.time}
                           </Text>
                         </View>
                         <View className="flex-row items-center mt-1">
-                          <Ionicons name="time-outline" size={16} color="#64748B" />
-                          <Text className="text-[#64748B] text-sm ml-1">
+                          <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
+                          <Text style={{ color: colors.textSecondary, fontSize: 14, marginLeft: 4 }}>
                             Duration: {selectedClass.duration}
                           </Text>
                         </View>
                       </View>
                       <View className="items-end">
-                        <Text className="text-[#0F172A] font-bold">
+                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>
                           {selectedClass.participants}
                         </Text>
-                        <Text className="text-[#94A3B8] text-xs">
+                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                           participants
                         </Text>
                       </View>
                     </View>
 
-                    <Text className="text-[#0F172A] font-bold mt-4 mb-2">
+                    <Text style={{ color: colors.text, fontWeight: 'bold', marginTop: 16, marginBottom: 8 }}>
                       About this class
                     </Text>
-                    <Text className="text-[#64748B] text-sm leading-5">
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20 }}>
                       {selectedClass.description}
                     </Text>
 
                     <View className="flex-row flex-wrap mt-3">
                       {selectedClass.tags.map((tag, index) => (
-                        <View key={index} className="bg-[#F1F5F9] px-3 py-1 rounded-full mr-2 mb-2">
-                          <Text className="text-[#64748B] text-xs">#{tag}</Text>
+                        <View key={index} className="px-3 py-1 rounded-full mr-2 mb-2" style={{ backgroundColor: colors.backgroundSelected }}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>#{tag}</Text>
                         </View>
                       ))}
                     </View>
@@ -788,13 +815,22 @@ export default function LiveScreen() {
                     <TouchableOpacity
                       className={`mt-4 py-3 rounded-xl ${
                         selectedClass.status === 'ended'
-                          ? 'bg-[#E2E8F0]'
+                          ? ''
                           : selectedClass.status === 'live'
                           ? 'bg-[#EF4444]'
                           : selectedClass.isRegistered
                           ? 'bg-[#16A34A]'
-                          : 'bg-[#2563EB]'
+                          : ''
                       }`}
+                      style={{
+                        backgroundColor: selectedClass.status === 'ended'
+                          ? colors.backgroundSelected
+                          : selectedClass.status === 'live'
+                          ? '#EF4444'
+                          : selectedClass.isRegistered
+                          ? '#16A34A'
+                          : colors.primary,
+                      }}
                       onPress={() => {
                         if (selectedClass.status === 'live') {
                           handleJoinClass(selectedClass.id);
@@ -817,10 +853,11 @@ export default function LiveScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      className="mt-2 py-3 rounded-xl border border-[#E2E8F0]"
+                      className="mt-2 py-3 rounded-xl border"
+                      style={{ borderColor: colors.backgroundSelected }}
                       onPress={() => setModalVisible(false)}
                     >
-                      <Text className="text-[#64748B] text-center font-medium">
+                      <Text style={{ color: colors.textSecondary, textAlign: 'center', fontWeight: '500' }}>
                         Close
                       </Text>
                     </TouchableOpacity>

@@ -1,4 +1,4 @@
-// app/(auth)/login.tsx
+// frontend/src/app/(auth)/login.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -18,10 +18,11 @@ import { useAuthStore } from '@/store/authStore';
 import googleAuth from '@/lib/googleAuth';
 import api from '@/lib/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
 
-// Simple custom input component to avoid dependency issues
+// Simple custom input component
 const CustomInput: React.FC<{
   label: string;
   value: string;
@@ -31,6 +32,8 @@ const CustomInput: React.FC<{
   error?: string | null;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  colors: any;
+  isDarkMode: boolean;
 }> = ({
   label,
   value,
@@ -40,20 +43,22 @@ const CustomInput: React.FC<{
   error = null,
   autoCapitalize = 'none',
   keyboardType = 'default',
+  colors,
+  isDarkMode,
 }) => {
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 6 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 6 }}>
         {label}
       </Text>
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
+        backgroundColor: colors.backgroundElement,
         borderWidth: 1,
-        borderColor: error ? '#ef4444' : '#e2e8f0',
+        borderColor: error ? '#ef4444' : colors.backgroundSelected,
         borderRadius: 12,
         paddingHorizontal: 12,
         paddingVertical: 2,
@@ -63,10 +68,10 @@ const CustomInput: React.FC<{
             flex: 1,
             paddingVertical: 10,
             fontSize: 16,
-            color: '#0f172a',
+            color: colors.text,
           }}
           placeholder={placeholder}
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={colors.textSecondary}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry && !showPassword}
@@ -78,7 +83,7 @@ const CustomInput: React.FC<{
             <Ionicons 
               name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
               size={20} 
-              color="#64748b" 
+              color={colors.textSecondary} 
             />
           </TouchableOpacity>
         )}
@@ -96,14 +101,15 @@ const CustomButton: React.FC<{
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-}> = ({ title, onPress, loading = false, disabled = false }) => {
+  colors: any;
+}> = ({ title, onPress, loading = false, disabled = false, colors }) => {
   return (
     <TouchableOpacity
       style={{
         width: '100%',
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: disabled || loading ? '#94a3b8' : '#0a53d6',
+        backgroundColor: disabled || loading ? colors.textSecondary : colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -139,6 +145,7 @@ const validatePassword = (password: string): string | null => {
 export default function LoginScreen() {
   const router = useRouter();
   const { login, loading, isAuthenticated, initialized, requiresRoleSelection, user } = useAuthStore();
+  const { colors, isDarkMode } = useTheme();
   const hasRedirected = useRef(false);
 
   const [email, setEmail] = useState('');
@@ -174,9 +181,9 @@ export default function LoginScreen() {
   // Show loading while checking auth state
   if (!initialized) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0a53d6" />
-        <Text style={{ marginTop: 16, color: '#64748b', fontSize: 14, fontWeight: '500' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
           Loading...
         </Text>
       </SafeAreaView>
@@ -213,7 +220,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -230,8 +237,15 @@ export default function LoginScreen() {
             <View style={{ width: '100%', maxWidth: 480, marginHorizontal: 'auto', alignItems: 'center' }}>
               {/* Simple Logo */}
               <View style={{ marginBottom: 24, alignItems: 'center', justifyContent: 'center' }}>
-                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#dbeafe', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 32, color: '#0a53d6', fontWeight: 'bold' }}>B</Text>
+                <View style={{ 
+                  width: 80, 
+                  height: 80, 
+                  borderRadius: 40, 
+                  backgroundColor: isDarkMode ? 'rgba(37, 99, 235, 0.2)' : '#dbeafe', 
+                  alignItems: 'center', 
+                  justifyContent: 'center' 
+                }}>
+                  <Text style={{ fontSize: 32, color: colors.primary, fontWeight: 'bold' }}>B</Text>
                 </View>
               </View>
 
@@ -239,7 +253,7 @@ export default function LoginScreen() {
               <Text 
                 style={{
                   fontWeight: 'bold',
-                  color: '#0f172a',
+                  color: colors.text,
                   textAlign: 'center',
                   marginBottom: 8,
                   fontSize: isSmallDevice ? 24 : 32,
@@ -249,7 +263,7 @@ export default function LoginScreen() {
               </Text>
               <Text 
                 style={{
-                  color: '#64748b',
+                  color: colors.textSecondary,
                   textAlign: 'center',
                   marginBottom: 24,
                   paddingHorizontal: 16,
@@ -259,25 +273,32 @@ export default function LoginScreen() {
                 Continue your high-performance learning journey with Buildakar.
               </Text>
 
-              {/* Main White Card Container */}
+              {/* Main Card Container */}
               <View 
                 style={{
                   width: '100%',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: colors.backgroundElement,
                   borderRadius: 24,
                   borderWidth: 1,
-                  borderColor: '#f1f5f9',
+                  borderColor: colors.backgroundSelected,
                   padding: cardPadding,
-                  shadowColor: '#0f172a',
+                  shadowColor: isDarkMode ? '#000000' : '#0f172a',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: isDarkMode ? 0.2 : 0.05,
                   shadowRadius: 4,
                   elevation: 4,
                 }}
               >
                 {generalError && (
-                  <View style={{ backgroundColor: '#fef2f2', borderWidth: 1, borderColor: '#fecaca', borderRadius: 12, padding: 12, marginBottom: 16 }}>
-                    <Text style={{ color: '#dc2626', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>
+                  <View style={{ 
+                    backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', 
+                    borderWidth: 1, 
+                    borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#fecaca', 
+                    borderRadius: 12, 
+                    padding: 12, 
+                    marginBottom: 16 
+                  }}>
+                    <Text style={{ color: '#ef4444', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>
                       {generalError}
                     </Text>
                   </View>
@@ -295,6 +316,8 @@ export default function LoginScreen() {
                   error={emailError}
                   autoCapitalize="none"
                   keyboardType="email-address"
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Password */}
@@ -308,12 +331,14 @@ export default function LoginScreen() {
                   }}
                   error={passwordError}
                   secureTextEntry
+                  colors={colors}
+                  isDarkMode={isDarkMode}
                 />
 
                 {/* Forgot Password Button */}
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: -8, marginBottom: 16 }}>
                   <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
-                    <Text style={{ fontWeight: '600', color: '#0a53d6', fontSize: isSmallDevice ? 12 : 14 }}>
+                    <Text style={{ fontWeight: '600', color: colors.primary, fontSize: isSmallDevice ? 12 : 14 }}>
                       Forgot Password?
                     </Text>
                   </TouchableOpacity>
@@ -325,16 +350,23 @@ export default function LoginScreen() {
                     title="Sign In"
                     onPress={handleSignIn}
                     loading={loading}
+                    colors={colors}
                   />
                 </View>
 
                 {/* Divider */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                  <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
-                  <Text style={{ fontWeight: 'bold', color: '#94a3b8', letterSpacing: 1, paddingHorizontal: 12, fontSize: isSmallDevice ? 9 : 11 }}>
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.backgroundSelected }} />
+                  <Text style={{ 
+                    fontWeight: 'bold', 
+                    color: colors.textSecondary, 
+                    letterSpacing: 1, 
+                    paddingHorizontal: 12, 
+                    fontSize: isSmallDevice ? 9 : 11 
+                  }}>
                     or continue with
                   </Text>
-                  <View style={{ flex: 1, height: 1, backgroundColor: '#e2e8f0' }} />
+                  <View style={{ flex: 1, height: 1, backgroundColor: colors.backgroundSelected }} />
                 </View>
 
                 {/* Social Login Buttons */}
@@ -347,9 +379,9 @@ export default function LoginScreen() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       borderWidth: 1,
-                      borderColor: '#e2e8f0',
+                      borderColor: colors.backgroundSelected,
                       borderRadius: 12,
-                      backgroundColor: '#ffffff',
+                      backgroundColor: colors.backgroundElement,
                       paddingVertical: isSmallDevice ? 10 : 14,
                     }}
                     onPress={async () => {
@@ -362,7 +394,7 @@ export default function LoginScreen() {
                         if (response.data?.success) {
                           const { user, token } = response.data.data;
                           // Use existing auth store to set state and persist
-                          useAuthStore.setState({ user, token, isAuthenticated: true, initialized: true });
+                          useAuthStore.setState({ user, token, isAuthenticated: true, initialized: true, requiresRoleSelection: true });
                         } else {
                           throw new Error(response.data?.message || 'Google login failed');
                         }
@@ -373,7 +405,7 @@ export default function LoginScreen() {
                     }}
                   >
                     <Ionicons name="logo-google" size={isSmallDevice ? 16 : 18} color="#ea4335" />
-                    <Text style={{ fontWeight: 'bold', color: '#0f172a', marginLeft: 8, fontSize: isSmallDevice ? 12 : 14 }}>
+                    <Text style={{ fontWeight: 'bold', color: colors.text, marginLeft: 8, fontSize: isSmallDevice ? 12 : 14 }}>
                       Google
                     </Text>
                   </TouchableOpacity>
@@ -382,12 +414,12 @@ export default function LoginScreen() {
 
               {/* Bottom Link */}
               <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Text style={{ color: '#475569', fontSize: isSmallDevice ? 13 : 15 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: isSmallDevice ? 13 : 15 }}>
                   Don't have an account?{' '}
                 </Text>
                 <Link href="/(auth)/signup" asChild>
                   <TouchableOpacity>
-                    <Text style={{ fontWeight: 'bold', color: '#0a53d6', fontSize: isSmallDevice ? 13 : 15 }}>
+                    <Text style={{ fontWeight: 'bold', color: colors.primary, fontSize: isSmallDevice ? 13 : 15 }}>
                       Create Account
                     </Text>
                   </TouchableOpacity>

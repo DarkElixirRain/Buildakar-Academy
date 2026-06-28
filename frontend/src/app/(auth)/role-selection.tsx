@@ -1,4 +1,4 @@
-// app/(auth)/role-selection.tsx
+// frontend/src/app/(auth)/role-selection.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -45,14 +46,15 @@ const CustomButton: React.FC<{
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-}> = ({ title, onPress, loading = false, disabled = false }) => {
+  colors: any;
+}> = ({ title, onPress, loading = false, disabled = false, colors }) => {
   return (
     <TouchableOpacity
       style={{
         width: '100%',
         paddingVertical: 14,
         borderRadius: 12,
-        backgroundColor: disabled || loading ? '#94a3b8' : '#0a53d6',
+        backgroundColor: disabled || loading ? colors.textSecondary : colors.primary,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -74,6 +76,7 @@ const CustomButton: React.FC<{
 export default function RoleSelectionScreen() {
   const router = useRouter();
   const { updateRole, user, loading, isAuthenticated, initialized, requiresRoleSelection } = useAuthStore();
+  const { colors, isDarkMode } = useTheme();
   const hasRedirected = useRef(false);
 
   const [selectedRole, setSelectedRole] = useState<SignupRole>('STUDENT');
@@ -98,9 +101,9 @@ export default function RoleSelectionScreen() {
   // Show loading while checking auth state
   if (!initialized) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0a53d6" />
-        <Text style={{ marginTop: 16, color: '#64748b', fontSize: 14, fontWeight: '500' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 16, color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
           Loading...
         </Text>
       </SafeAreaView>
@@ -125,7 +128,7 @@ export default function RoleSelectionScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -146,11 +149,11 @@ export default function RoleSelectionScreen() {
                   width: 80, 
                   height: 80, 
                   borderRadius: 40, 
-                  backgroundColor: '#dbeafe', 
+                  backgroundColor: isDarkMode ? 'rgba(37, 99, 235, 0.2)' : '#dbeafe', 
                   alignItems: 'center', 
                   justifyContent: 'center' 
                 }}>
-                  <Ionicons name="person-outline" size={32} color="#0a53d6" />
+                  <Ionicons name="person-outline" size={32} color={colors.primary} />
                 </View>
               </View>
 
@@ -158,7 +161,7 @@ export default function RoleSelectionScreen() {
               <Text 
                 style={{
                   fontWeight: 'bold',
-                  color: '#0f172a',
+                  color: colors.text,
                   textAlign: 'center',
                   marginBottom: 8,
                   fontSize: isSmallDevice ? 24 : 32,
@@ -168,7 +171,7 @@ export default function RoleSelectionScreen() {
               </Text>
               <Text 
                 style={{
-                  color: '#64748b',
+                  color: colors.textSecondary,
                   textAlign: 'center',
                   marginBottom: 24,
                   paddingHorizontal: 16,
@@ -178,18 +181,18 @@ export default function RoleSelectionScreen() {
                 {user?.firstName ? `Welcome, ${user.firstName}! ` : ''}Select how you'd like to use Buildakar.
               </Text>
 
-              {/* Main White Card Container */}
+              {/* Main Card Container */}
               <View 
                 style={{
                   width: '100%',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: colors.backgroundElement,
                   borderRadius: 24,
                   borderWidth: 1,
-                  borderColor: '#f1f5f9',
+                  borderColor: colors.backgroundSelected,
                   padding: cardPadding,
-                  shadowColor: '#0f172a',
+                  shadowColor: isDarkMode ? '#000000' : '#0f172a',
                   shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
+                  shadowOpacity: isDarkMode ? 0.2 : 0.05,
                   shadowRadius: 4,
                   elevation: 4,
                 }}
@@ -197,9 +200,9 @@ export default function RoleSelectionScreen() {
                 {/* General Error Message */}
                 {generalError && (
                   <View style={{ 
-                    backgroundColor: '#fef2f2', 
+                    backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2', 
                     borderWidth: 1, 
-                    borderColor: '#fecaca', 
+                    borderColor: isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#fecaca', 
                     borderRadius: 12, 
                     padding: 12, 
                     marginBottom: 16 
@@ -215,7 +218,7 @@ export default function RoleSelectionScreen() {
 
                 {/* Role Selection */}
                 <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#0f172a', marginBottom: 6 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 6 }}>
                     How will you use Buildakar?
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -230,8 +233,10 @@ export default function RoleSelectionScreen() {
                           style={{
                             flex: 1,
                             borderWidth: 1.5,
-                            borderColor: isSelected ? '#0a53d6' : '#e2e8f0',
-                            backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                            borderColor: isSelected ? colors.primary : colors.backgroundSelected,
+                            backgroundColor: isSelected 
+                              ? (isDarkMode ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff')
+                              : colors.backgroundElement,
                             borderRadius: 16,
                             paddingVertical: 14,
                             paddingHorizontal: 12,
@@ -243,7 +248,9 @@ export default function RoleSelectionScreen() {
                                 width: 34,
                                 height: 34,
                                 borderRadius: 17,
-                                backgroundColor: isSelected ? '#dbeafe' : '#f8fafc',
+                                backgroundColor: isSelected 
+                                  ? (isDarkMode ? 'rgba(37, 99, 235, 0.3)' : '#dbeafe')
+                                  : colors.backgroundSelected,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 marginRight: 10,
@@ -252,16 +259,16 @@ export default function RoleSelectionScreen() {
                               <Ionicons
                                 name={option.icon}
                                 size={18}
-                                color={isSelected ? '#0a53d6' : '#64748b'}
+                                color={isSelected ? colors.primary : colors.textSecondary}
                               />
                             </View>
                             <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 15, fontWeight: '700', color: '#0f172a' }}>
+                              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
                                 {option.title}
                               </Text>
                             </View>
                           </View>
-                          <Text style={{ fontSize: 12, color: '#64748b', lineHeight: 17 }}>
+                          <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
                             {option.description}
                           </Text>
                         </TouchableOpacity>
@@ -276,6 +283,7 @@ export default function RoleSelectionScreen() {
                     title="Continue"
                     onPress={handleContinue}
                     loading={loading}
+                    colors={colors}
                   />
                 </View>
               </View>
@@ -288,7 +296,7 @@ export default function RoleSelectionScreen() {
                 justifyContent: 'center', 
                 flexWrap: 'wrap' 
               }}>
-                <Text style={{ color: '#64748b', fontSize: isSmallDevice ? 11 : 13, textAlign: 'center' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: isSmallDevice ? 11 : 13, textAlign: 'center' }}>
                   You can change your role later in settings.
                 </Text>
               </View>
