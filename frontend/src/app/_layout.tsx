@@ -77,41 +77,29 @@ function AppContent() {
     return <AnimatedSplashOverlay />;
   }
 
-  try {
-    return (
-      <SafeAreaProvider>
-        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          <AppThemeContext.Provider value={themeValues}>
-            <StatusBar style={isDark ? 'light' : 'dark'} />
-
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: themeValues.background },
-                animation: 'slide_from_right',
-              }}
-            >
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
-          </AppThemeContext.Provider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    );
-  } catch (error) {
-    console.error('Error rendering stack:', error);
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: '#F8FAFC',
+  return (
+    <SafeAreaProvider>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
         }}
       >
-        <Text style={{ color: '#0F172A' }}>Error loading app</Text>
-        <Text style={{ color: '#64748B' }}>{String(error)}</Text>
-      </View>
-    );
-  }
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(instructor)" options={{ headerShown: false }} />
+      </Stack>
+    </SafeAreaProvider>
+  );
+}
+
+// Main layout with ThemeProvider
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }

@@ -4,11 +4,16 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Platform, Dimensions } from 'react-native';
+import { useTheme } from '@/context/themeContext';
+import { useAuthStore } from '@/store/authStore';
 
 const { width, height } = Dimensions.get('window');
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, colors } = useTheme();
+  const { user } = useAuthStore();
+  const isInstructor = user?.role === 'INSTRUCTOR';
 
   // Calculate responsive tab bar height
   const getTabBarHeight = () => {
@@ -60,42 +65,42 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? 'home' : 'home-outline'} 
-              size={size || 24} 
-              color={color} 
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              size={size || 24}
+              color={color}
             />
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons 
-              name={focused ? 'compass' : 'compass-outline'} 
-              size={size || 24} 
-              color={color} 
+            <Ionicons
+              name={focused ? 'compass' : 'compass-outline'}
+              size={size || 24}
+              color={color}
             />
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="live"
         options={{
           title: 'Live',
           tabBarIcon: ({ color, size, focused }) => (
             <View className="relative">
-              <Ionicons 
-                name={focused ? 'videocam' : 'videocam-outline'} 
-                size={size || 24} 
-                color={color} 
+              <Ionicons
+                name={focused ? 'videocam' : 'videocam-outline'}
+                size={size || 24}
+                color={color}
               />
               {/* Live indicator dot */}
-              <View 
+              <View
                 className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#EF4444] rounded-full border-2"
                 style={{ borderColor: colors.background }}
               >
@@ -105,10 +110,36 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
-      
-      
-      
+
+      {isInstructor && (
+        <Tabs.Screen
+          name="instructor"
+          options={{
+            title: 'Teach',
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons
+                name={focused ? 'school' : 'school-outline'}
+                size={size || 24}
+                color={color}
+              />
+            ),
+          }}
+        />
+      )}
+
+      <Tabs.Screen
+        name="setting"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'settings' : 'settings-outline'}
+              size={size || 24}
+              color={color}
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
