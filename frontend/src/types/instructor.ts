@@ -1,4 +1,36 @@
 // types/instructor.ts
+export interface Instructor {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+  title?: string;
+  expertise?: string;
+  bio?: string;
+  photo?: string;
+  socialLinks?: {
+    website?: string;
+    linkedin?: string;
+    twitter?: string;
+    youtube?: string;
+    github?: string;
+  };
+  isVerifiedInstructor: boolean;
+  averageRating: number;
+  totalCourses: number;
+  totalStudents: number;
+  totalReviews: number;
+  totalRevenue: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InstructorProfile extends Instructor {
+  stripeAccountId?: string;
+  payoutMethod?: string;
+}
+
 export interface CreateCourseInput {
   title: string;
   description?: string;

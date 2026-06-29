@@ -12,7 +12,7 @@ const { width, height } = Dimensions.get('window');
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { isDarkMode, colors } = useTheme();
-  const { user } = useAuthStore();
+  const user = useAuthStore(state => state.user);
   const isInstructor = user?.role === 'INSTRUCTOR';
 
   // Calculate responsive tab bar height

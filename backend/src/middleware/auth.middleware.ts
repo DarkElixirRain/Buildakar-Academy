@@ -1,17 +1,20 @@
+// backend/src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt.utils';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+import { AppError } from '../utils/errorHandler';
 
 declare global {
   namespace Express {
     interface Request {
       user?: {
-        isActive: any;
         id: string;
         email: string;
         role: string;
+        firstName: string;
+        lastName: string;
+        isVerified: boolean;
+        isActive: boolean;
       };
     }
   }
@@ -38,6 +41,15 @@ export const authenticate = async (
     // Check if user exists and is active
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        isVerified: true,
+        isActive: true,
+      },
     });
 
     if (!user) {
@@ -55,10 +67,13 @@ export const authenticate = async (
     }
 
     req.user = {
-      isActive: user.isActive,
       id: user.id,
       email: user.email,
       role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isVerified: user.isVerified,
+      isActive: user.isActive,
     };
 
     next();
@@ -67,5 +82,53 @@ export const authenticate = async (
       success: false,
       message: 'Invalid or expired token',
     });
+  }
+};
+
+// Optional: Middleware that allows optional authentication
+export const optionalAuthenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        isVerified: true,
+        isActive: true,
+      },
+    });
+
+    if (user && user.isActive) {
+      req.user = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isVerified: user.isVerified,
+        isActive: user.isActive,
+      };
+    }
+
+    next();
+  } catch (error) {
+    // Don't fail on invalid token for optional auth
+    next();
   }
 };

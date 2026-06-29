@@ -19,17 +19,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/context/themeContext';
 
 const { width } = Dimensions.get('window');
 
 // ✅ Get the correct API URL based on platform
 const getApiUrl = () => {
-  // For web
   if (Platform.OS === 'web') {
-    // If running on web, use localhost or the actual backend URL
     return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
   }
-  // For native (iOS/Android)
   return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 };
 
@@ -55,20 +53,21 @@ interface Category {
 }
 
 // Skeleton Components
-const Skeleton = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded-lg animate-pulse ${className}`} />
+const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded-lg animate-pulse ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonText = ({ className = '' }: { className?: string }) => (
-  <View className={`bg-[#E2E8F0] rounded h-4 ${className}`} />
+const SkeletonText = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
+  <View className={`rounded h-4 ${className}`} style={{ backgroundColor: bgColor }} />
 );
 
-const SkeletonCircle = ({ size = 28 }: { size?: number }) => (
-  <View className="bg-[#E2E8F0] rounded-full" style={{ width: size, height: size }} />
+const SkeletonCircle = ({ size = 28, bgColor = '#E2E8F0' }: { size?: number; bgColor?: string }) => (
+  <View className="rounded-full" style={{ width: size, height: size, backgroundColor: bgColor }} />
 );
 
 export default function CategoriesPage() {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -87,8 +86,6 @@ export default function CategoriesPage() {
       const response = await fetch(`${API_URL}/api/categories`, {
         headers: {
           'Content-Type': 'application/json',
-          // Add authorization if needed
-          // 'Authorization': `Bearer ${token}`,
         },
       });
       
@@ -131,7 +128,6 @@ export default function CategoriesPage() {
         'Error',
         `Failed to load categories: ${error.message}`
       );
-      // Set empty array on error instead of mock data
       setCategories([]);
     } finally {
       setLoading(false);
@@ -170,11 +166,13 @@ export default function CategoriesPage() {
         onPress={() => handleCategoryPress(item.id)}
         activeOpacity={0.8}
       >
-        <View className="flex-row items-center bg-white rounded-2xl overflow-hidden border border-[#E2E8F0]"
+        <View className="flex-row items-center rounded-2xl overflow-hidden border"
           style={{
-            shadowColor: '#0F172A',
+            backgroundColor: colors.backgroundElement,
+            borderColor: colors.backgroundSelected,
+            shadowColor: isDarkMode ? '#000000' : '#0F172A',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
+            shadowOpacity: isDarkMode ? 0.3 : 0.05,
             shadowRadius: 4,
             elevation: 2,
           }}
@@ -193,7 +191,7 @@ export default function CategoriesPage() {
           
           <View className="flex-1 p-3">
             <View className="flex-row items-center justify-between">
-              <Text className="text-[#0F172A] font-bold text-base">
+              <Text className="font-bold text-base" style={{ color: colors.text }}>
                 {item.name}
               </Text>
               {item.popular && (
@@ -209,7 +207,7 @@ export default function CategoriesPage() {
             </View>
             
             {item.description && (
-              <Text className="text-[#64748B] text-sm mt-0.5" numberOfLines={1}>
+              <Text className="text-sm mt-0.5" style={{ color: colors.textSecondary }} numberOfLines={1}>
                 {item.description}
               </Text>
             )}
@@ -219,13 +217,13 @@ export default function CategoriesPage() {
                 className="w-2 h-2 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
-              <Text className="text-[#94A3B8] text-xs ml-1.5">
+              <Text className="text-xs ml-1.5" style={{ color: colors.textSecondary }}>
                 {item.courseCount} courses
               </Text>
-              <Text className="text-[#94A3B8] text-xs ml-2">•</Text>
-              <View className="flex-row items-center ml-2">
-                <Ionicons name="arrow-forward" size={12} color="#2563EB" />
-                <Text className="text-[#2563EB] text-xs font-medium ml-1">
+              <Text className="text-xs mx-2" style={{ color: colors.textSecondary }}>•</Text>
+              <View className="flex-row items-center">
+                <Ionicons name="arrow-forward" size={12} color={colors.primary} />
+                <Text className="text-xs font-medium ml-1" style={{ color: colors.primary }}>
                   Explore
                 </Text>
               </View>
@@ -237,30 +235,46 @@ export default function CategoriesPage() {
   };
 
   if (loading) {
+    const skeletonBg = isDarkMode ? '#1E293B' : '#E2E8F0';
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-        <StatusBar style="dark" />
-        <View className="flex-row items-center px-4 py-3 bg-white border-b border-[#E2E8F0]">
-          <SkeletonCircle size={40} />
-          <SkeletonText className="w-32 h-6 ml-3" />
-          <SkeletonText className="w-20 h-5 ml-auto" />
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <View className="flex-row items-center px-4 py-3 border-b"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderBottomColor: colors.backgroundSelected,
+          }}
+        >
+          <SkeletonCircle size={40} bgColor={skeletonBg} />
+          <SkeletonText className="w-32 h-6 ml-3" bgColor={skeletonBg} />
+          <SkeletonText className="w-20 h-5 ml-auto" bgColor={skeletonBg} />
         </View>
-        <View className="px-4 py-3 bg-white border-b border-[#E2E8F0]">
-          <Skeleton className="h-11 rounded-xl" />
+        <View className="px-4 py-3 border-b"
+          style={{
+            backgroundColor: colors.backgroundElement,
+            borderBottomColor: colors.backgroundSelected,
+          }}
+        >
+          <Skeleton className="h-11 rounded-xl" bgColor={skeletonBg} />
         </View>
         <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <View key={i} className="flex-row items-center bg-white rounded-2xl mb-4 overflow-hidden border border-[#E2E8F0]">
-              <Skeleton className="w-24 h-24" />
+            <View key={i} className="flex-row items-center rounded-2xl mb-4 overflow-hidden border"
+              style={{
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.backgroundSelected,
+              }}
+            >
+              <Skeleton className="w-24 h-24" bgColor={skeletonBg} />
               <View className="flex-1 p-3">
                 <View className="flex-row items-center justify-between">
-                  <SkeletonText className="w-28 h-5" />
-                  <SkeletonText className="w-16 h-4" />
+                  <SkeletonText className="w-28 h-5" bgColor={skeletonBg} />
+                  <SkeletonText className="w-16 h-4" bgColor={skeletonBg} />
                 </View>
-                <SkeletonText className="w-48 h-4 mt-1" />
+                <SkeletonText className="w-48 h-4 mt-1" bgColor={skeletonBg} />
                 <View className="flex-row items-center mt-2">
-                  <Skeleton className="w-2 h-2 rounded-full" />
-                  <SkeletonText className="w-20 h-3 ml-1.5" />
+                  <Skeleton className="w-2 h-2 rounded-full" bgColor={skeletonBg} />
+                  <SkeletonText className="w-20 h-3 ml-1.5" bgColor={skeletonBg} />
                 </View>
               </View>
             </View>
@@ -271,41 +285,57 @@ export default function CategoriesPage() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC]">
-      <StatusBar style="dark" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
-      <View className="flex-row items-center px-4 py-3 bg-white border-b border-[#E2E8F0]">
+      <View className="flex-row items-center px-4 py-3 border-b"
+        style={{
+          backgroundColor: colors.backgroundElement,
+          borderBottomColor: colors.backgroundSelected,
+        }}
+      >
         <TouchableOpacity
           onPress={handleBack}
-          className="w-10 h-10 rounded-full bg-[#F1F5F9] items-center justify-center"
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundSelected }}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color="#0F172A" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View className="flex-1 ml-2">
-          <Text className="text-[#0F172A] text-lg font-bold">Categories</Text>
-          <Text className="text-[#64748B] text-xs">
+          <Text className="text-lg font-bold" style={{ color: colors.text }}>Categories</Text>
+          <Text className="text-xs" style={{ color: colors.textSecondary }}>
             {filteredCategories.length} categories available
           </Text>
         </View>
-        <TouchableOpacity className="w-10 h-10 rounded-full bg-[#F1F5F9] items-center justify-center">
-          <Ionicons name="grid-outline" size={20} color="#0F172A" />
+        <TouchableOpacity className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.backgroundSelected }}
+        >
+          <Ionicons name="grid-outline" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <View className="px-4 py-3 bg-white border-b border-[#E2E8F0]">
-        <View className="flex-row items-center bg-[#F1F5F9] rounded-xl px-3">
-          <Ionicons name="search-outline" size={20} color="#94A3B8" />
+      <View className="px-4 py-3 border-b"
+        style={{
+          backgroundColor: colors.backgroundElement,
+          borderBottomColor: colors.backgroundSelected,
+        }}
+      >
+        <View className="flex-row items-center rounded-xl px-3"
+          style={{ backgroundColor: colors.backgroundSelected }}
+        >
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
           <TextInput
-            className="flex-1 py-2.5 px-2 text-[#0F172A] text-sm"
+            className="flex-1 py-2.5 px-2 text-sm"
+            style={{ color: colors.text }}
             placeholder="Search categories..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textSecondary}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#94A3B8" />
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -325,26 +355,29 @@ export default function CategoriesPage() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#2563EB"
-            colors={["#2563EB"]}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         ListEmptyComponent={
           <View className="items-center py-16">
-            <View className="w-24 h-24 rounded-full bg-[#F1F5F9] items-center justify-center mb-4">
-              <Ionicons name="search-outline" size={48} color="#94A3B8" />
+            <View className="w-24 h-24 rounded-full items-center justify-center mb-4"
+              style={{ backgroundColor: colors.backgroundSelected }}
+            >
+              <Ionicons name="search-outline" size={48} color={colors.textSecondary} />
             </View>
-            <Text className="text-[#0F172A] text-xl font-bold">
+            <Text className="text-xl font-bold" style={{ color: colors.text }}>
               No Categories Found
             </Text>
-            <Text className="text-[#64748B] text-center mt-1 px-8">
+            <Text className="text-center mt-1 px-8" style={{ color: colors.textSecondary }}>
               {searchQuery 
                 ? `We couldn't find any categories matching "${searchQuery}"`
                 : "No categories available"}
             </Text>
             {searchQuery && (
               <TouchableOpacity
-                className="mt-6 px-6 py-3 bg-[#2563EB] rounded-xl"
+                className="mt-6 px-6 py-3 rounded-xl"
+                style={{ backgroundColor: colors.primary }}
                 onPress={() => setSearchQuery('')}
               >
                 <Text className="text-white font-semibold">Clear Search</Text>

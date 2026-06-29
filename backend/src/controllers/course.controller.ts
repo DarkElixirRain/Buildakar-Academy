@@ -74,7 +74,7 @@ export class CourseController {
       // Check access: instructors can only access their own, admins can access all
       // Students can only access published courses
       if (userRole === 'STUDENT') {
-        if (course.status !== 'PUBLISHED') {
+        if (!('status' in course) || course.status !== 'PUBLISHED') {
           return res.status(403).json({
             success: false,
             message: 'Course not available',

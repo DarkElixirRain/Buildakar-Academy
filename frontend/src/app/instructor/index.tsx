@@ -1,436 +1,498 @@
-// app/(tabs)/instructors.tsx (or app/instructors/index.tsx)
+// app/instructor/[id].tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Image,
-  TextInput,
+  ScrollView,
   RefreshControl,
   SafeAreaView,
-  FlatList,
   ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
 } from 'react-native';
-import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/themeContext';
+import { homeService } from '@/services/homeService';
+import { Instructor, Course } from '@/types/home';
 
-interface Instructor {
-  id: string;
-  name: string;
-  expertise: string;
-  photo: string;
-  rating: number;
-  studentsCount: number;
-  coursesCount: number;
-  bio: string;
-  isFollowing: boolean;
-  totalRevenue?: string;
-  joinDate?: string;
-  socialLinks?: {
-    youtube?: string;
-    twitter?: string;
-    linkedin?: string;
-    website?: string;
-  };
-}
-
-// Mock data - replace with your actual data
-const MOCK_INSTRUCTORS: Instructor[] = [
-  {
-    id: '1',
-    name: 'Dr. Sarah Johnson',
-    expertise: 'Data Science & AI',
-    photo: 'https://randomuser.me/api/portraits/women/1.jpg',
-    rating: 4.9,
-    studentsCount: 24500,
-    coursesCount: 28,
-    bio: 'Leading AI researcher with 15+ years of experience in machine learning and deep learning. Passionate about making AI accessible to everyone.',
-    isFollowing: false,
-    totalRevenue: '$2.4M',
-    joinDate: '2020-01-15',
-    socialLinks: {
-      youtube: 'https://youtube.com',
-      twitter: 'https://twitter.com',
-      linkedin: 'https://linkedin.com',
-      website: 'https://example.com',
-    },
-  },
-  {
-    id: '2',
-    name: 'Prof. Michael Chen',
-    expertise: 'Web Development',
-    photo: 'https://randomuser.me/api/portraits/men/2.jpg',
-    rating: 4.8,
-    studentsCount: 32000,
-    coursesCount: 35,
-    bio: 'Full-stack developer and educator with 10+ years of industry experience. Creator of popular React and Node.js courses.',
-    isFollowing: false,
-    totalRevenue: '$3.1M',
-    joinDate: '2019-06-20',
-    socialLinks: {
-      twitter: 'https://twitter.com',
-      linkedin: 'https://linkedin.com',
-      website: 'https://example.com',
-    },
-  },
-  {
-    id: '3',
-    name: 'Prof. Emily Rodriguez',
-    expertise: 'UX/UI Design',
-    photo: 'https://randomuser.me/api/portraits/women/3.jpg',
-    rating: 4.7,
-    studentsCount: 18000,
-    coursesCount: 22,
-    bio: 'Award-winning UX designer and design educator. Focused on human-centered design and design thinking.',
-    isFollowing: false,
-    totalRevenue: '$1.8M',
-    joinDate: '2020-08-10',
-  },
-  {
-    id: '4',
-    name: 'Dr. James Wilson',
-    expertise: 'Machine Learning',
-    photo: 'https://randomuser.me/api/portraits/men/4.jpg',
-    rating: 4.9,
-    studentsCount: 28000,
-    coursesCount: 30,
-    bio: 'Machine Learning engineer with PhD from Stanford. Specializing in NLP and computer vision.',
-    isFollowing: false,
-    totalRevenue: '$2.9M',
-    joinDate: '2019-03-05',
-  },
-  {
-    id: '5',
-    name: 'Prof. Lisa Thompson',
-    expertise: 'Digital Marketing',
-    photo: 'https://randomuser.me/api/portraits/women/5.jpg',
-    rating: 4.6,
-    studentsCount: 15000,
-    coursesCount: 18,
-    bio: 'Digital marketing strategist with 12+ years of experience. Helped 500+ businesses grow their online presence.',
-    isFollowing: false,
-    totalRevenue: '$1.5M',
-    joinDate: '2021-01-15',
-  },
-];
-
-export default function InstructorsScreen() {
+export default function InstructorDetailScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { isDarkMode, colors } = useTheme();
-  const [instructors, setInstructors] = useState<Instructor[]>(MOCK_INSTRUCTORS);
-  const [filteredInstructors, setFilteredInstructors] = useState<Instructor[]>(MOCK_INSTRUCTORS);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  const [instructor, setInstructor] = useState<Instructor | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [sortBy, setSortBy] = useState<'popular' | 'rating' | 'newest'>('popular');
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [followingMap, setFollowingMap] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  // Load following status from storage or state
+  const loadInstructor = useCallback(async () => {
+    if (!id) return;
+    try {
+      setError(null);
+      console.log(`🔍 Loading instructor detail for ${id}...`);
+
+      const data = await homeService.getInstructorById(id);
+
+      if (!data) {
+        setError('Instructor not found.');
+        setInstructor(null);
+        return;
+      }
+
+      console.log('📊 Instructor data loaded:', JSON.stringify(data, null, 2));
+      setInstructor(data);
+      setIsFollowing(!!data.isFollowing);
+      setImageError(false);
+    } catch (err: any) {
+      console.error('❌ Failed to load instructor:', err);
+      setError(err.message || 'Failed to load instructor. Please try again.');
+    }
+  }, [id]);
+
+  const loadCourses = useCallback(async () => {
+    if (!id) return;
+    try {
+      setCoursesLoading(true);
+      const data = await homeService.getInstructorCourses(id);
+      setCourses(data);
+      console.log(`📚 Loaded ${data.length} courses for instructor`);
+    } catch (err: any) {
+      console.error('❌ Failed to load instructor courses:', err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }, [id]);
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([loadInstructor(), loadCourses()]);
+    setLoading(false);
+  }, [loadInstructor, loadCourses]);
+
   useEffect(() => {
-    // Load instructors with following status
-    const loadedInstructors = MOCK_INSTRUCTORS.map(instructor => ({
-      ...instructor,
-      isFollowing: followingMap.has(instructor.id),
-    }));
-    setInstructors(loadedInstructors);
-    setFilteredInstructors(loadedInstructors);
-  }, []);
+    loadAll();
+  }, [loadAll]);
 
-  // Handle search
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    const filtered = instructors.filter(
-      instructor =>
-        instructor.name.toLowerCase().includes(query.toLowerCase()) ||
-        instructor.expertise.toLowerCase().includes(query.toLowerCase()) ||
-        instructor.bio.toLowerCase().includes(query.toLowerCase())
-    );
-    setFilteredInstructors(filtered);
-  };
-
-  // Handle refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await loadAll();
     setRefreshing(false);
-  }, []);
+  }, [loadAll]);
 
-  // Handle follow/unfollow
-  const handleFollow = (instructorId: string) => {
-    setFollowingMap(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(instructorId)) {
-        newSet.delete(instructorId);
+  const handleFollow = async () => {
+    if (!instructor) return;
+    try {
+      setFollowLoading(true);
+      if (isFollowing) {
+        await homeService.unfollowInstructor(instructor.id);
+        setIsFollowing(false);
+        // Update instructor state
+        setInstructor(prev => prev ? { ...prev, isFollowing: false } : null);
       } else {
-        newSet.add(instructorId);
+        await homeService.followInstructor(instructor.id);
+        setIsFollowing(true);
+        setInstructor(prev => prev ? { ...prev, isFollowing: true } : null);
       }
-      
-      // Update instructors
-      setInstructors(prevInstructors =>
-        prevInstructors.map(instructor =>
-          instructor.id === instructorId
-            ? { ...instructor, isFollowing: newSet.has(instructorId) }
-            : instructor
-        )
-      );
-      setFilteredInstructors(prevFiltered =>
-        prevFiltered.map(instructor =>
-          instructor.id === instructorId
-            ? { ...instructor, isFollowing: newSet.has(instructorId) }
-            : instructor
-        )
-      );
-      
-      return newSet;
+    } catch (err: any) {
+      console.error('❌ Failed to toggle follow:', err);
+      Alert.alert('Error', err.message || 'Failed to update follow status. Please try again.');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const openLink = (url?: string) => {
+    if (!url) return;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'Could not open this link.');
     });
   };
 
-  // Handle sort
-  const handleSort = (type: 'popular' | 'rating' | 'newest') => {
-    setSortBy(type);
-    const sorted = [...filteredInstructors];
-    if (type === 'popular') {
-      sorted.sort((a, b) => b.studentsCount - a.studentsCount);
-    } else if (type === 'rating') {
-      sorted.sort((a, b) => b.rating - a.rating);
-    } else if (type === 'newest') {
-      sorted.sort((a, b) => new Date(b.joinDate || '').getTime() - new Date(a.joinDate || '').getTime());
-    }
-    setFilteredInstructors(sorted);
-    setShowSortModal(false);
+  const handleCoursePress = (courseId: string) => {
+    router.push(`/course/${courseId}` as any);
   };
 
-  // Navigate to instructor profile
-  const handleInstructorPress = (instructorId: string) => {
-    router.push(`/instructor/${instructorId}` as any);
+  const getInitials = (name: string) => {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  // Render instructor card
-  const renderInstructorCard = ({ item }: { item: Instructor }) => {
-    const isFollowing = followingMap.has(item.id);
-
+  // ---------------- Loading state ----------------
+  if (loading) {
     return (
-      <TouchableOpacity
-        className="rounded-2xl border p-4 mb-4"
-        style={{
-          backgroundColor: colors.backgroundElement,
-          borderColor: colors.backgroundSelected,
-          shadowColor: isDarkMode ? '#000000' : '#0F172A',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDarkMode ? 0.3 : 0.05,
-          shadowRadius: 4,
-          elevation: 2,
-        }}
-        onPress={() => handleInstructorPress(item.id)}
-        activeOpacity={0.8}
-      >
-        <View className="flex-row items-start">
-          <Image
-            source={{ uri: item.photo }}
-            className="w-20 h-20 rounded-full mr-4"
-          />
-          <View className="flex-1">
-            <View className="flex-row items-center justify-between">
-              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, flex: 1, marginRight: 8 }}>
-                {item.name}
-              </Text>
-              <TouchableOpacity
-                className={`px-3 py-1 rounded-full border ${
-                  isFollowing
-                    ? 'bg-transparent'
-                    : ''
-                }`}
-                style={{
-                  borderColor: colors.primary,
-                  backgroundColor: isFollowing ? 'transparent' : colors.primary,
-                }}
-                onPress={() => handleFollow(item.id)}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 'bold',
-                    color: isFollowing ? colors.primary : '#FFFFFF',
-                  }}
-                >
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
-              {item.expertise}
-            </Text>
-
-            <View className="flex-row items-center mt-1 space-x-3">
-              <View className="flex-row items-center">
-                <Ionicons name="star" size={14} color="#FBBF24" />
-                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '500', marginLeft: 2 }}>
-                  {item.rating.toFixed(1)}
-                </Text>
-              </View>
-              <View className="flex-row items-center">
-                <Ionicons name="people" size={14} color={colors.textSecondary} />
-                <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 2 }}>
-                  {item.studentsCount.toLocaleString()} students
-                </Text>
-              </View>
-              <View className="flex-row items-center">
-                <Ionicons name="book" size={14} color={colors.textSecondary} />
-                <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 2 }}>
-                  {item.coursesCount} courses
-                </Text>
-              </View>
-            </View>
-
-            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6 }} numberOfLines={2}>
-              {item.bio}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  // Sort options
-  const SortOptions = () => (
-    <View className="flex-row items-center space-x-2 ml-2">
-      <TouchableOpacity
-        className="flex-row items-center rounded-full px-3 py-1.5 border"
-        style={{
-          backgroundColor: colors.backgroundElement,
-          borderColor: colors.backgroundSelected,
-        }}
-        onPress={() => setShowSortModal(!showSortModal)}
-      >
-        <Ionicons name="options-outline" size={16} color={colors.textSecondary} />
-        <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>
-          {sortBy === 'popular' ? 'Popular' : sortBy === 'rating' ? 'Top Rated' : 'Newest'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  // Sort Modal
-  const SortModal = () => (
-    <View className="absolute top-12 right-0 rounded-xl border p-2 z-10 w-40 shadow-lg"
-      style={{
-        backgroundColor: colors.backgroundElement,
-        borderColor: colors.backgroundSelected,
-      }}
-    >
-      {['popular', 'rating', 'newest'].map((type) => (
-        <TouchableOpacity
-          key={type}
-          className={`px-3 py-2 rounded-lg ${sortBy === type ? 'bg-[#EFF6FF]' : ''}`}
-          style={{ backgroundColor: sortBy === type ? (isDarkMode ? '#1E3A5F' : '#EFF6FF') : 'transparent' }}
-          onPress={() => handleSort(type as 'popular' | 'rating' | 'newest')}
-        >
-          <Text style={{
-            fontSize: 14,
-            color: sortBy === type ? colors.primary : colors.textSecondary,
-            fontWeight: sortBy === type ? 'bold' : 'normal',
-          }}>
-            {type === 'popular' ? 'Most Popular' : type === 'rating' ? 'Top Rated' : 'Newest'}
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ color: colors.textSecondary, marginTop: 16 }}>
+            Loading instructor...
           </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
+        </View>
+      </SafeAreaView>
+    );
+  }
 
+  // ---------------- Error state ----------------
+  if (error || !instructor) {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <View className="flex-row items-center px-4 pt-4 pb-2">
+          <TouchableOpacity onPress={() => router.back()} className="p-1">
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+        <View className="flex-1 justify-center items-center px-4">
+          <Ionicons name="alert-circle" size={64} color={colors.primary} />
+          <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginTop: 16 }}>
+            Something went wrong
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+            {error || 'Instructor not found.'}
+          </Text>
+          <TouchableOpacity
+            className="mt-6 px-6 py-3 rounded-xl"
+            style={{ backgroundColor: colors.primary }}
+            onPress={loadAll}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ---------------- Derived, fallback-safe display values ----------------
+  const displayName = instructor.name || 
+    `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 
+    'Instructor';
+  
+  const displayRating = instructor.rating ?? instructor.averageRating ?? 0;
+  const displayStudents = instructor.studentsCount ?? instructor.totalStudents ?? 0;
+  const displayCourses = instructor.coursesCount ?? instructor.totalCourses ?? 0;
+  const displayExpertise = instructor.expertise || 'Expert Instructor';
+
+  // ---------------- Main content ----------------
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
       {/* Header */}
-      <View className="px-4 pt-4 pb-2 border-b" style={{
-        backgroundColor: colors.backgroundElement,
-        borderBottomColor: colors.backgroundSelected,
-      }}>
-        <View className="flex-row items-center justify-between">
-          <TouchableOpacity onPress={() => router.back()} className="p-1">
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
-            Top Instructors
-          </Text>
-          <TouchableOpacity className="p-1">
-            <Ionicons name="notifications-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View className="flex-row items-center rounded-xl px-3 py-2 mt-3" style={{
-          backgroundColor: colors.backgroundSelected,
-        }}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} />
-          <TextInput
-            className="flex-1 ml-2 text-sm"
-            style={{ color: colors.text }}
-            placeholder="Search instructors..."
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => handleSearch('')}>
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filter Row */}
-        <View className="flex-row items-center justify-between mt-3">
-          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-            {filteredInstructors.length} instructors
-          </Text>
-          <View className="relative">
-            <SortOptions />
-            {showSortModal && <SortModal />}
-          </View>
-        </View>
+      <View
+        className="flex-row items-center justify-between px-4 pt-4 pb-2 border-b"
+        style={{
+          backgroundColor: colors.backgroundElement,
+          borderBottomColor: colors.backgroundSelected,
+        }}
+      >
+        <TouchableOpacity onPress={() => router.back()} className="p-1">
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
+          Instructor
+        </Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      {/* Instructor List */}
-      <FlatList
-        data={filteredInstructors}
-        renderItem={renderInstructorCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 80 }}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
           />
         }
-        ListEmptyComponent={
-          <View className="items-center justify-center py-10">
-            <Ionicons name="people" size={64} color={colors.textSecondary} />
-            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginTop: 16 }}>
-              No Instructors Found
+      >
+        {/* Profile section */}
+        <View className="items-center px-4 pt-6 pb-4">
+          {/* Profile Image with fallback */}
+          <View style={{
+            width: 112,
+            height: 112,
+            borderRadius: 56,
+            overflow: 'hidden',
+            backgroundColor: colors.backgroundSelected,
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: colors.primary,
+          }}>
+            {!imageError && instructor.photo ? (
+              <Image
+                source={{ 
+                  uri: instructor.photo,
+                  cache: 'force-cache',
+                }}
+                style={{
+                  width: 112,
+                  height: 112,
+                  borderRadius: 56,
+                }}
+                onError={() => {
+                  console.log(`❌ Failed to load image for ${displayName}`);
+                  setImageError(true);
+                }}
+                onLoad={() => {
+                  console.log(`✅ Image loaded for ${displayName}`);
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={{
+                width: 112,
+                height: 112,
+                borderRadius: 56,
+                backgroundColor: colors.primary,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}>
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 40,
+                  fontWeight: 'bold',
+                }}>
+                  {getInitials(displayName)}
+                </Text>
+              </View>
+            )}
+            
+            {/* Verification Badge */}
+            {instructor.isVerified && (
+              <View style={{
+                position: 'absolute',
+                bottom: 4,
+                right: 4,
+                backgroundColor: '#3B82F6',
+                borderRadius: 16,
+                width: 32,
+                height: 32,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: colors.backgroundElement,
+              }}>
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+              </View>
+            )}
+          </View>
+
+          <View className="flex-row items-center mt-3">
+            <Text style={{ color: colors.text, fontSize: 22, fontWeight: 'bold' }}>
+              {displayName}
             </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4, textAlign: 'center' }}>
-              Try adjusting your search terms
+            {instructor.isVerified && (
+              <Ionicons
+                name="checkmark-circle"
+                size={18}
+                color={colors.primary}
+                style={{ marginLeft: 6 }}
+              />
+            )}
+          </View>
+
+          <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
+            {displayExpertise}
+          </Text>
+
+          {/* Stats row */}
+          <View className="flex-row items-center justify-center mt-4" style={{ gap: 24 }}>
+            <View className="items-center">
+              <View className="flex-row items-center">
+                <Ionicons name="star" size={16} color="#FBBF24" />
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginLeft: 4 }}>
+                  {displayRating.toFixed(1)}
+                </Text>
+              </View>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                Rating
+              </Text>
+            </View>
+
+            <View className="items-center">
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                {displayStudents.toLocaleString()}
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                Students
+              </Text>
+            </View>
+
+            <View className="items-center">
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                {displayCourses}
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                Courses
+              </Text>
+            </View>
+
+            {instructor.followerCount !== undefined && instructor.followerCount > 0 && (
+              <View className="items-center">
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                  {instructor.followerCount.toLocaleString()}
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                  Followers
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Follow button */}
+          <TouchableOpacity
+            className="px-8 py-2.5 rounded-full border mt-5"
+            style={{
+              borderColor: colors.primary,
+              backgroundColor: isFollowing ? 'transparent' : colors.primary,
+              opacity: followLoading ? 0.6 : 1,
+            }}
+            onPress={handleFollow}
+            disabled={followLoading}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: 'bold',
+                color: isFollowing ? colors.primary : '#FFFFFF',
+              }}
+            >
+              {followLoading ? 'Please wait...' : isFollowing ? 'Following' : 'Follow'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Social links */}
+          {instructor.socialLinks && Object.values(instructor.socialLinks).some(Boolean) && (
+            <View className="flex-row items-center mt-4" style={{ gap: 16 }}>
+              {instructor.socialLinks.website && (
+                <TouchableOpacity onPress={() => openLink(instructor.socialLinks?.website)}>
+                  <Ionicons name="globe-outline" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+              {instructor.socialLinks.youtube && (
+                <TouchableOpacity onPress={() => openLink(instructor.socialLinks?.youtube)}>
+                  <Ionicons name="logo-youtube" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+              {instructor.socialLinks.twitter && (
+                <TouchableOpacity onPress={() => openLink(instructor.socialLinks?.twitter)}>
+                  <Ionicons name="logo-twitter" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+              {instructor.socialLinks.linkedin && (
+                <TouchableOpacity onPress={() => openLink(instructor.socialLinks?.linkedin)}>
+                  <Ionicons name="logo-linkedin" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Bio */}
+        {instructor.bio && (
+          <View
+            className="mx-4 mb-4 p-4 rounded-2xl border"
+            style={{
+              backgroundColor: colors.backgroundElement,
+              borderColor: colors.backgroundSelected,
+            }}
+          >
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 6 }}>
+              About
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19 }}>
+              {instructor.bio}
             </Text>
           </View>
-        }
-        ListFooterComponent={
-          loading ? (
-            <View className="py-4">
+        )}
+
+        {/* Courses */}
+        <View className="px-4">
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>
+            Courses by {displayName}
+          </Text>
+
+          {coursesLoading ? (
+            <View className="py-6 items-center">
               <ActivityIndicator color={colors.primary} />
             </View>
-          ) : null
-        }
-      />
+          ) : courses.length === 0 ? (
+            <View className="py-8 items-center">
+              <Ionicons name="book-outline" size={48} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 8 }}>
+                No published courses yet.
+              </Text>
+            </View>
+          ) : (
+            courses.map((course) => (
+              <TouchableOpacity
+                key={course.id}
+                className="flex-row rounded-2xl border p-3 mb-3"
+                style={{
+                  backgroundColor: colors.backgroundElement,
+                  borderColor: colors.backgroundSelected,
+                }}
+                onPress={() => handleCoursePress(course.id)}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{ 
+                    uri: course.thumbnail || 'https://via.placeholder.com/80x64/4F46E5/FFFFFF?text=Course',
+                    cache: 'force-cache',
+                  }}
+                  className="w-20 h-16 rounded-xl mr-3"
+                  resizeMode="cover"
+                  onError={() => console.log(`❌ Failed to load course thumbnail for ${course.title}`)}
+                />
+                <View className="flex-1">
+                  <Text
+                    style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}
+                    numberOfLines={2}
+                  >
+                    {course.title}
+                  </Text>
+                  <View className="flex-row items-center mt-2" style={{ gap: 12 }}>
+                    <View className="flex-row items-center">
+                      <Ionicons name="star" size={12} color="#FBBF24" />
+                      <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 2 }}>
+                        {(course.rating || 0).toFixed(1)}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center">
+                      <Ionicons name="people" size={12} color={colors.textSecondary} />
+                      <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 2 }}>
+                        {(course.students || 0).toLocaleString()}
+                      </Text>
+                    </View>
+                    {course.price !== undefined && course.price > 0 && (
+                      <Text style={{ color: colors.primary, fontSize: 13, fontWeight: 'bold' }}>
+                        ${course.price}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

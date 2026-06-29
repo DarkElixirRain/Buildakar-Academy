@@ -31,7 +31,7 @@ const getBaseURL = (): string => {
   }
   
   // Production - use your actual backend URL
-  return process.env.EXPO_PUBLIC_API_URL || 'https://your-production-api.com/api';
+  return process.env.EXPO_PUBLIC_API_URL || 'https://localhost:3000/api';
 };
 
 interface ApiClientConfig {

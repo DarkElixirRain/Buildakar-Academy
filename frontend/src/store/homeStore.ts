@@ -22,7 +22,6 @@ import { homeService } from '@/services/homeService';
 // Platform-specific storage
 const getStorage = () => {
   if (Platform.OS === 'web') {
-    // Use localStorage for web
     return {
       getItem: (name: string) => {
         try {
@@ -50,7 +49,6 @@ const getStorage = () => {
       },
     };
   } else {
-    // Use AsyncStorage for native platforms
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
     return {
       getItem: AsyncStorage.getItem,
@@ -87,8 +85,8 @@ interface HomeState {
   loadMoreRecommendations: () => Promise<void>;
   updateCourseProgress: (courseId: string, progress: number) => void;
   toggleSaveCourse: (courseId: string) => void;
-  followInstructor: (instructorId: string) => void;
-  unfollowInstructor: (instructorId: string) => void;
+  followInstructor: (instructorId: string) => Promise<void>;
+  unfollowInstructor: (instructorId: string) => Promise<void>;
   markNotificationAsRead: (notificationId: string) => void;
   clearError: () => void;
   reset: () => void;
@@ -99,6 +97,7 @@ interface HomeState {
   getFeaturedCourseById: (courseId: string) => FeaturedCourse | null;
   getRecommendedCourseById: (courseId: string) => RecommendedCourse | null;
   getPopularCourseById: (courseId: string) => PopularCourse | null;
+  refreshTopInstructors: () => Promise<void>;
 }
 
 const initialState = {
@@ -132,7 +131,11 @@ export const useHomeStore = create<HomeState>()(
         try {
           set({ loading: true, error: null });
           
+          // Fetch home data
           const data = await homeService.getHomeData();
+          
+          // Fetch top instructors separately to ensure real data
+          const instructors = await homeService.getTopInstructors(10);
           
           set({
             data,
@@ -144,13 +147,15 @@ export const useHomeStore = create<HomeState>()(
             learningPaths: data.learningPaths || [],
             liveClasses: data.liveClasses || [],
             achievements: data.achievements || null,
-            topInstructors: data.topInstructors || [],
+            topInstructors: instructors.length > 0 ? instructors : data.topInstructors || [],
             userProgress: data.userProgress || null,
             notifications: data.notifications || null,
             recentlyViewed: data.recentlyViewed || [],
             loading: false,
             error: null,
           });
+          
+          console.log(`✅ Home data loaded: ${instructors.length} instructors`);
         } catch (error: any) {
           console.error('Error fetching home data:', error);
           set({
@@ -164,7 +169,11 @@ export const useHomeStore = create<HomeState>()(
         try {
           set({ refreshing: true, error: null });
           
+          // Refresh home data
           const data = await homeService.getHomeData(true);
+          
+          // Refresh top instructors
+          const instructors = await homeService.getTopInstructors(10);
           
           set({
             data,
@@ -176,7 +185,7 @@ export const useHomeStore = create<HomeState>()(
             learningPaths: data.learningPaths || [],
             liveClasses: data.liveClasses || [],
             achievements: data.achievements || null,
-            topInstructors: data.topInstructors || [],
+            topInstructors: instructors.length > 0 ? instructors : data.topInstructors || [],
             userProgress: data.userProgress || null,
             notifications: data.notifications || null,
             recentlyViewed: data.recentlyViewed || [],
@@ -185,12 +194,36 @@ export const useHomeStore = create<HomeState>()(
             recommendationsPage: 1,
             hasMoreRecommendations: true,
           });
+          
+          console.log(`✅ Home data refreshed: ${instructors.length} instructors`);
         } catch (error: any) {
           console.error('Error refreshing home data:', error);
           set({
             refreshing: false,
             error: error?.message || 'Failed to refresh home data',
           });
+        }
+      },
+
+      refreshTopInstructors: async () => {
+        try {
+          console.log('🔄 Refreshing top instructors...');
+          const instructors = await homeService.getTopInstructors(10);
+          
+          set({
+            topInstructors: instructors,
+          });
+          
+          // Update data object as well
+          const currentData = get().data;
+          if (currentData) {
+            const updatedData = { ...currentData, topInstructors: instructors };
+            set({ data: updatedData });
+          }
+          
+          console.log(`✅ Refreshed ${instructors.length} instructors`);
+        } catch (error) {
+          console.error('❌ Failed to refresh instructors:', error);
         }
       },
 
@@ -234,7 +267,6 @@ export const useHomeStore = create<HomeState>()(
           ),
         }));
         
-        // Update data object as well
         const currentData = get().data;
         if (currentData) {
           const updatedData = { ...currentData };
@@ -256,7 +288,6 @@ export const useHomeStore = create<HomeState>()(
           ),
         }));
         
-        // Update data object as well
         const currentData = get().data;
         if (currentData) {
           const updatedData = { ...currentData };
@@ -268,10 +299,8 @@ export const useHomeStore = create<HomeState>()(
           set({ data: updatedData });
         }
         
-        // Call service to persist the change
         homeService.toggleSaveCourse(courseId).catch((error) => {
           console.error('Error toggling save:', error);
-          // Revert the change if API call fails
           set((state) => ({
             recommendedCourses: state.recommendedCourses.map((course) =>
               course.id === courseId
@@ -282,64 +311,9 @@ export const useHomeStore = create<HomeState>()(
         });
       },
 
-      followInstructor: (instructorId: string) => {
-        set((state) => ({
-          topInstructors: state.topInstructors.map((instructor) =>
-            instructor.id === instructorId
-              ? { ...instructor, isFollowing: true }
-              : instructor
-          ),
-        }));
-        
-        // Update data object as well
-        const currentData = get().data;
-        if (currentData) {
-          const updatedData = { ...currentData };
-          updatedData.topInstructors = updatedData.topInstructors.map((instructor) =>
-            instructor.id === instructorId
-              ? { ...instructor, isFollowing: true }
-              : instructor
-          );
-          set({ data: updatedData });
-        }
-        
-        homeService.followInstructor(instructorId).catch((error) => {
-          console.error('Error following instructor:', error);
-          // Revert the change if API call fails
-          set((state) => ({
-            topInstructors: state.topInstructors.map((instructor) =>
-              instructor.id === instructorId
-                ? { ...instructor, isFollowing: false }
-                : instructor
-            ),
-          }));
-        });
-      },
-
-      unfollowInstructor: (instructorId: string) => {
-        set((state) => ({
-          topInstructors: state.topInstructors.map((instructor) =>
-            instructor.id === instructorId
-              ? { ...instructor, isFollowing: false }
-              : instructor
-          ),
-        }));
-        
-        // Update data object as well
-        const currentData = get().data;
-        if (currentData) {
-          const updatedData = { ...currentData };
-          updatedData.topInstructors = updatedData.topInstructors.map((instructor) =>
-            instructor.id === instructorId
-              ? { ...instructor, isFollowing: false }
-              : instructor
-          );
-          set({ data: updatedData });
-        }
-        
-        homeService.unfollowInstructor(instructorId).catch((error) => {
-          console.error('Error unfollowing instructor:', error);
-          // Revert the change if API call fails
+      followInstructor: async (instructorId: string) => {
+        try {
+          // Optimistically update UI
           set((state) => ({
             topInstructors: state.topInstructors.map((instructor) =>
               instructor.id === instructorId
@@ -347,7 +321,82 @@ export const useHomeStore = create<HomeState>()(
                 : instructor
             ),
           }));
-        });
+          
+          // Update data object as well
+          const currentData = get().data;
+          if (currentData) {
+            const updatedData = { ...currentData };
+            updatedData.topInstructors = updatedData.topInstructors.map((instructor) =>
+              instructor.id === instructorId
+                ? { ...instructor, isFollowing: true }
+                : instructor
+            );
+            set({ data: updatedData });
+          }
+          
+          // Call API
+          await homeService.followInstructor(instructorId);
+          console.log(`✅ Followed instructor ${instructorId}`);
+          
+          // Refresh instructors to get updated data
+          await get().refreshTopInstructors();
+          
+        } catch (error) {
+          console.error('Error following instructor:', error);
+          // Revert optimistic update
+          set((state) => ({
+            topInstructors: state.topInstructors.map((instructor) =>
+              instructor.id === instructorId
+                ? { ...instructor, isFollowing: false }
+                : instructor
+            ),
+          }));
+          throw error;
+        }
+      },
+
+      unfollowInstructor: async (instructorId: string) => {
+        try {
+          // Optimistically update UI
+          set((state) => ({
+            topInstructors: state.topInstructors.map((instructor) =>
+              instructor.id === instructorId
+                ? { ...instructor, isFollowing: false }
+                : instructor
+            ),
+          }));
+          
+          // Update data object as well
+          const currentData = get().data;
+          if (currentData) {
+            const updatedData = { ...currentData };
+            updatedData.topInstructors = updatedData.topInstructors.map((instructor) =>
+              instructor.id === instructorId
+                ? { ...instructor, isFollowing: false }
+                : instructor
+            );
+            set({ data: updatedData });
+          }
+          
+          // Call API
+          await homeService.unfollowInstructor(instructorId);
+          console.log(`✅ Unfollowed instructor ${instructorId}`);
+          
+          // Refresh instructors to get updated data
+          await get().refreshTopInstructors();
+          
+        } catch (error) {
+          console.error('Error unfollowing instructor:', error);
+          // Revert optimistic update
+          set((state) => ({
+            topInstructors: state.topInstructors.map((instructor) =>
+              instructor.id === instructorId
+                ? { ...instructor, isFollowing: true }
+                : instructor
+            ),
+          }));
+          throw error;
+        }
       },
 
       markNotificationAsRead: (notificationId: string) => {
@@ -360,7 +409,6 @@ export const useHomeStore = create<HomeState>()(
             : null,
         }));
         
-        // Update data object as well
         const currentData = get().data;
         if (currentData?.notifications) {
           const updatedData = { ...currentData };
@@ -394,12 +442,9 @@ export const useHomeStore = create<HomeState>()(
             instructor: course.instructor || '',
           };
 
-          // Remove duplicate if exists
           const filtered = state.recentlyViewed.filter(c => c.id !== course.id);
-          // Add to front and limit to 10
           const updated = [recentlyViewedCourse, ...filtered].slice(0, 10);
           
-          // Update data object as well
           if (state.data) {
             const updatedData = { ...state.data };
             updatedData.recentlyViewed = updated;
@@ -412,7 +457,6 @@ export const useHomeStore = create<HomeState>()(
           return { recentlyViewed: updated };
         });
         
-        // Track view in background
         homeService.trackCourseView(course.id).catch((error) => {
           console.error('Error tracking course view:', error);
         });
@@ -429,7 +473,6 @@ export const useHomeStore = create<HomeState>()(
           ),
         }));
         
-        // Update data object as well
         const currentData = get().data;
         if (currentData) {
           const updatedData = { ...currentData };

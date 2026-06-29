@@ -9,9 +9,11 @@ const router = express.Router();
 
 // Public routes
 router.get('/', categoryController.getAllCategories);
-router.get('/:id', categoryController.getCategoryById);
-router.get('/slug/:slug', categoryController.getCategoryBySlug);
-router.get('/:id/stats', categoryController.getCategoryStats);
+
+// ✅ IMPORTANT: Put more specific routes BEFORE the generic :id route
+router.get('/slug/:slug', categoryController.getCategoryBySlug);  // Move this UP
+router.get('/:id/stats', categoryController.getCategoryStats);     // Move this UP
+router.get('/:id', categoryController.getCategoryById);            // Keep this LAST
 
 // Admin only routes
 router.post(

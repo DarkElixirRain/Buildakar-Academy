@@ -41,10 +41,26 @@ interface Section {
   items: SettingItem[];
 }
 
+// Minimal logger (kept for occasional debug)
+const debugLog = (step: string, data?: any) => {
+  // no-op in production; use console when needed
+  // console.log(`🔍 [LOGOUT DEBUG] ${step}:`, data || '');
+};
+
 export default function SettingsPage() {
   const insets = useSafeAreaInsets();
-  const { user, logout, getDisplayName, getInitials } = useAuthStore();
-  const { isDarkMode, colors, toggleTheme, setTheme } = useTheme();
+  const authStore = useAuthStore();
+  const { 
+    user, 
+    logout, 
+    clearAuth, 
+    getDisplayName, 
+    getInitials,
+    isAuthenticated,
+    loading,
+    token,
+  } = authStore;
+  const { isDarkMode, colors, toggleTheme } = useTheme();
   const { reset: resetHomeStore } = useHomeStore();
   
   const [notifications, setNotifications] = useState(true);
@@ -52,14 +68,35 @@ export default function SettingsPage() {
   const [autoPlay, setAutoPlay] = useState(false);
   const [offlineMode, setOfflineMode] = useState(false);
   const [language, setLanguage] = useState('English');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Get user display name and initials
   const displayName = getDisplayName();
   const initials = getInitials();
-
-  // Handle logout
+  // Simplified logout: confirm, call store logout, reset stores, navigate
   const handleLogout = async () => {
+    console.log('[SETTINGS] handleLogout triggered');
+    // On web, Alert.alert may not support button callbacks reliably.
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Are you sure you want to logout?');
+      if (!ok) return;
+      try {
+        setIsLoggingOut(true);
+        console.log('[SETTINGS] logout confirmed (web)');
+        await logout();
+        console.log('[SETTINGS] logout() resolved (web)');
+        resetHomeStore();
+        router.replace('/(auth)/login');
+      } catch (error) {
+        console.error('[SETTINGS] logout error (web)', error);
+        Alert.alert('Logout Error', 'Failed to logout. Please try again.');
+      } finally {
+        setIsLoggingOut(false);
+      }
+      return;
+    }
+
+    // Native platforms: use Alert.alert
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -70,11 +107,17 @@ export default function SettingsPage() {
           style: 'destructive',
           onPress: async () => {
             try {
+              setIsLoggingOut(true);
+              console.log('[SETTINGS] logout button pressed (native)');
               await logout();
+              console.log('[SETTINGS] logout() resolved (native)');
               resetHomeStore();
-              router.replace('/(auth)/login');
+              setTimeout(() => router.replace('/(auth)/login'), 80);
             } catch (error) {
-              Alert.alert('Error', 'Failed to logout. Please try again.');
+              console.error('[SETTINGS] logout error (native)', error);
+              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
+            } finally {
+              setIsLoggingOut(false);
             }
           },
         },
@@ -82,6 +125,8 @@ export default function SettingsPage() {
       { cancelable: true }
     );
   };
+
+  // directLogout removed (debug) - use `handleLogout` for production
 
   // Handle clear cache
   const handleClearCache = () => {
@@ -95,11 +140,14 @@ export default function SettingsPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear app cache
               if (Platform.OS === 'web') {
                 localStorage.clear();
+                // Also remove the persist key
+                localStorage.removeItem('auth-storage');
+              } else {
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                await AsyncStorage.clear();
               }
-              // Reset home store
               resetHomeStore();
               Alert.alert('Success', 'Cache cleared successfully');
             } catch (error) {
@@ -179,7 +227,6 @@ export default function SettingsPage() {
     }
     
     try {
-      setIsLoading(true);
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
         Alert.alert(
@@ -201,8 +248,6 @@ export default function SettingsPage() {
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to check for updates');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -348,7 +393,6 @@ export default function SettingsPage() {
           label: 'Check for Updates',
           type: 'button',
           onPress: handleCheckUpdates,
-          badge: isLoading ? '...' : undefined,
         },
         {
           id: 'rate',
@@ -402,6 +446,9 @@ export default function SettingsPage() {
     },
   ];
 
+  // No debug sections in production
+  const allSections = sections;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
@@ -437,7 +484,19 @@ export default function SettingsPage() {
           }}>
             Settings
           </Text>
-          <View className="w-10" />
+          <TouchableOpacity
+            onPress={() => {}}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.backgroundSelected,
+            }}
+          >
+            <Ionicons name="bug" size={20} color={colors.text} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -447,6 +506,26 @@ export default function SettingsPage() {
           paddingBottom: insets.bottom + 20,
         }}
       >
+        {/* Auth Status Badge */}
+        <View style={{
+          marginHorizontal: 16,
+          marginTop: 8,
+          padding: 8,
+          borderRadius: 8,
+          backgroundColor: isAuthenticated ? '#DCFCE7' : '#FEE2E2',
+          borderWidth: 1,
+          borderColor: isAuthenticated ? '#86EFAC' : '#FECACA',
+        }}>
+          <Text style={{
+            textAlign: 'center',
+            fontSize: 12,
+            fontWeight: '600',
+            color: isAuthenticated ? '#16A34A' : '#DC2626',
+          }}>
+            Status: {isAuthenticated ? '✅ Authenticated' : '❌ Not Authenticated'}
+          </Text>
+        </View>
+
         {/* User Profile Section */}
         <View style={{
           marginHorizontal: 16,
@@ -493,6 +572,7 @@ export default function SettingsPage() {
               <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                 {user?.email || 'user@email.com'}
               </Text>
+              {/* Hide token from UI for security */}
             </View>
 
             <TouchableOpacity
@@ -512,7 +592,7 @@ export default function SettingsPage() {
         </View>
 
         {/* Settings Sections */}
-        {sections.map((section) => (
+        {allSections.map((section) => (
           <View key={section.id} className="mt-6">
             <Text style={{
               paddingHorizontal: 16,
@@ -626,9 +706,10 @@ export default function SettingsPage() {
           </Text>
         </View>
 
-        {/* Logout Button */}
+        {/* Single Logout Button */}
         <TouchableOpacity
           onPress={handleLogout}
+          disabled={isLoggingOut}
           style={{
             marginHorizontal: 16,
             marginTop: 16,
@@ -637,16 +718,30 @@ export default function SettingsPage() {
             backgroundColor: '#FEE2E2',
             borderWidth: 1,
             borderColor: '#FECACA',
+            opacity: isLoggingOut ? 0.8 : 1,
           }}
           activeOpacity={0.7}
         >
           <View className="flex-row items-center justify-center">
-            <Ionicons name="log-out-outline" size={22} color="#DC2626" />
-            <Text style={{ marginLeft: 8, color: '#DC2626', fontWeight: '600', fontSize: 16 }}>
-              Logout
-            </Text>
+            {isLoggingOut || loading ? (
+              <>
+                <Ionicons name="reload" size={22} color="#DC2626" />
+                <Text style={{ marginLeft: 8, color: '#DC2626', fontWeight: '600', fontSize: 16 }}>
+                  Logging out...
+                </Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="log-out-outline" size={22} color="#DC2626" />
+                <Text style={{ marginLeft: 8, color: '#DC2626', fontWeight: '600', fontSize: 16 }}>
+                  Logout
+                </Text>
+              </>
+            )}
           </View>
         </TouchableOpacity>
+
+        {/* debug button removed */}
 
         {/* Delete Account Button */}
         <TouchableOpacity
@@ -668,7 +763,7 @@ export default function SettingsPage() {
           }}
           style={{
             marginHorizontal: 16,
-            marginTop: 8,
+            marginTop: 16,
             padding: 12,
             borderRadius: 16,
           }}

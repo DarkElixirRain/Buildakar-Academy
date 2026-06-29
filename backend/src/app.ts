@@ -8,6 +8,7 @@ import categoryRoutes from './routes/category.routes';
 import courseRoutes from './routes/course.routes';
 import sectionRoutes from './routes/section.routes';
 import lessonRoutes from './routes/lesson.routes';
+import instructorRoutes from './routes/instructor.routes';
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/instructors', instructorRoutes);
 app.use('/api', sectionRoutes);
 app.use('/api', lessonRoutes);
 

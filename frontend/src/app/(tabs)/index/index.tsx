@@ -28,6 +28,7 @@ import { RecentlyViewed } from "@/components/home/RecentlyViewed";
 import { LoadingSkeleton } from "@/components/home/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
 import { EmptyState } from "@/components/common/EmptyState";
+import { homeService } from "@/services/homeService";
 
 const { width } = Dimensions.get("window");
 
@@ -59,13 +60,26 @@ export default function HomeScreen() {
   } = useHomeStore();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [localTopInstructors, setLocalTopInstructors] = useState<any[]>([]);
 
   useEffect(() => {
     fetchHomeData();
+    loadTopInstructors();
   }, []);
+
+  // Load top instructors separately to ensure real data
+  const loadTopInstructors = async () => {
+    try {
+      const instructors = await homeService.getTopInstructors(10);
+      setLocalTopInstructors(instructors);
+    } catch (error) {
+      console.error('Failed to load top instructors:', error);
+    }
+  };
 
   const onRefresh = useCallback(async () => {
     await refreshHomeData();
+    await loadTopInstructors(); // Refresh instructors too
   }, [refreshHomeData]);
 
   const handleSearch = (query: string) => {
@@ -86,8 +100,6 @@ export default function HomeScreen() {
     router.push("/(my-learning)" as any);
   };
 
-  // For courses that are already enrolled (Continue Learning, Recently Viewed)
-  // Navigate directly to the course player
   const handleCoursePress = (courseId: string) => {
     router.push({
       pathname: "/course/[id]",
@@ -95,8 +107,6 @@ export default function HomeScreen() {
     } as any);
   };
 
-  // For courses that haven't been started yet (Recommended, Featured, Popular)
-  // Navigate to course details page first
   const handleCourseDetailsPress = (courseId: string) => {
     router.push({
       pathname: "/course-details/[id]",
@@ -104,7 +114,6 @@ export default function HomeScreen() {
     } as any);
   };
 
-  // Handle category press with slug
   const handleCategoryPress = (categoryId: string) => {
     const category = categories?.find((cat) => cat.id === categoryId);
     if (category) {
@@ -115,7 +124,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Handle See All for different sections
   const handleSeeAll = (section: string) => {
     if (section === "categories") {
       router.push("/categories" as any);
@@ -141,6 +149,8 @@ export default function HomeScreen() {
 
   const handleInstructorFollow = (instructorId: string) => {
     console.log("Following instructor:", instructorId);
+    // Refresh instructors after follow/unfollow
+    loadTopInstructors();
   };
 
   const handleAchievementPress = () => {
@@ -160,6 +170,11 @@ export default function HomeScreen() {
 
   const statusBarStyle = isDarkMode ? 'light' : 'dark';
 
+  // Use real instructors from local state or store
+  const displayInstructors = localTopInstructors.length > 0 
+    ? localTopInstructors 
+    : topInstructors || [];
+
   if (loading && !data) {
     return <LoadingSkeleton />;
   }
@@ -172,6 +187,7 @@ export default function HomeScreen() {
           onRetry={() => {
             clearError();
             fetchHomeData();
+            loadTopInstructors();
           }}
         />
       </SafeAreaView>
@@ -219,7 +235,7 @@ export default function HomeScreen() {
         }}
       >
         <View style={{ paddingHorizontal: 16, backgroundColor: colors.background }}>
-          {/* Search Bar - with margin bottom */}
+          {/* Search Bar */}
           <View style={{ marginBottom: 16 }}>
             <SearchBar
               value={searchQuery}
@@ -228,7 +244,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* Continue Learning Section - with margin bottom */}
+          {/* Continue Learning Section */}
           {continueLearning && continueLearning.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <ContinueLearning
@@ -238,7 +254,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Featured Courses Carousel - with margin bottom */}
+          {/* Featured Courses Carousel */}
           {featuredCourses && featuredCourses.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <FeaturedCourses
@@ -248,7 +264,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Categories Section - with margin bottom */}
+          {/* Categories Section */}
           {categories && categories.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <Categories
@@ -259,7 +275,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Recommended For You - with margin bottom */}
+          {/* Recommended For You */}
           {recommendedCourses && recommendedCourses.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <RecommendedCourses
@@ -271,7 +287,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Popular Courses - with margin bottom */}
+          {/* Popular Courses */}
           {popularCourses && popularCourses.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <PopularCourses
@@ -282,7 +298,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Upcoming Live Classes - with margin bottom */}
+          {/* Upcoming Live Classes */}
           {liveClasses && liveClasses.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <LiveClasses
@@ -293,11 +309,10 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Top Instructors - with margin bottom */}
-          {topInstructors && topInstructors.length > 0 && (
+          {/* Top Instructors - Using real data */}
+          {displayInstructors.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <TopInstructors
-                instructors={topInstructors}
                 onFollowPress={handleInstructorFollow}
                 onInstructorPress={handleInstructorPress}
                 onSeeAll={() => handleSeeAll("instructors")}
@@ -305,7 +320,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Recently Viewed - with margin bottom */}
+          {/* Recently Viewed */}
           {recentlyViewed && recentlyViewed.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <RecentlyViewed

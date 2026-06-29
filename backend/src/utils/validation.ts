@@ -1,8 +1,10 @@
+// backend/src/utils/validation.ts
 import { z } from 'zod';
+
+// ============= USER SCHEMAS =============
 
 const registerRoleSchema = z.enum(['STUDENT', 'INSTRUCTOR']);
 
-// Register validation schema
 export const registerSchema = z.object({
   email: z
     .string()
@@ -26,7 +28,6 @@ export const registerSchema = z.object({
   role: registerRoleSchema.default('STUDENT'),
 });
 
-// Login validation schema
 export const loginSchema = z.object({
   email: z
     .string()
@@ -37,12 +38,10 @@ export const loginSchema = z.object({
     .min(1, 'Password is required'),
 });
 
-// Get user profile validation (for query params if needed)
 export const userIdSchema = z.object({
   id: z.string().cuid('Invalid user ID format'),
 });
 
-// Update profile validation
 export const updateProfileSchema = z.object({
   firstName: z
     .string()
@@ -60,7 +59,6 @@ export const updateProfileSchema = z.object({
     .optional(),
 });
 
-// Change password validation
 export const changePasswordSchema = z.object({
   currentPassword: z
     .string()
@@ -74,7 +72,6 @@ export const changePasswordSchema = z.object({
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
 });
 
-// Forgot password validation
 export const forgotPasswordSchema = z.object({
   email: z
     .string()
@@ -82,7 +79,6 @@ export const forgotPasswordSchema = z.object({
     .min(1, 'Email is required'),
 });
 
-// Reset password validation
 export const resetPasswordSchema = z.object({
   token: z
     .string()
@@ -96,14 +92,12 @@ export const resetPasswordSchema = z.object({
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
 });
 
-// Email verification validation
 export const verifyEmailSchema = z.object({
   token: z
     .string()
     .min(1, 'Token is required'),
 });
 
-// Update role validation
 export const updateRoleSchema = z.object({
   role: z.enum(['STUDENT', 'INSTRUCTOR'], {
     errorMap: () => ({ message: 'Role must be either STUDENT or INSTRUCTOR' }),
@@ -112,17 +106,14 @@ export const updateRoleSchema = z.object({
 
 // ============= COURSE MANAGEMENT SCHEMAS =============
 
-// Course status enum
 export const courseStatusSchema = z.enum(['DRAFT', 'UNDER_REVIEW', 'PUBLISHED'], {
   errorMap: () => ({ message: 'Invalid course status' }),
 });
 
-// Level enum (matches Prisma)
 export const levelSchema = z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED'], {
   errorMap: () => ({ message: 'Invalid level' }),
 });
 
-// Create course schema
 export const createCourseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200, 'Title must be less than 200 characters'),
   description: z.string().max(5000, 'Description must be less than 5000 characters').optional(),
@@ -136,17 +127,14 @@ export const createCourseSchema = z.object({
   categoryId: z.string().cuid('Invalid category ID format'),
 });
 
-// Update course schema (all optional except title if provided)
 export const updateCourseSchema = createCourseSchema.partial().extend({
   status: courseStatusSchema.optional(),
 });
 
-// Course ID param schema
 export const courseIdSchema = z.object({
   id: z.string().cuid('Invalid course ID format'),
 });
 
-// Section schemas
 export const createSectionSchema = z.object({
   title: z.string().min(1, 'Section title is required').max(200, 'Title must be less than 200 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional(),
@@ -159,7 +147,6 @@ export const sectionIdSchema = z.object({
   id: z.string().cuid('Invalid section ID format'),
 });
 
-// Reorder sections schema
 export const reorderSectionsSchema = z.object({
   sections: z.array(z.object({
     id: z.string().cuid('Invalid section ID format'),
@@ -167,7 +154,6 @@ export const reorderSectionsSchema = z.object({
   })).min(1, 'At least one section required'),
 });
 
-// Lesson schemas
 export const createLessonSchema = z.object({
   title: z.string().min(1, 'Lesson title is required').max(200, 'Title must be less than 200 characters'),
   description: z.string().max(5000, 'Description must be less than 5000 characters').optional(),
@@ -184,7 +170,6 @@ export const lessonIdSchema = z.object({
   id: z.string().cuid('Invalid lesson ID format'),
 });
 
-// Reorder lessons schema
 export const reorderLessonsSchema = z.object({
   lessons: z.array(z.object({
     id: z.string().cuid('Invalid lesson ID format'),
@@ -192,19 +177,16 @@ export const reorderLessonsSchema = z.object({
   })).min(1, 'At least one lesson required'),
 });
 
-// Video upload validation
 export const videoUploadSchema = z.object({
   fileName: z.string().min(1, 'File name is required'),
   mimeType: z.string().min(1, 'MIME type is required'),
   fileSize: z.number().min(1, 'File size is required'),
 });
 
-// Course status transition schema
 export const updateCourseStatusSchema = z.object({
   status: courseStatusSchema,
 });
 
-// Query params for pagination
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
@@ -212,9 +194,39 @@ export const paginationSchema = z.object({
   search: z.string().optional(),
 });
 
-// Export all schemas
+// ============= INSTRUCTOR MANAGEMENT SCHEMAS =============
+
+export const updateInstructorProfileSchema = z.object({
+  title: z.string().max(100, 'Title must be less than 100 characters').optional(),
+  expertise: z.string().max(500, 'Expertise must be less than 500 characters').optional(),
+  bio: z.string().max(2000, 'Bio must be less than 2000 characters').optional(),
+  photo: z.string().url('Invalid photo URL').optional().or(z.literal('')),
+  socialLinks: z.object({
+    website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+    linkedin: z.string().url('Invalid LinkedIn URL').optional().or(z.literal('')),
+    twitter: z.string().url('Invalid Twitter URL').optional().or(z.literal('')),
+    youtube: z.string().url('Invalid YouTube URL').optional().or(z.literal('')),
+    github: z.string().url('Invalid GitHub URL').optional().or(z.literal('')),
+  }).optional(),
+});
+
+export const getInstructorsSchema = z.object({
+  search: z.string().optional(),
+  expertise: z.string().optional(),
+  categoryId: z.string().cuid('Invalid category ID').optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  offset: z.coerce.number().int().min(0).default(0),
+  sortBy: z.enum(['popular', 'rating', 'newest', 'courses']).default('popular'),
+});
+
+export const instructorIdSchema = z.object({
+  instructorId: z.string().cuid('Invalid instructor ID format'),
+});
+
+// ============= EXPORT ALL SCHEMAS =============
+
 export const schemas = {
-  // ... existing schemas
+  // User schemas
   register: registerSchema,
   login: loginSchema,
   userId: userIdSchema,
@@ -224,7 +236,8 @@ export const schemas = {
   resetPassword: resetPasswordSchema,
   verifyEmail: verifyEmailSchema,
   updateRole: updateRoleSchema,
-  // Course management schemas
+  
+  // Course schemas
   createCourse: createCourseSchema,
   updateCourse: updateCourseSchema,
   courseId: courseIdSchema,
@@ -239,9 +252,14 @@ export const schemas = {
   videoUpload: videoUploadSchema,
   updateCourseStatus: updateCourseStatusSchema,
   pagination: paginationSchema,
+  
+  // Instructor schemas
+  updateInstructorProfile: updateInstructorProfileSchema,
+  getInstructors: getInstructorsSchema,
+  instructorId: instructorIdSchema,
 };
 
-// Type inference for TypeScript
+// ============= TYPE INFERENCE =============
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
@@ -251,7 +269,6 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;
 
-// Course management types
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;
 export type UpdateCourseInput = z.infer<typeof updateCourseSchema>;
 export type CourseIdInput = z.infer<typeof courseIdSchema>;
@@ -266,3 +283,7 @@ export type ReorderLessonsInput = z.infer<typeof reorderLessonsSchema>;
 export type VideoUploadInput = z.infer<typeof videoUploadSchema>;
 export type UpdateCourseStatusInput = z.infer<typeof updateCourseStatusSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
+
+export type UpdateInstructorProfileInput = z.infer<typeof updateInstructorProfileSchema>;
+export type GetInstructorsInput = z.infer<typeof getInstructorsSchema>;
+export type InstructorIdInput = z.infer<typeof instructorIdSchema>;

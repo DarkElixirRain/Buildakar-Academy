@@ -18,12 +18,18 @@ export interface BaseCourse {
 export interface Course extends BaseCourse {
   progress?: number;
   remainingTime?: string;
-  rating?: number;
-  students?: number;
+  rating: number;
+  students: number;
   duration?: string;
   isSaved?: boolean;
   isTrending?: boolean;
   lastOpened?: string;
+  price: number;
+  originalPrice?: number;
+  status?: string;
+  isPublished?: boolean;
+  instructorId?: string;
+  categoryId?: string;
 }
 
 export interface FeaturedCourse extends BaseCourse {
@@ -54,17 +60,16 @@ export interface RecentlyViewedCourse extends BaseCourse {
   lastOpened: string;
 }
 
-// ✅ Updated Category interface with all fields
 export interface Category {
   id: string;
   name: string;
-  slug?: string; // Added slug
+  slug?: string;
   icon: string;
   color: string;
-  image?: string; // Added image
-  courseCount?: number; // Added courseCount
-  description?: string; // Added description
-  isActive?: boolean; // Added isActive
+  image?: string;
+  courseCount?: number;
+  description?: string;
+  isActive?: boolean;
 }
 
 export interface LearningPath {
@@ -99,7 +104,31 @@ export interface Instructor {
   expertise: string;
   photo: string;
   rating: number;
+  studentsCount?: number;
+  coursesCount?: number;
+  bio?: string;
   isFollowing?: boolean;
+  // API response fields
+  firstName?: string;
+  lastName?: string;
+  totalStudents?: number;
+  totalCourses?: number;
+  averageRating?: number;
+  isVerified?: boolean;
+  followerCount?: number;
+  email?: string;
+  title?: string;
+  totalRevenue?: number;
+  totalReviews?: number;
+  isVerifiedInstructor?: boolean;
+  createdAt?: string;
+  socialLinks?: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
+    youtube?: string;
+  };
 }
 
 export interface Notification {
@@ -126,19 +155,25 @@ export interface HomeData {
   continueLearning: ContinueLearningCourse[];
   learningPaths: LearningPath[];
   liveClasses: LiveClass[];
-  achievements: Achievement | null; // Made nullable
+  achievements: Achievement | null;
   topInstructors: Instructor[];
-  userProgress: UserProgress | null; // Made nullable
-  notifications: Notification | null; // Made nullable
+  userProgress: UserProgress | null;
+  notifications: Notification | null;
   recentlyViewed: RecentlyViewedCourse[];
 }
 
-// ✅ API Response Types
+// API Response Types
 export interface ApiResponse<T = any> {
   success: boolean;
   data: T;
   message?: string;
   error?: string;
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }
 
 export interface PaginatedResponse<T> {
@@ -151,7 +186,6 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// ✅ Category API Response (matches your backend)
 export interface CategoryApiResponse {
   id: string;
   name: string;
@@ -170,7 +204,6 @@ export interface CategoryApiResponse {
   courseCount?: number;
 }
 
-// ✅ Course API Response
 export interface CourseApiResponse {
   id: string;
   title: string;
@@ -204,7 +237,6 @@ export interface CourseApiResponse {
   };
 }
 
-// ✅ Instructor API Response
 export interface InstructorApiResponse {
   id: string;
   firstName: string;
@@ -212,15 +244,25 @@ export interface InstructorApiResponse {
   email: string;
   photo?: string;
   expertise?: string;
-  rating?: number;
+  title?: string;
+  bio?: string;
+  averageRating: number;
+  totalStudents: number;
+  totalCourses: number;
+  totalRevenue?: number;
+  totalReviews?: number;
+  isVerifiedInstructor: boolean;
   isFollowing?: boolean;
-  _count?: {
-    courses: number;
-    students: number;
+  followerCount?: number;
+  createdAt?: string;
+  socialLinks?: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
   };
 }
 
-// ✅ Learning Path API Response
 export interface LearningPathApiResponse {
   id: string;
   title: string;
@@ -230,7 +272,6 @@ export interface LearningPathApiResponse {
   image: string;
 }
 
-// ✅ Live Class API Response
 export interface LiveClassApiResponse {
   id: string;
   title: string;
@@ -241,7 +282,6 @@ export interface LiveClassApiResponse {
   isLive?: boolean;
 }
 
-// ✅ Achievement API Response
 export interface AchievementApiResponse {
   streak: number;
   xp: number;
@@ -249,7 +289,6 @@ export interface AchievementApiResponse {
   nextBadge?: string;
 }
 
-// ✅ User Progress API Response
 export interface UserProgressApiResponse {
   streak: number;
   enrolled: number;
@@ -259,14 +298,12 @@ export interface UserProgressApiResponse {
   weeklyProgress: number;
 }
 
-// ✅ Notification API Response
 export interface NotificationApiResponse {
   id: string;
   unread: number;
   items?: NotificationItem[];
 }
 
-// ✅ Continue Learning API Response
 export interface ContinueLearningApiResponse {
   id: string;
   title: string;
