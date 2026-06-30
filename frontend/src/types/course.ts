@@ -4,12 +4,25 @@ export interface Lesson {
   order: number;
   title: string;
   duration: string;
-  // New: Direct video URL
   videoUrl?: string;
-  // Keep for backward compatibility
   youtubeId?: string;
-  completed: boolean;
+  completed?: boolean; // ✅ Made optional
   locked?: boolean;
+  isPreview?: boolean;
+  description?: string;
+  content?: string;
+  isFree?: boolean;
+}
+
+export interface Section {
+  id: string;
+  title: string;
+  description?: string;
+  order: number;
+  lessons: Lesson[];
+  _count?: {
+    lessons: number;
+  };
 }
 
 export interface CourseDetail {
@@ -23,6 +36,24 @@ export interface CourseDetail {
   studentsCount: number;
   lessons: Lesson[];
   comments: Comment[];
+  price?: number;
+  originalPrice?: number;
+  level?: string;
+  language?: string;
+  totalDuration?: string;
+  lastUpdated?: string;
+  sections?: Section[];
+  whatYouWillLearn?: string[];
+  requirements?: string[];
+  instructorBio?: string;
+  isEnrolled?: boolean;
+  isBookmarked?: boolean;
+  progress?: number;
+  _count?: {
+    enrollments: number;
+    reviews: number;
+    lessons: number;
+  };
 }
 
 export interface Comment {

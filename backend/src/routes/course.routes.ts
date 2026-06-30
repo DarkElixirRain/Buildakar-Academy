@@ -10,7 +10,28 @@ import courseController from '../controllers/course.controller';
 
 const router = express.Router();
 
-// All routes require authentication
+// ============================================
+// ✅ PUBLIC ROUTES - No authentication required
+// ============================================
+
+// GET /api/courses/public - Get public courses (for students)
+router.get(
+  '/public',
+  courseController.getPublicCourses
+);
+
+// GET /api/courses/:id - Get course by ID (Public for published courses)
+// Removed validate middleware - we'll validate in controller
+router.get(
+  '/:id',
+  courseController.getCourseById
+);
+
+// ============================================
+// 🔒 PROTECTED ROUTES - Authentication required
+// ============================================
+
+// All routes below require authentication
 router.use(authenticate);
 
 const instructorOrAdmin = roleMiddleware([Role.INSTRUCTOR, Role.ADMIN]);
@@ -36,19 +57,6 @@ router.get(
   '/stats',
   instructorOrAdmin,
   courseController.getInstructorStats
-);
-
-// GET /api/courses/public - Get public courses (for students)
-router.get(
-  '/public',
-  courseController.getPublicCourses
-);
-
-// GET /api/courses/:id - Get course by ID
-router.get(
-  '/:id',
-  validate(schemas.courseId),
-  courseController.getCourseById
 );
 
 // PATCH /api/courses/:id - Update course

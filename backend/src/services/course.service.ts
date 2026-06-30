@@ -1,5 +1,5 @@
 // backend/src/services/course.service.ts
-import { PrismaClient, CourseStatus, Role, Level } from '@prisma/client';
+import { PrismaClient, CourseStatus, Role, Level } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -40,7 +40,7 @@ interface CourseFilters {
   search?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'newest' | 'oldest' | 'title' | 'updatedAt' | 'rating' | 'students';
+  sortBy?: "newest" | "oldest" | "title" | "updatedAt" | "rating" | "students";
 }
 
 interface PaginatedResult<T> {
@@ -56,10 +56,13 @@ interface PaginatedResult<T> {
 
 export class CourseService {
   // Valid status transitions
-  private static readonly validTransitions: Record<CourseStatus, CourseStatus[]> = {
-    DRAFT: ['UNDER_REVIEW'],
-    UNDER_REVIEW: ['PUBLISHED', 'DRAFT'],
-    PUBLISHED: ['DRAFT'], // Admin can unpublish
+  private static readonly validTransitions: Record<
+    CourseStatus,
+    CourseStatus[]
+  > = {
+    DRAFT: ["UNDER_REVIEW"],
+    UNDER_REVIEW: ["PUBLISHED", "DRAFT"],
+    PUBLISHED: ["DRAFT"], // Admin can unpublish
   };
 
   // Create a new course (instructor only)
@@ -70,7 +73,7 @@ export class CourseService {
     });
 
     if (!category) {
-      throw new Error('Category not found');
+      throw new Error("Category not found");
     }
 
     // Create course with DRAFT status
@@ -82,7 +85,7 @@ export class CourseService {
         price: data.price || 0,
         originalPrice: data.originalPrice,
         level: data.level || Level.BEGINNER,
-        language: data.language || 'English',
+        language: data.language || "English",
         duration: data.duration,
         totalHours: data.totalHours,
         categoryId: data.categoryId,
@@ -111,7 +114,7 @@ export class CourseService {
       search,
       page = 1,
       limit = 10,
-      sortBy = 'newest',
+      sortBy = "newest",
     } = filters;
 
     const where: any = {};
@@ -122,28 +125,28 @@ export class CourseService {
     if (isPublished !== undefined) where.isPublished = isPublished;
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
       ];
     }
 
     // Build orderBy
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: any = { createdAt: "desc" };
     switch (sortBy) {
-      case 'oldest':
-        orderBy = { createdAt: 'asc' };
+      case "oldest":
+        orderBy = { createdAt: "asc" };
         break;
-      case 'title':
-        orderBy = { title: 'asc' };
+      case "title":
+        orderBy = { title: "asc" };
         break;
-      case 'updatedAt':
-        orderBy = { updatedAt: 'desc' };
+      case "updatedAt":
+        orderBy = { updatedAt: "desc" };
         break;
-      case 'rating':
-        orderBy = { rating: 'desc' };
+      case "rating":
+        orderBy = { rating: "desc" };
         break;
-      case 'students':
-        orderBy = { studentsCount: 'desc' };
+      case "students":
+        orderBy = { studentsCount: "desc" };
         break;
     }
 
@@ -159,7 +162,7 @@ export class CourseService {
             include: {
               lessons: true,
             },
-            orderBy: { order: 'asc' },
+            orderBy: { order: "asc" },
           },
           _count: {
             select: { enrollments: true, lessons: true, reviews: true },
@@ -196,10 +199,10 @@ export class CourseService {
         sections: {
           include: {
             lessons: {
-              orderBy: { order: 'asc' },
+              orderBy: { order: "asc" },
             },
           },
-          orderBy: { order: 'asc' },
+          orderBy: { order: "asc" },
         },
         _count: {
           select: { enrollments: true, lessons: true, reviews: true },
@@ -210,19 +213,129 @@ export class CourseService {
     return course;
   }
 
+  // backend/src/services/course.service.ts
+
+  // Add this new method to the CourseService class
+  async getPublishedCourses(filters: {
+    page?: number;
+    limit?: number;
+    categoryId?: string;
+    search?: string;
+    sortBy?: string;
+    level?: string;
+  }) {
+    const { page = 1, limit = 10, categoryId, search, sortBy, level } = filters;
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {
+      status: "PUBLISHED",
+      isPublished: true,
+    };
+
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
+    if (level) {
+      where.level = level;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    // Build order by
+    let orderBy: any = { createdAt: "desc" };
+    if (sortBy === "rating") {
+      orderBy = { rating: "desc" };
+    } else if (sortBy === "popularity") {
+      orderBy = { studentsCount: "desc" };
+    } else if (sortBy === "newest") {
+      orderBy = { createdAt: "desc" };
+    } else if (sortBy === "priceLow") {
+      orderBy = { price: "asc" };
+    } else if (sortBy === "priceHigh") {
+      orderBy = { price: "desc" };
+    }
+
+    // Get courses with relations
+    const [data, total] = await Promise.all([
+      prisma.course.findMany({
+        where,
+        include: {
+          instructor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              photo: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              icon: true,
+              color: true,
+            },
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              reviews: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.course.count({ where }),
+    ]);
+
+    // Format response
+    const formattedData = data.map((course: any) => ({
+      ...course,
+      studentsCount: course._count?.enrollments || 0,
+      reviewCount: course._count?.reviews || 0,
+    }));
+
+    return {
+      data: formattedData,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page * limit < total,
+      },
+    };
+  }
+
   // Update course
-  async updateCourse(id: string, data: UpdateCourseData, userId: string, userRole: Role) {
+  async updateCourse(
+    id: string,
+    data: UpdateCourseData,
+    userId: string,
+    userRole: Role,
+  ) {
     const course = await prisma.course.findUnique({
       where: { id },
     });
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error("Course not found");
     }
 
     // Check ownership (instructors can only update their own courses)
     if (userRole !== Role.ADMIN && course.instructorId !== userId) {
-      throw new Error('Not authorized to update this course');
+      throw new Error("Not authorized to update this course");
     }
 
     // If category is being updated, verify it exists
@@ -231,7 +344,7 @@ export class CourseService {
         where: { id: data.categoryId },
       });
       if (!category) {
-        throw new Error('Category not found');
+        throw new Error("Category not found");
       }
     }
 
@@ -256,12 +369,12 @@ export class CourseService {
     });
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error("Course not found");
     }
 
     // Check ownership
     if (userRole !== Role.ADMIN && course.instructorId !== userId) {
-      throw new Error('Not authorized to delete this course');
+      throw new Error("Not authorized to delete this course");
     }
 
     // Check if course has enrollments
@@ -270,14 +383,16 @@ export class CourseService {
     });
 
     if (enrollmentCount > 0) {
-      throw new Error('Cannot delete course with active enrollments. Archive instead.');
+      throw new Error(
+        "Cannot delete course with active enrollments. Archive instead.",
+      );
     }
 
     await prisma.course.delete({
       where: { id },
     });
 
-    return { success: true, message: 'Course deleted successfully' };
+    return { success: true, message: "Course deleted successfully" };
   }
 
   // Update course status with validation
@@ -285,38 +400,45 @@ export class CourseService {
     id: string,
     newStatus: CourseStatus,
     userId: string,
-    userRole: Role
+    userRole: Role,
   ) {
     const course = await prisma.course.findUnique({
       where: { id },
     });
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error("Course not found");
     }
 
     // Check permissions
-    const canSubmitForReview = userRole === Role.INSTRUCTOR && course.instructorId === userId;
+    const canSubmitForReview =
+      userRole === Role.INSTRUCTOR && course.instructorId === userId;
     const canPublish = userRole === Role.ADMIN;
 
     // Validate transition
     const currentStatus = course.status;
-    const allowedTransitions = CourseService.validTransitions[currentStatus] || [];
+    const allowedTransitions =
+      CourseService.validTransitions[currentStatus] || [];
 
     // Instructors can only move DRAFT -> UNDER_REVIEW
     if (userRole === Role.INSTRUCTOR) {
       if (!canSubmitForReview) {
-        throw new Error('Not authorized to update this course status');
+        throw new Error("Not authorized to update this course status");
       }
-      if (currentStatus !== CourseStatus.DRAFT || newStatus !== CourseStatus.UNDER_REVIEW) {
-        throw new Error('Instructors can only submit draft courses for review');
+      if (
+        currentStatus !== CourseStatus.DRAFT ||
+        newStatus !== CourseStatus.UNDER_REVIEW
+      ) {
+        throw new Error("Instructors can only submit draft courses for review");
       }
     }
 
     // Admins can do any valid transition
     if (userRole === Role.ADMIN) {
       if (!allowedTransitions.includes(newStatus)) {
-        throw new Error(`Invalid status transition from ${currentStatus} to ${newStatus}`);
+        throw new Error(
+          `Invalid status transition from ${currentStatus} to ${newStatus}`,
+        );
       }
     }
 
@@ -356,41 +478,57 @@ export class CourseService {
     });
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error("Course not found");
     }
 
     // Check if course has at least one section
     if (!course.sections || course.sections.length === 0) {
-      throw new Error('Course must have at least one section before publishing');
+      throw new Error(
+        "Course must have at least one section before publishing",
+      );
     }
 
     // Check if at least one section has lessons
-    const hasLessons = course.sections.some(section => section.lessons.length > 0);
+    const hasLessons = course.sections.some(
+      (section) => section.lessons.length > 0,
+    );
     if (!hasLessons) {
-      throw new Error('Course must have at least one lesson before publishing');
+      throw new Error("Course must have at least one lesson before publishing");
     }
 
     // Check for required fields
     if (!course.title || !course.description) {
-      throw new Error('Course must have a title and description');
+      throw new Error("Course must have a title and description");
     }
 
     if (!course.thumbnail) {
-      throw new Error('Course must have a thumbnail before publishing');
+      throw new Error("Course must have a thumbnail before publishing");
     }
 
     if (!course.categoryId) {
-      throw new Error('Course must have a category');
+      throw new Error("Course must have a category");
     }
   }
 
   // Get instructor's courses stats
   async getInstructorStats(instructorId: string) {
-    const [totalCourses, publishedCourses, draftCourses, underReviewCourses, totalStudents] = await Promise.all([
+    const [
+      totalCourses,
+      publishedCourses,
+      draftCourses,
+      underReviewCourses,
+      totalStudents,
+    ] = await Promise.all([
       prisma.course.count({ where: { instructorId } }),
-      prisma.course.count({ where: { instructorId, status: CourseStatus.PUBLISHED } }),
-      prisma.course.count({ where: { instructorId, status: CourseStatus.DRAFT } }),
-      prisma.course.count({ where: { instructorId, status: CourseStatus.UNDER_REVIEW } }),
+      prisma.course.count({
+        where: { instructorId, status: CourseStatus.PUBLISHED },
+      }),
+      prisma.course.count({
+        where: { instructorId, status: CourseStatus.DRAFT },
+      }),
+      prisma.course.count({
+        where: { instructorId, status: CourseStatus.UNDER_REVIEW },
+      }),
       prisma.enrollment.count({
         where: {
           course: { instructorId },
@@ -421,11 +559,11 @@ export class CourseService {
     });
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error("Course not found");
     }
 
     if (course.instructorId !== instructorId) {
-      throw new Error('Not authorized to duplicate this course');
+      throw new Error("Not authorized to duplicate this course");
     }
 
     // Create new course as draft

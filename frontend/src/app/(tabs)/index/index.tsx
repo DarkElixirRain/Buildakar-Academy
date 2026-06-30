@@ -61,6 +61,7 @@ export default function HomeScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [localTopInstructors, setLocalTopInstructors] = useState<any[]>([]);
+  const [localFeaturedCourses, setLocalFeaturedCourses] = useState<any[]>([]);
 
   useEffect(() => {
     fetchHomeData();
@@ -254,15 +255,10 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Featured Courses Carousel */}
-          {featuredCourses && featuredCourses.length > 0 && (
-            <View style={{ marginBottom: 24 }}>
-              <FeaturedCourses
-                courses={featuredCourses}
-                onCoursePress={handleCourseDetailsPress}
-              />
-            </View>
-          )}
+          {/* Featured Courses Carousel - NOW FETCHES DATA INTERNALLY */}
+          <View style={{ marginBottom: 24 }}>
+            <FeaturedCourses onCoursePress={handleCourseDetailsPress} />
+          </View>
 
           {/* Categories Section */}
           {categories && categories.length > 0 && (

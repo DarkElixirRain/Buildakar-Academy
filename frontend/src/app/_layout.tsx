@@ -91,6 +91,8 @@ function AppContent() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(instructor)" options={{ headerShown: false }} />
       </Stack>
+
+      
     </SafeAreaProvider>
   );
 }

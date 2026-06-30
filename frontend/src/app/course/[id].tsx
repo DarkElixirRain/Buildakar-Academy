@@ -12,6 +12,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +21,77 @@ import { useTheme } from '@/context/themeContext';
 
 import { CustomVideoPlayer } from '../../components/course/CustomVideoPlayer';
 import { LessonsList } from '../../components/course/LessonsList';
-import { getCourseById, getLessonVideoSource } from '../../data/courseData';
+
+// API Configuration
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+// Types
+interface Instructor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  photo?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Lesson {
+  id: string;
+  order: number;
+  title: string;
+  duration: string;
+  videoUrl?: string;
+  youtubeId?: string;
+  completed: boolean;
+  locked?: boolean;
+  isPreview?: boolean;
+  description?: string;
+  content?: string;
+}
+
+interface Section {
+  id: string;
+  title: string;
+  description?: string;
+  order: number;
+  lessons: Lesson[];
+  _count?: {
+    lessons: number;
+  };
+}
+
+interface CourseData {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  price: number;
+  originalPrice?: number;
+  level: string;
+  language: string;
+  rating: number;
+  studentsCount: number;
+  isPublished: boolean;
+  status: string;
+  instructorId: string;
+  categoryId: string;
+  instructor: Instructor;
+  category: Category;
+  sections: Section[];
+  _count: {
+    enrollments: number;
+    reviews: number;
+    lessons: number;
+  };
+  learningObjectives?: string[];
+  requirements?: string[];
+  whatYouWillLearn?: string[];
+}
 
 // Skeleton Components
 const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
@@ -57,9 +128,10 @@ export default function CourseScreen() {
   const { width, height } = useWindowDimensions();
   const { isDarkMode, colors } = useTheme();
 
-  // Loading state
+  // State
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [courseData, setCourseData] = useState<CourseData | null>(null);
   const [videoHeight, setVideoHeight] = useState(width * (9 / 16));
 
   // Comments state
@@ -68,39 +140,102 @@ export default function CourseScreen() {
   const [isReplying, setIsReplying] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
-  // Replace with a real fetch (React Query, SWR, your API client, etc).
-  const course = useMemo(() => getCourseById(id ?? 'unknown'), [id]);
+  // Lesson state
+  const [activeLessonId, setActiveLessonId] = useState('');
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<Tab>('lessons');
+  const [notes, setNotes] = useState('');
 
-  // Simulate loading
+  // Update video height on orientation change
   useEffect(() => {
-    setIsLoading(true);
-    // Simulate network delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [id]);
-
-  // Update video height on orientation change or window resize
-  useEffect(() => {
-    const maxHeight = height * 0.6; // Maximum 60% of screen height
+    const maxHeight = height * 0.6;
     const calculatedHeight = width * (9 / 16);
     setVideoHeight(Math.min(calculatedHeight, maxHeight));
   }, [width, height]);
 
+  // Fetch course details from API
+  const fetchCourseDetails = async () => {
+    try {
+      setIsLoading(true);
+      console.log(`🌐 Fetching course details for ID: ${id}`);
 
+      const response = await fetch(`${API_URL}/api/courses/${id}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch course');
+      }
+
+      console.log('✅ Course loaded:', result.data.title);
+      setCourseData(result.data);
+
+      // Initialize lessons
+      const allLessons = getAllLessons(result.data.sections);
+      const firstIncomplete = allLessons.find((l) => !l.completed && !l.locked);
+      setActiveLessonId(firstIncomplete?.id ?? allLessons[0]?.id ?? '');
+      setCompletedIds(new Set(allLessons.filter((l) => l.completed).map((l) => l.id)));
+
+      // Fetch comments
+      await fetchComments();
+    } catch (error: any) {
+      console.error('❌ Failed to fetch course:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to load course. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Helper: Get all lessons from sections
+  const getAllLessons = (sections?: Section[]): Lesson[] => {
+    if (!sections) return [];
+    const allLessons: Lesson[] = [];
+    sections.forEach(section => {
+      section.lessons?.forEach(lesson => {
+        allLessons.push({
+          ...lesson,
+          completed: lesson.completed || false,
+        });
+      });
+    });
+    return allLessons;
+  };
+
+  // Helper: Get instructor name
+  const getInstructorName = (instructor: Instructor) => {
+    if (!instructor) return 'Instructor';
+    const firstName = instructor.firstName || '';
+    const lastName = instructor.lastName || '';
+    return `${firstName} ${lastName}`.trim() || 'Instructor';
+  };
+
+  // Helper: Get instructor avatar
+  const getInstructorAvatar = (instructor: Instructor) => {
+    if (!instructor) return 'https://ui-avatars.com/api/?name=Instructor&size=150&background=4F46E5&color=fff';
+    const name = getInstructorName(instructor);
+    return instructor.photo || 
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=4F46E5&color=fff`;
+  };
+
+  // Fetch comments
   const fetchComments = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      // Simulate API call - TODO: Replace with real API
       const mockComments: Comment[] = [
         {
           id: '1',
           userId: 'user1',
           userName: 'John Doe',
           userAvatar: 'https://picsum.photos/seed/john/200/200',
-          text: 'This lesson is really helpful! I finally understand React Native navigation.',
+          text: 'This course is really helpful! I finally understand the concepts.',
           timestamp: '2 hours ago',
           likes: 24,
           isLiked: false,
@@ -110,7 +245,7 @@ export default function CourseScreen() {
               userId: 'user2',
               userName: 'Sarah Chen',
               userAvatar: 'https://picsum.photos/seed/sarah/200/200',
-              text: 'I agree! The explanation of stack navigator was very clear.',
+              text: 'I agree! The explanations are very clear.',
               timestamp: '1 hour ago',
               likes: 12,
               isLiked: false,
@@ -122,21 +257,10 @@ export default function CourseScreen() {
           userId: 'user3',
           userName: 'Alex Johnson',
           userAvatar: 'https://picsum.photos/seed/alex/200/200',
-          text: 'Can someone explain the difference between useNavigation and useRouter?',
+          text: 'Can someone explain the difference between these concepts?',
           timestamp: '3 hours ago',
           likes: 8,
           isLiked: false,
-          replies: [],
-        },
-        {
-          id: '3',
-          userId: 'user4',
-          userName: 'Emily Davis',
-          userAvatar: 'https://picsum.photos/seed/emily/200/200',
-          text: 'Great content! Looking forward to the next lesson on navigation.',
-          timestamp: '5 hours ago',
-          likes: 15,
-          isLiked: true,
           replies: [],
         },
       ];
@@ -147,57 +271,49 @@ export default function CourseScreen() {
     }
   };
 
-  const firstIncomplete = course?.lessons?.find((l) => !l.completed && !l.locked);
-  const [activeLessonId, setActiveLessonId] = useState(
-    firstIncomplete?.id ?? course?.lessons?.[0]?.id ?? ''
-  );
-  const [completedIds, setCompletedIds] = useState(
-    () => new Set(course?.lessons?.filter((l) => l.completed).map((l) => l.id) ?? [])
-  );
-  const [activeTab, setActiveTab] = useState<Tab>('lessons');
-  const [notes, setNotes] = useState('');
-
-  // Update active lesson when course loads
+  // Initial fetch
   useEffect(() => {
-    if (course?.lessons?.length) {
-      const firstIncomplete = course.lessons.find((l) => !l.completed && !l.locked);
-      setActiveLessonId(firstIncomplete?.id ?? course.lessons[0].id);
-      setCompletedIds(new Set(course.lessons.filter((l) => l.completed).map((l) => l.id)));
+    if (id) {
+      fetchCourseDetails();
     }
-  }, [course]);
+  }, [id]);
 
-  const activeIndex = course?.lessons?.findIndex((l) => l.id === activeLessonId) ?? -1;
-  const activeLesson = course?.lessons?.[activeIndex];
-  const nextLesson = course?.lessons?.[activeIndex + 1];
+  // Get current lesson
+  const allLessons = courseData ? getAllLessons(courseData.sections) : [];
+  const activeIndex = allLessons.findIndex((l) => l.id === activeLessonId);
+  const activeLesson = allLessons[activeIndex];
+  const nextLesson = allLessons[activeIndex + 1];
   const isActiveCompleted = completedIds.has(activeLessonId);
+  const completedCount = allLessons.filter((l) => completedIds.has(l.id)).length;
+  const overallProgress = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
 
-  const lessons = course?.lessons?.map((l) => ({ ...l, completed: completedIds.has(l.id) })) ?? [];
-  const completedCount = lessons.filter((l) => l.completed).length;
-  const overallProgress = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
-
+  // Handlers
   const handleSelectLesson = (lessonId: string) => {
     setActiveLessonId(lessonId);
   };
 
   const handleMarkComplete = () => {
+    if (isActiveCompleted) return;
     setCompletedIds((prev) => new Set(prev).add(activeLessonId));
   };
 
   const handleNext = () => {
     if (!nextLesson) return;
-    setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+    if (!isActiveCompleted) {
+      setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+    }
     setActiveLessonId(nextLesson.id);
   };
 
   const handleVideoEnd = () => {
-    setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+    if (!isActiveCompleted) {
+      setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+    }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    await fetchComments();
-    setRefreshing(false);
+    await fetchCourseDetails();
   };
 
   // Comment handlers
@@ -334,7 +450,6 @@ export default function CourseScreen() {
             )}
           </View>
 
-          {/* Reply input */}
           {isReplying === comment.id && !isReply && (
             <View className="flex-row items-center mt-2">
               <TextInput
@@ -366,7 +481,6 @@ export default function CourseScreen() {
         </View>
       </View>
 
-      {/* Replies */}
       {comment.replies && comment.replies.map(reply => renderComment(reply, true))}
     </View>
   );
@@ -378,7 +492,6 @@ export default function CourseScreen() {
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <Stack.Screen options={{ headerShown: false }} />
         
-        {/* Video Player Skeleton */}
         <View style={{ width, height: videoHeight, backgroundColor: '#1a1a1a' }}>
           <View className="absolute top-0 left-0 right-0 p-4" style={{ top: insets.top }}>
             <Skeleton className="w-10 h-10 rounded-full" bgColor={skeletonBg} />
@@ -388,7 +501,6 @@ export default function CourseScreen() {
           </View>
         </View>
 
-        {/* Course Header Skeleton */}
         <View className="px-4 pt-4 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
           <SkeletonText className="h-6 w-3/4 mb-2" bgColor={skeletonBg} />
           <View className="flex-row items-center mt-2">
@@ -405,7 +517,6 @@ export default function CourseScreen() {
           </View>
         </View>
 
-        {/* Tabs Skeleton */}
         <View className="flex-row px-4" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
           {['lessons', 'overview', 'notes', 'comments'].map((tab) => (
             <View key={tab} className="mr-6 py-3">
@@ -414,7 +525,6 @@ export default function CourseScreen() {
           ))}
         </View>
 
-        {/* Content Skeleton */}
         <View className="px-4 py-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <View key={i} className="flex-row items-center py-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
@@ -428,7 +538,6 @@ export default function CourseScreen() {
           ))}
         </View>
 
-        {/* Bottom Bar Skeleton */}
         <View
           className="flex-row items-center px-4 py-3 border-t"
           style={{ 
@@ -445,7 +554,7 @@ export default function CourseScreen() {
   }
 
   // Handle case where course doesn't exist
-  if (!course || !course.id || !course.lessons?.length) {
+  if (!courseData || !courseData.id || !allLessons.length) {
     return (
       <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
         <Ionicons name="book-outline" size={64} color={colors.textSecondary} />
@@ -461,6 +570,9 @@ export default function CourseScreen() {
     );
   }
 
+  const instructorName = getInstructorName(courseData.instructor);
+  const instructorAvatar = getInstructorAvatar(courseData.instructor);
+
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -472,46 +584,45 @@ export default function CourseScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Video player - now scrollable */}
+        {/* Video player */}
         <View style={{ width, height: videoHeight, backgroundColor: '#000' }}>
           <CustomVideoPlayer
             key={activeLessonId}
-            source={getLessonVideoSource(activeLessonId)}
+            source={{ uri: activeLesson?.videoUrl || 'https://www.pexels.com/download/video/34279733/' }}
             title={activeLesson?.title}
             topInset={insets.top}
             onBack={() => router.back()}
             onEnd={handleVideoEnd}
-            onProgress={(_currentTime, _duration) => {
-              // Save progress
-            }}
           />
         </View>
 
         {/* Rest of content */}
         <View className="px-4 pt-4 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
           <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }} numberOfLines={2}>
-            {course.title}
+            {courseData.title}
           </Text>
 
           <View className="flex-row items-center mt-2">
             <Image
-              source={{ uri: course.instructorAvatar }}
+              source={{ uri: instructorAvatar }}
               className="w-7 h-7 rounded-full mr-2"
             />
             <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1 }} numberOfLines={1}>
-              {course.instructor}
+              {instructorName}
             </Text>
             <Ionicons name="star" size={14} color="#F59E0B" />
-            <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginLeft: 4 }}>{course.rating}</Text>
+            <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginLeft: 4 }}>
+              {courseData.rating?.toFixed(1) || '0.0'}
+            </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 8 }}>
-              {course.studentsCount.toLocaleString()} students
+              {courseData.studentsCount || 0} students
             </Text>
           </View>
 
           <View className="mt-3">
             <View className="flex-row justify-between mb-1">
               <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                {completedCount} of {lessons.length} lessons complete
+                {completedCount} of {allLessons.length} lessons complete
               </Text>
               <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>{overallProgress}%</Text>
             </View>
@@ -554,7 +665,7 @@ export default function CourseScreen() {
 
         {activeTab === 'lessons' && (
           <LessonsList
-            lessons={lessons}
+            lessons={allLessons}
             activeLessonId={activeLessonId}
             onSelectLesson={handleSelectLesson}
           />
@@ -562,21 +673,35 @@ export default function CourseScreen() {
 
         {activeTab === 'overview' && (
           <View className="px-4 py-4">
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>About this course</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 16 }}>{course.description}</Text>
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>
+              About this course
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 16 }}>
+              {courseData.description || 'No description available.'}
+            </Text>
 
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>What you'll learn</Text>
-            {course.whatYouWillLearn.map((point, i) => (
-              <View key={i} className="flex-row items-start mb-2">
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color="#16A34A"
-                  style={{ marginTop: 2, marginRight: 8 }}
-                />
-                <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>{point}</Text>
-              </View>
-            ))}
+            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>
+              What you'll learn
+            </Text>
+            {courseData.whatYouWillLearn && courseData.whatYouWillLearn.length > 0 ? (
+              courseData.whatYouWillLearn.map((point, i) => (
+                <View key={i} className="flex-row items-start mb-2">
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#16A34A"
+                    style={{ marginTop: 2, marginRight: 8 }}
+                  />
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>
+                    {point}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                No learning objectives listed.
+              </Text>
+            )}
           </View>
         )}
 
@@ -602,8 +727,7 @@ export default function CourseScreen() {
               }}
             />
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>
-              Notes are kept on this screen only for now — save them to AsyncStorage or your
-              backend to persist across sessions.
+              Notes are kept on this screen only for now.
             </Text>
           </View>
         )}
@@ -614,7 +738,6 @@ export default function CourseScreen() {
             keyboardVerticalOffset={100}
           >
             <View className="px-4 py-4">
-              {/* Comment Input */}
               <View className="flex-row items-end mb-4">
                 <View className="flex-1 mr-2">
                   <TextInput
@@ -646,7 +769,6 @@ export default function CourseScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Comments List */}
               <View className="space-y-4">
                 {comments.length > 0 ? (
                   comments.map(comment => renderComment(comment))
@@ -690,7 +812,7 @@ export default function CourseScreen() {
               isActiveCompleted ? 'text-[#16A34A]' : isDarkMode ? 'text-white' : 'text-[#0F172A]'
             }`}
           >
-            {isActiveCompleted ? 'Completed' : 'Mark as Complete'}
+            {isActiveCompleted ? 'Completed ✓' : 'Mark as Complete'}
           </Text>
         </TouchableOpacity>
 
@@ -706,7 +828,7 @@ export default function CourseScreen() {
               nextLesson ? 'text-white' : isDarkMode ? 'text-[#64748B]' : 'text-[#94A3B8]'
             }`}
           >
-            {nextLesson ? 'Next Lesson' : 'Course Complete'}
+            {nextLesson ? 'Next Lesson' : 'Course Complete 🎉'}
           </Text>
           {nextLesson && <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />}
         </TouchableOpacity>

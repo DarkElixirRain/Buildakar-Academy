@@ -108,6 +108,7 @@ model Lesson {
   title       String
   description String?
   videoUrl    String?
+  videoPublicId String?
   duration    String?
   order       Int
   isPreview   Boolean          @default(false)

@@ -1,4 +1,4 @@
-// app/(tabs)/_layout.tsx (with className approach)
+// app/(tabs)/_layout.tsx
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { isDarkMode, colors } = useTheme();
   const user = useAuthStore(state => state.user);
-  const isInstructor = user?.role === 'INSTRUCTOR';
+  const isInstructor = user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN';
 
   // Calculate responsive tab bar height
   const getTabBarHeight = () => {
@@ -115,7 +115,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="instructor"
           options={{
-            title: 'Teach',
+            title: 'Instructor',
             tabBarIcon: ({ color, size, focused }) => (
               <Ionicons
                 name={focused ? 'school' : 'school-outline'}

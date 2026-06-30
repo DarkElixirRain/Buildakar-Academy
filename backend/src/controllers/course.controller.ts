@@ -1,7 +1,7 @@
 // backend/src/controllers/course.controller.ts
-import { Request, Response, NextFunction } from 'express';
-import courseService from '../services/course.service';
-import { schemas } from '../utils/validation';
+import { Request, Response, NextFunction } from "express";
+import courseService from "../services/course.service";
+import { schemas } from "../utils/validation";
 
 export class CourseController {
   // Create a new course (Instructor only)
@@ -17,7 +17,7 @@ export class CourseController {
 
       res.status(201).json({
         success: true,
-        message: 'Course created successfully',
+        message: "Course created successfully",
         data: course,
       });
     } catch (error) {
@@ -30,11 +30,11 @@ export class CourseController {
     try {
       const userId = req.user!.id;
       const userRole = req.user!.role;
-      
+
       const filters = schemas.pagination.parse(req.query);
-      
+
       // Instructors can only see their own courses unless admin
-      const instructorId = userRole === 'ADMIN' ? undefined : userId;
+      const instructorId = userRole === "ADMIN" ? undefined : userId;
 
       const result = await courseService.getCourses({
         ...filters,
@@ -46,7 +46,7 @@ export class CourseController {
 
       res.status(200).json({
         success: true,
-        message: 'Courses retrieved successfully',
+        message: "Courses retrieved successfully",
         data: result.data,
         pagination: result.pagination,
       });
@@ -55,41 +55,67 @@ export class CourseController {
     }
   }
 
+  // backend/src/controllers/course.controller.ts
+
   // Get single course by ID
   async getCourseById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = schemas.courseId.parse(req.params);
-      const userId = req.user!.id;
-      const userRole = req.user!.role;
+      const { id } = req.params;
+
+      // Manual validation
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Course ID is required",
+        });
+      }
+
+      const userId = req.user?.id;
+      const userRole = req.user?.role;
 
       const course = await courseService.getCourseById(id);
 
       if (!course) {
         return res.status(404).json({
           success: false,
-          message: 'Course not found',
+          message: "Course not found",
+        });
+      }
+
+      // If user is not authenticated, only show published courses
+      if (!userId) {
+        if (course.status !== "PUBLISHED" || !course.isPublished) {
+          return res.status(404).json({
+            success: false,
+            message: "Course not found",
+          });
+        }
+        return res.status(200).json({
+          success: true,
+          message: "Course retrieved successfully",
+          data: course,
         });
       }
 
       // Check access: instructors can only access their own, admins can access all
       // Students can only access published courses
-      if (userRole === 'STUDENT') {
-        if (!('status' in course) || course.status !== 'PUBLISHED') {
+      if (userRole === "STUDENT") {
+        if (course.status !== "PUBLISHED") {
           return res.status(403).json({
             success: false,
-            message: 'Course not available',
+            message: "Course not available",
           });
         }
-      } else if (userRole === 'INSTRUCTOR' && course.instructorId !== userId) {
+      } else if (userRole === "INSTRUCTOR" && course.instructorId !== userId) {
         return res.status(403).json({
           success: false,
-          message: 'Not authorized to access this course',
+          message: "Not authorized to access this course",
         });
       }
 
       res.status(200).json({
         success: true,
-        message: 'Course retrieved successfully',
+        message: "Course retrieved successfully",
         data: course,
       });
     } catch (error) {
@@ -102,14 +128,19 @@ export class CourseController {
     try {
       const { id } = schemas.courseId.parse(req.params);
       const userId = req.user!.id;
-      const userRole = req.user!.role as import('@prisma/client').Role;
+      const userRole = req.user!.role as import("@prisma/client").Role;
       const data = schemas.updateCourse.parse(req.body);
 
-      const course = await courseService.updateCourse(id, data, userId, userRole);
+      const course = await courseService.updateCourse(
+        id,
+        data,
+        userId,
+        userRole,
+      );
 
       res.status(200).json({
         success: true,
-        message: 'Course updated successfully',
+        message: "Course updated successfully",
         data: course,
       });
     } catch (error) {
@@ -122,7 +153,7 @@ export class CourseController {
     try {
       const { id } = schemas.courseId.parse(req.params);
       const userId = req.user!.id;
-      const userRole = req.user!.role as import('@prisma/client').Role;
+      const userRole = req.user!.role as import("@prisma/client").Role;
 
       const result = await courseService.deleteCourse(id, userId, userRole);
 
@@ -140,10 +171,15 @@ export class CourseController {
     try {
       const { id } = schemas.courseId.parse(req.params);
       const userId = req.user!.id;
-      const userRole = req.user!.role as import('@prisma/client').Role;
+      const userRole = req.user!.role as import("@prisma/client").Role;
       const { status } = schemas.updateCourseStatus.parse(req.body);
 
-      const course = await courseService.updateCourseStatus(id, status, userId, userRole);
+      const course = await courseService.updateCourseStatus(
+        id,
+        status,
+        userId,
+        userRole,
+      );
 
       res.status(200).json({
         success: true,
@@ -163,7 +199,7 @@ export class CourseController {
 
       res.status(200).json({
         success: true,
-        message: 'Instructor stats retrieved successfully',
+        message: "Instructor stats retrieved successfully",
         data: stats,
       });
     } catch (error) {
@@ -181,7 +217,7 @@ export class CourseController {
 
       res.status(201).json({
         success: true,
-        message: 'Course duplicated successfully',
+        message: "Course duplicated successfully",
         data: course,
       });
     } catch (error) {
@@ -189,23 +225,24 @@ export class CourseController {
     }
   }
 
-  // Get public courses (for students browsing)
+  // ✅ FIXED: Get public courses (for students browsing)
   async getPublicCourses(req: Request, res: Response, next: NextFunction) {
     try {
+      // Parse pagination filters
       const filters = schemas.pagination.parse(req.query);
-      
-      const result = await courseService.getCourses({
+
+      // Get published courses
+      const result = await courseService.getPublishedCourses({
         ...filters,
-        status: 'PUBLISHED',
-        isPublished: true,
         categoryId: req.query.categoryId as string,
         search: req.query.search as string,
         sortBy: req.query.sortBy as any,
+        level: req.query.level as any,
       });
 
       res.status(200).json({
         success: true,
-        message: 'Courses retrieved successfully',
+        message: "Courses retrieved successfully",
         data: result.data,
         pagination: result.pagination,
       });

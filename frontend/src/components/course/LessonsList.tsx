@@ -1,9 +1,22 @@
 // components/course/LessonsList.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { Lesson } from '../../data/courseData';
 import { useTheme } from '@/context/themeContext';
+
+interface Lesson {
+  id: string;
+  order: number;
+  title: string;
+  duration: string;
+  videoUrl?: string;
+  youtubeId?: string;
+  completed?: boolean;
+  locked?: boolean;
+  isPreview?: boolean;
+  description?: string;
+  content?: string;
+}
 
 interface LessonsListProps {
   lessons: Lesson[];
@@ -18,95 +31,97 @@ export const LessonsList: React.FC<LessonsListProps> = ({
 }) => {
   const { isDarkMode, colors } = useTheme();
 
-  const handlePress = (lesson: Lesson) => {
-    if (lesson.locked) {
-      Alert.alert('Lesson locked', 'Complete the previous lesson to unlock this one.');
-      return;
-    }
-    onSelectLesson(lesson.id);
-  };
+  // Sort lessons by order
+  const sortedLessons = [...lessons].sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
-    <View style={{ backgroundColor: colors.background }}>
-      {lessons.map((lesson, index) => {
+    <View className="px-4 py-2">
+      {sortedLessons.map((lesson, index) => {
         const isActive = lesson.id === activeLessonId;
+        const isCompleted = lesson.completed || false;
+        const isLocked = lesson.locked || false;
+
         return (
           <TouchableOpacity
             key={lesson.id}
-            onPress={() => handlePress(lesson)}
-            activeOpacity={0.7}
+            onPress={() => !isLocked && onSelectLesson(lesson.id)}
+            disabled={isLocked}
+            className={`flex-row items-center py-3 px-3 rounded-xl mb-1 ${
+              isActive ? 'bg-[#2563EB]/10' : ''
+            }`}
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.backgroundSelected,
               backgroundColor: isActive 
-                ? (isDarkMode ? '#1E3A5F' : '#EFF6FF')
-                : colors.background,
+                ? isDarkMode ? 'rgba(37,99,235,0.2)' : 'rgba(37,99,235,0.08)'
+                : 'transparent',
             }}
           >
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-                backgroundColor: lesson.completed
-                  ? '#16A34A'
-                  : isActive
-                  ? colors.primary
-                  : lesson.locked
-                  ? colors.backgroundSelected
-                  : colors.backgroundSelected,
-              }}
-            >
-              {lesson.completed ? (
-                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-              ) : lesson.locked ? (
-                <Ionicons name="lock-closed" size={14} color={colors.textSecondary} />
-              ) : isActive ? (
-                <Ionicons name="play" size={14} color="#FFFFFF" />
+            {/* Lesson number / status icon */}
+            <View className="w-8 h-8 rounded-full items-center justify-center mr-3">
+              {isCompleted ? (
+                <View className="w-6 h-6 rounded-full bg-[#16A34A] items-center justify-center">
+                  <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                </View>
+              ) : isLocked ? (
+                <View className="w-6 h-6 rounded-full items-center justify-center" style={{ backgroundColor: colors.backgroundSelected }}>
+                  <Ionicons name="lock-closed" size={14} color={colors.textSecondary} />
+                </View>
               ) : (
-                <Text style={{
-                  color: colors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: '600',
-                }}>{index + 1}</Text>
+                <View 
+                  className="w-6 h-6 rounded-full items-center justify-center"
+                  style={{ 
+                    backgroundColor: isActive 
+                      ? colors.primary 
+                      : colors.backgroundSelected 
+                  }}
+                >
+                  <Text 
+                    className="text-xs font-semibold"
+                    style={{ 
+                      color: isActive 
+                        ? '#FFFFFF' 
+                        : colors.textSecondary 
+                    }}
+                  >
+                    {index + 1}
+                  </Text>
+                </View>
               )}
             </View>
 
+            {/* Lesson info */}
             <View className="flex-1">
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: '600',
-                  color: lesson.locked ? colors.textSecondary : colors.text,
+              <Text 
+                className="text-sm font-medium"
+                style={{ 
+                  color: isLocked 
+                    ? colors.textSecondary 
+                    : isActive 
+                      ? colors.primary 
+                      : colors.text,
+                  opacity: isLocked ? 0.6 : 1,
                 }}
-                numberOfLines={2}
+                numberOfLines={1}
               >
                 {lesson.title}
               </Text>
-              <Text style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                marginTop: 2,
-              }}>{lesson.duration}</Text>
+              {lesson.isPreview && (
+                <Text style={{ color: colors.primary, fontSize: 10, marginTop: 1 }}>
+                  Preview
+                </Text>
+              )}
             </View>
 
-            {isActive && !lesson.completed && (
-              <View style={{
-                backgroundColor: colors.primary,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 12,
-                marginLeft: 8,
-              }}>
-                <Text className="text-white text-[10px] font-semibold">Now Playing</Text>
-              </View>
+            {/* Duration */}
+            <Text 
+              className="text-xs ml-2"
+              style={{ color: colors.textSecondary }}
+            >
+              {lesson.duration || 'N/A'}
+            </Text>
+
+            {/* Active indicator */}
+            {isActive && (
+              <View className="w-1.5 h-6 rounded-full ml-2" style={{ backgroundColor: colors.primary }} />
             )}
           </TouchableOpacity>
         );

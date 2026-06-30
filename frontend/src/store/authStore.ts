@@ -44,6 +44,7 @@ const getStorage = () => {
 };
 
 interface User {
+  name: string;
   id: string;
   firstName: string;
   lastName: string;

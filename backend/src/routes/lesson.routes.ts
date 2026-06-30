@@ -10,9 +10,29 @@ import lessonController from '../controllers/lesson.controller';
 import multer from 'multer';
 
 const router = express.Router();
-const upload = multer({ 
+
+// Configure multer for video uploads
+const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5GB
+  limits: {
+    fileSize: 5 * 1024 * 1024 * 1024, // 5GB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/mpeg',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/webm',
+      'video/x-matroska',
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported video format: ${file.mimetype}`));
+    }
+  },
 });
 
 // All routes require authentication
@@ -49,7 +69,7 @@ router.post(
 router.get(
   '/lessons/:id',
   instructorOrAdmin,
-  validate(schemas.lessonId),
+  validate(schemas.lessonId, 'params'),
   checkLessonOwnership,
   lessonController.getLessonById
 );
@@ -58,7 +78,7 @@ router.get(
 router.patch(
   '/lessons/:id',
   instructorOrAdmin,
-  validate(schemas.lessonId),
+  validate(schemas.lessonId, 'params'),
   checkLessonOwnership,
   validate(schemas.updateLesson),
   lessonController.updateLesson
@@ -68,7 +88,7 @@ router.patch(
 router.delete(
   '/lessons/:id',
   instructorOrAdmin,
-  validate(schemas.lessonId),
+  validate(schemas.lessonId, 'params'),
   checkLessonOwnership,
   lessonController.deleteLesson
 );
@@ -82,13 +102,13 @@ router.post(
   lessonController.reorderLessons
 );
 
-// POST /api/lessons/:id/upload-video - Upload video for lesson
+// ✅ UPLOAD VIDEO - IMPORTANT: Multer MUST come before validation
 router.post(
   '/lessons/:id/upload-video',
   instructorOrAdmin,
-  validate(schemas.lessonId),
+  upload.single('video'), // ← CRITICAL: This must be FIRST
+  validate(schemas.lessonId, 'params'),
   checkLessonOwnership,
-  upload.single('video'),
   lessonController.uploadVideo
 );
 
@@ -96,7 +116,7 @@ router.post(
 router.delete(
   '/lessons/:id/video',
   instructorOrAdmin,
-  validate(schemas.lessonId),
+  validate(schemas.lessonId, 'params'),
   checkLessonOwnership,
   lessonController.deleteVideo
 );
@@ -105,7 +125,7 @@ router.delete(
 router.get(
   '/lessons/:id/stream-url',
   instructorOrAdmin,
-  validate(schemas.lessonId),
+  validate(schemas.lessonId, 'params'),
   checkLessonOwnership,
   lessonController.getVideoStreamUrl
 );

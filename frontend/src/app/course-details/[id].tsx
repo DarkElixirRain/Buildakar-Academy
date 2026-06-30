@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   StatusBar,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,9 +22,86 @@ import { useTheme } from '@/context/themeContext';
 import { CustomVideoPlayer } from '../../components/course/CustomVideoPlayer';
 import { CourseCurriculum } from '../../components/course-details/CourseCurriculum';
 import { CourseReviews } from '../../components/course-details/CourseReviews';
-import { getCourseById, getCoursePreviewSource } from '../../data/courseData';
+import { Lesson } from '@/types/course';
 
 type Tab = 'overview' | 'curriculum' | 'reviews';
+
+// API Configuration
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+// API Response Types
+interface ApiInstructor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  photo?: string;
+  bio?: string;
+}
+
+interface ApiCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface ApiLesson {
+  id: string;
+  title: string;
+  description?: string;
+  duration?: string;
+  videoUrl?: string;
+  order: number;
+  isPreview: boolean;
+  isFree: boolean;
+  content?: string;
+  completed?: boolean;
+}
+
+interface ApiSection {
+  id: string;
+  title: string;
+  description?: string;
+  order: number;
+  lessons: ApiLesson[];
+  _count: {
+    lessons: number;
+  };
+}
+
+interface ApiCourse {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  price: number;
+  originalPrice?: number;
+  level: string;
+  language: string;
+  duration?: string;
+  totalHours?: number;
+  rating: number;
+  studentsCount: number;
+  isPublished: boolean;
+  isBestseller: boolean;
+  isTrending: boolean;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  instructorId: string;
+  categoryId: string;
+  instructor: ApiInstructor;
+  category: ApiCategory;
+  sections: ApiSection[];
+  _count: {
+    enrollments: number;
+    reviews: number;
+    lessons: number;
+  };
+  learningObjectives?: string[];
+  requirements?: string[];
+  whatYouWillLearn?: string[];
+}
 
 // Skeleton Components
 const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
@@ -45,67 +123,162 @@ export default function CourseDetailsScreen() {
   const { width } = useWindowDimensions();
   const { isDarkMode, colors } = useTheme();
 
-  // Loading state
+  // State
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Replace with a real fetch (React Query, SWR, your API client, etc).
-  const course = useMemo(() => getCourseById(id ?? 'unknown'), [id]);
-
+  const [courseData, setCourseData] = useState<ApiCourse | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [previewVisible, setPreviewVisible] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
-  // In a real app this comes from the user's enrollment record, not local state.
   const [enrolled, setEnrolled] = useState(false);
 
-  // Simulate loading
-  useEffect(() => {
-    setIsLoading(true);
-    // Simulate network delay
-    const timer = setTimeout(() => {
+  // Fetch course details from API
+  const fetchCourseDetails = async () => {
+    try {
+      setIsLoading(true);
+      console.log(`🌐 Fetching course details for ID: ${id}`);
+
+      const response = await fetch(`${API_URL}/api/courses/${id}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch course');
+      }
+
+      console.log('✅ Course loaded:', result.data.title);
+      setCourseData(result.data);
+    } catch (error: any) {
+      console.error('❌ Failed to fetch course:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to load course details. Please try again.'
+      );
+    } finally {
       setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+      setRefreshing(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    if (id) {
+      fetchCourseDetails();
+    }
   }, [id]);
 
-  const discountPercent = course?.originalPrice
-    ? Math.round((1 - course.price / course.originalPrice) * 100)
-    : 0;
+  // Handle refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCourseDetails();
+  };
 
-  // ✅ Fixed back button handler with multiple fallbacks
+  // Handle back navigation
   const handleBack = () => {
     try {
       if (router.canGoBack()) {
         router.back();
       } else {
-        // Fallback: navigate to home or previous screen
         router.replace('/(tabs)' as any);
       }
     } catch (error) {
-      // Ultimate fallback
       router.replace('/' as any);
     }
   };
 
-  // ✅ Toggle bookmark with haptic feedback (optional)
+  // Toggle bookmark
   const toggleBookmark = () => {
     setBookmarked((prev) => !prev);
+    // TODO: Implement API call to save/unsave course
   };
 
+  // Handle primary action
   const handlePrimaryAction = () => {
     if (!enrolled) {
-      // Simulate enrolling — swap this for your real purchase/enroll API call.
       setEnrolled(true);
+      Alert.alert('Success', 'You have been enrolled in this course!');
     }
-    router.push(`/course/${course.id}`);
+    router.push(`/course/${courseData?.id}`);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // Simulate refresh
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setRefreshing(false);
+  // Helper: Get instructor full name
+  const getInstructorName = (instructor: ApiInstructor) => {
+    if (!instructor) return 'Unknown Instructor';
+    const firstName = instructor.firstName || '';
+    const lastName = instructor.lastName || '';
+    return `${firstName} ${lastName}`.trim() || 'Instructor';
   };
+
+  // Helper: Get instructor avatar
+  const getInstructorAvatar = (instructor: ApiInstructor) => {
+    if (!instructor) return 'https://ui-avatars.com/api/?name=Instructor&size=150&background=4F46E5&color=fff';
+    const name = getInstructorName(instructor);
+    return instructor.photo || 
+      `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=4F46E5&color=fff`;
+  };
+
+  // Helper: Get total duration
+  const getTotalDuration = (sections: ApiSection[]) => {
+    if (!sections || sections.length === 0) return 'N/A';
+    
+    let totalMinutes = 0;
+    sections.forEach(section => {
+      section.lessons?.forEach(lesson => {
+        if (lesson.duration) {
+          const parts = lesson.duration.split(':');
+          if (parts.length === 2) {
+            totalMinutes += parseInt(parts[0]) + parseInt(parts[1]) / 60;
+          } else if (parts.length === 3) {
+            totalMinutes += parseInt(parts[0]) * 60 + parseInt(parts[1]) + parseInt(parts[2]) / 60;
+          }
+        }
+      });
+    });
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
+
+  // Helper: Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Recently';
+    const d = new Date(dateString);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  // Helper: Map API lessons to component lessons
+  // app/course-details/[id].tsx - Updated mapLessons function
+
+// Helper: Map API lessons to component lessons
+const mapLessons = (sections: ApiSection[]): Lesson[] => {
+  if (!sections) return [];
+  const allLessons: Lesson[] = [];
+  sections.forEach(section => {
+    section.lessons?.forEach(lesson => {
+      allLessons.push({
+        id: lesson.id,
+        title: lesson.title,
+        duration: lesson.duration || 'N/A',
+        videoUrl: lesson.videoUrl,
+        youtubeId: lesson.videoUrl, // Fallback
+        completed: lesson.completed || false, // ✅ Default to false if undefined
+        locked: false,
+        isPreview: lesson.isPreview || false,
+        description: lesson.description,
+        content: lesson.content,
+        order: lesson.order,
+        isFree: lesson.isFree || false,
+      });
+    });
+  });
+  return allLessons;
+};
 
   // Loading Skeleton
   if (isLoading) {
@@ -115,20 +288,15 @@ export default function CourseDetailsScreen() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
         <Stack.Screen options={{ headerShown: false }} />
 
-        {/* Hero Skeleton */}
         <View style={{ width, height: width * 0.55, backgroundColor: '#1a1a2e' }}>
           <LinearGradient
             colors={['rgba(15,23,42,0.45)', 'transparent', 'rgba(15,23,42,0.6)']}
             style={StyleSheet.absoluteFill}
           />
           
-          {/* Header Skeleton */}
           <View
             className="absolute left-0 right-0 flex-row items-center justify-between px-4"
-            style={{ 
-              top: insets.top + 8,
-              zIndex: 10,
-            }}
+            style={{ top: insets.top + 8, zIndex: 10 }}
           >
             <View className="flex-row items-center bg-black/40 px-3 py-2 rounded-full">
               <Skeleton className="w-5 h-5 rounded-full" bgColor={skeletonBg} />
@@ -137,16 +305,13 @@ export default function CourseDetailsScreen() {
             <SkeletonCircle size={40} bgColor={skeletonBg} />
           </View>
 
-          {/* Play Button Skeleton */}
           <View className="absolute inset-0 items-center justify-center">
             <SkeletonCircle size={56} bgColor={skeletonBg} />
             <SkeletonText className="w-24 mt-2" bgColor={skeletonBg} />
           </View>
         </View>
 
-        {/* Content Skeleton */}
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          {/* Title + meta Skeleton */}
           <View className="px-4 pt-4">
             <View className="flex-row items-center mb-2">
               <Skeleton className="w-16 h-5 rounded-full mr-2" bgColor={skeletonBg} />
@@ -164,66 +329,31 @@ export default function CourseDetailsScreen() {
             </View>
 
             <View className="flex-row items-center flex-wrap mb-1">
-              <View className="flex-row items-center mr-4 mb-2">
-                <Skeleton className="w-4 h-4 rounded-full" bgColor={skeletonBg} />
-                <SkeletonText className="w-20 ml-1.5" bgColor={skeletonBg} />
-              </View>
-              <View className="flex-row items-center mr-4 mb-2">
-                <Skeleton className="w-4 h-4 rounded-full" bgColor={skeletonBg} />
-                <SkeletonText className="w-16 ml-1.5" bgColor={skeletonBg} />
-              </View>
-              <View className="flex-row items-center mb-2">
-                <Skeleton className="w-4 h-4 rounded-full" bgColor={skeletonBg} />
-                <SkeletonText className="w-24 ml-1.5" bgColor={skeletonBg} />
-              </View>
+              {[1, 2, 3].map((i) => (
+                <View key={i} className="flex-row items-center mr-4 mb-2">
+                  <Skeleton className="w-4 h-4 rounded-full" bgColor={skeletonBg} />
+                  <SkeletonText className="w-16 ml-1.5" bgColor={skeletonBg} />
+                </View>
+              ))}
             </View>
           </View>
 
-          {/* Tabs Skeleton */}
           <View className="flex-row px-4 mt-2" style={{ borderBottomWidth: 1, borderBottomColor: colors.backgroundSelected }}>
             {['overview', 'curriculum', 'reviews'].map((tab) => (
               <View key={tab} className="mr-6 py-3">
-                <SkeletonText className={`w-${tab === 'overview' ? '20' : tab === 'curriculum' ? '24' : '18'} h-5`} bgColor={skeletonBg} />
+                <SkeletonText className="w-16 h-5" bgColor={skeletonBg} />
               </View>
             ))}
           </View>
 
-          {/* Overview Content Skeleton */}
           <View className="px-4 py-4">
             <SkeletonText className="h-5 w-40 mb-2" bgColor={skeletonBg} />
-            <SkeletonText className="w-full h-4 mb-1" bgColor={skeletonBg} />
-            <SkeletonText className="w-11/12 h-4 mb-1" bgColor={skeletonBg} />
-            <SkeletonText className="w-10/12 h-4 mb-1" bgColor={skeletonBg} />
-            <SkeletonText className="w-9/12 h-4 mb-4" bgColor={skeletonBg} />
-
-            <SkeletonText className="h-5 w-36 mb-2" bgColor={skeletonBg} />
-            {[1, 2, 3].map((i) => (
-              <View key={i} className="flex-row items-start mb-2">
-                <Skeleton className="w-4 h-4 rounded-full mt-1 mr-2" bgColor={skeletonBg} />
-                <SkeletonText className="flex-1 h-4" bgColor={skeletonBg} />
-              </View>
+            {[1, 2, 3, 4].map((i) => (
+              <SkeletonText key={i} className="w-full h-4 mb-1" bgColor={skeletonBg} />
             ))}
-
-            <SkeletonText className="h-5 w-32 mt-4 mb-2" bgColor={skeletonBg} />
-            {[1, 2].map((i) => (
-              <View key={i} className="flex-row items-start mb-2">
-                <Skeleton className="w-1.5 h-1.5 rounded-full mt-2 mr-3" bgColor={skeletonBg} />
-                <SkeletonText className="flex-1 h-4" bgColor={skeletonBg} />
-              </View>
-            ))}
-
-            <View className="mt-5 p-3.5 rounded-2xl flex-row" style={{ backgroundColor: colors.backgroundElement }}>
-              <SkeletonCircle size={48} bgColor={skeletonBg} />
-              <View className="flex-1 ml-3">
-                <SkeletonText className="h-5 w-32 mb-1" bgColor={skeletonBg} />
-                <SkeletonText className="w-full h-3 mb-0.5" bgColor={skeletonBg} />
-                <SkeletonText className="w-10/12 h-3" bgColor={skeletonBg} />
-              </View>
-            </View>
           </View>
         </ScrollView>
 
-        {/* Sticky enroll bar Skeleton */}
         <View
           className="flex-row items-center px-4 py-3 border-t"
           style={{ 
@@ -242,8 +372,8 @@ export default function CourseDetailsScreen() {
     );
   }
 
-  // ✅ Handle case where course doesn't exist
-  if (!course || !course.id) {
+  // Error state
+  if (!courseData) {
     return (
       <View className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
         <Ionicons name="book-outline" size={64} color={colors.textSecondary} />
@@ -258,6 +388,15 @@ export default function CourseDetailsScreen() {
       </View>
     );
   }
+
+  const instructorName = getInstructorName(courseData.instructor);
+  const instructorAvatar = getInstructorAvatar(courseData.instructor);
+  const totalDuration = getTotalDuration(courseData.sections);
+  const lastUpdated = formatDate(courseData.updatedAt || courseData.createdAt);
+  const discountPercent = courseData.originalPrice
+    ? Math.round((1 - courseData.price / courseData.originalPrice) * 100)
+    : 0;
+  const lessons = mapLessons(courseData.sections);
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -275,7 +414,7 @@ export default function CourseDetailsScreen() {
         {/* Hero */}
         <View style={{ width, height: width * 0.55, backgroundColor: '#000' }}>
           <Image
-            source={{ uri: course.thumbnail }}
+            source={{ uri: courseData.thumbnail || 'https://picsum.photos/seed/default/800/600' }}
             style={StyleSheet.absoluteFill}
             resizeMode="cover"
           />
@@ -284,31 +423,23 @@ export default function CourseDetailsScreen() {
             style={StyleSheet.absoluteFill}
           />
 
-          {/* ✅ Custom Header */}
           <View
             className="absolute left-0 right-0 flex-row items-center justify-between px-4"
-            style={{ 
-              top: insets.top + 8,
-              zIndex: 10,
-            }}
+            style={{ top: insets.top + 8, zIndex: 10 }}
           >
-            {/* Back Button with label */}
             <TouchableOpacity
               onPress={handleBack}
               className="flex-row items-center bg-black/40 backdrop-blur-sm px-3 py-2 rounded-full"
               activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               <Text className="text-white text-sm font-medium ml-1">Back</Text>
             </TouchableOpacity>
 
-            {/* Bookmark Button */}
             <TouchableOpacity
               onPress={toggleBookmark}
               className="bg-black/40 backdrop-blur-sm w-10 h-10 rounded-full items-center justify-center"
               activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons
                 name={bookmarked ? 'bookmark' : 'bookmark-outline'}
@@ -318,7 +449,6 @@ export default function CourseDetailsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Play Button */}
           <View className="absolute inset-0 items-center justify-center">
             <TouchableOpacity
               onPress={() => setPreviewVisible(true)}
@@ -338,35 +468,35 @@ export default function CourseDetailsScreen() {
 
         {/* Title + meta */}
         <View className="px-4 pt-4">
-          <View className="flex-row items-center mb-2">
+          <View className="flex-row items-center flex-wrap mb-2">
             <View className="px-2.5 py-1 rounded-full mr-2" style={{ backgroundColor: isDarkMode ? '#1E3A5F' : '#EFF6FF' }}>
               <Text className="text-[11px] font-semibold" style={{ color: colors.primary }}>
-                {course.level}
+                {courseData.level || 'Beginner'}
               </Text>
             </View>
             <Ionicons name="star" size={14} color="#F59E0B" />
             <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginLeft: 4 }}>
-              {course.rating.toFixed(1)}
+              {courseData.rating?.toFixed(1) || '0.0'}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 4 }}>
-              ({course.reviewsCount.toLocaleString()})
+              ({courseData._count?.reviews || 0})
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 12 }}>
-              {course.studentsCount.toLocaleString()} students
+              {courseData.studentsCount || 0} students
             </Text>
           </View>
 
           <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 8 }}>
-            {course.title}
+            {courseData.title}
           </Text>
 
           <TouchableOpacity className="flex-row items-center mb-3">
             <Image
-              source={{ uri: course.instructorAvatar }}
+              source={{ uri: instructorAvatar }}
               className="w-7 h-7 rounded-full mr-2"
             />
             <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-              Created by <Text style={{ fontWeight: '600', color: colors.text }}>{course.instructor}</Text>
+              Created by <Text style={{ fontWeight: '600', color: colors.text }}>{instructorName}</Text>
             </Text>
           </TouchableOpacity>
 
@@ -374,19 +504,19 @@ export default function CourseDetailsScreen() {
             <View className="flex-row items-center mr-4 mb-2">
               <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
               <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                {course.totalDurationLabel}
+                {totalDuration}
               </Text>
             </View>
             <View className="flex-row items-center mr-4 mb-2">
               <Ionicons name="globe-outline" size={14} color={colors.textSecondary} />
               <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                {course.language}
+                {courseData.language || 'English'}
               </Text>
             </View>
             <View className="flex-row items-center mb-2">
               <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
               <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                Updated {course.lastUpdated}
+                Updated {lastUpdated}
               </Text>
             </View>
           </View>
@@ -419,49 +549,53 @@ export default function CourseDetailsScreen() {
               About this course
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 20 }}>
-              {course.description}
+              {courseData.description || 'No description available.'}
             </Text>
 
             <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>
               What you'll learn
             </Text>
-            {course.whatYouWillLearn.map((point, i) => (
-              <View key={i} className="flex-row items-start mb-2">
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color="#16A34A"
-                  style={{ marginTop: 2, marginRight: 8 }}
-                />
-                <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>
-                  {point}
-                </Text>
-              </View>
-            ))}
+            {courseData.whatYouWillLearn && courseData.whatYouWillLearn.length > 0 ? (
+              courseData.whatYouWillLearn.map((point, i) => (
+                <View key={i} className="flex-row items-start mb-2">
+                  <Ionicons name="checkmark-circle" size={16} color="#16A34A" style={{ marginTop: 2, marginRight: 8 }} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>
+                    {point}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                No learning objectives listed.
+              </Text>
+            )}
 
             <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginTop: 16, marginBottom: 8 }}>
               Requirements
             </Text>
-            {course.requirements.map((req, i) => (
-              <View key={i} className="flex-row items-start mb-2">
-                <View className="w-1.5 h-1.5 rounded-full mt-2 mr-3" style={{ backgroundColor: colors.textSecondary }} />
-                <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>
-                  {req}
-                </Text>
-              </View>
-            ))}
+            {courseData.requirements && courseData.requirements.length > 0 ? (
+              courseData.requirements.map((req, i) => (
+                <View key={i} className="flex-row items-start mb-2">
+                  <View className="w-1.5 h-1.5 rounded-full mt-2 mr-3" style={{ backgroundColor: colors.textSecondary }} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, flex: 1, lineHeight: 20 }}>
+                    {req}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                No requirements listed.
+              </Text>
+            )}
 
             <View className="mt-5 p-3.5 rounded-2xl flex-row" style={{ backgroundColor: colors.backgroundElement }}>
-              <Image
-                source={{ uri: course.instructorAvatar }}
-                className="w-12 h-12 rounded-full mr-3"
-              />
+              <Image source={{ uri: instructorAvatar }} className="w-12 h-12 rounded-full mr-3" />
               <View className="flex-1">
                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>
-                  {course.instructor}
+                  {instructorName}
                 </Text>
                 <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18 }}>
-                  {course.instructorBio}
+                  {courseData.instructor?.bio || 'Experienced instructor passionate about teaching.'}
                 </Text>
               </View>
             </View>
@@ -470,18 +604,23 @@ export default function CourseDetailsScreen() {
 
         {activeTab === 'curriculum' && (
           <CourseCurriculum
-            lessons={course.lessons}
-            totalDurationLabel={course.totalDurationLabel}
+            sections={(courseData.sections || []).map((section) => ({
+              ...section,
+              lessons: (section.lessons || []).map((lesson) => ({
+                ...lesson,
+                duration: lesson.duration ?? '',
+              })),
+            }))}
+            totalDurationLabel={totalDuration}
             onPreviewPress={() => setPreviewVisible(true)}
           />
         )}
 
         {activeTab === 'reviews' && (
           <CourseReviews
-            rating={course.rating}
-            reviewsCount={course.reviewsCount}
-            breakdown={course.ratingBreakdown}
-            reviews={course.reviews}
+            rating={courseData.rating || 0}
+            reviewsCount={courseData._count?.reviews || 0}
+            reviews={[]}
           />
         )}
       </ScrollView>
@@ -498,11 +637,11 @@ export default function CourseDetailsScreen() {
         <View className="mr-4">
           <View className="flex-row items-center">
             <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
-              ${course.price.toFixed(2)}
+              ${(courseData.price || 0).toFixed(2)}
             </Text>
-            {course.originalPrice && (
+            {courseData.originalPrice && (
               <Text style={{ color: colors.textSecondary, fontSize: 12, textDecorationLine: 'line-through', marginLeft: 8 }}>
-                ${course.originalPrice.toFixed(2)}
+                ${courseData.originalPrice.toFixed(2)}
               </Text>
             )}
           </View>
@@ -525,7 +664,7 @@ export default function CourseDetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Preview trailer modal */}
+      {/* Preview modal */}
       <Modal
         visible={previewVisible}
         animationType="slide"
@@ -534,8 +673,8 @@ export default function CourseDetailsScreen() {
       >
         <View style={{ flex: 1, backgroundColor: '#000' }}>
           <CustomVideoPlayer
-            source={getCoursePreviewSource(course.id)}
-            title={`${course.title} — Preview`}
+            source={{ uri: 'https://www.pexels.com/download/video/34279733/' }}
+            title={`${courseData.title} — Preview`}
             topInset={insets.top}
             onBack={() => setPreviewVisible(false)}
           />
