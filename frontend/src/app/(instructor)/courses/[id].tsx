@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/themeContext';
 import { useInstructorStore } from '@/store/instructorStore';
 import { CourseForm } from '@/components/instructor/CourseForm';
-import { SectionManager } from '@/components/instructor/SectionManager';
+import { CurriculumWorkspace } from '@/components/instructor/CurriculumWorkspace';
 import { StatusBadge } from '@/components/instructor/StatusBadge';
 
 export default function CourseDetailsScreen() {
@@ -178,7 +178,7 @@ export default function CourseDetailsScreen() {
       </Modal>
 
       <Modal visible={showSectionManager} animationType="slide">
-        <SectionManager
+        <CurriculumWorkspace
           courseId={currentCourse.id}
           courseTitle={currentCourse.title}
           onClose={() => setShowSectionManager(false)}

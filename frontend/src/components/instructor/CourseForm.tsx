@@ -33,7 +33,11 @@ export const CourseForm: React.FC<CourseFormProps> = ({
   const [thumbnail, setThumbnail] = useState(course?.thumbnail || '');
   const [price, setPrice] = useState(course?.price?.toString() || '0');
   const [originalPrice, setOriginalPrice] = useState(course?.originalPrice?.toString() || '');
-  const [level, setLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>(course?.level as any || 'BEGINNER');
+  const [level, setLevel] = useState<'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'>(
+    course?.level && ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(course.level as any)
+      ? (course.level as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED')
+      : 'BEGINNER'
+  );
   const [language, setLanguage] = useState(course?.language || 'English');
   const [duration, setDuration] = useState(course?.duration || '');
   const [totalHours, setTotalHours] = useState(course?.totalHours?.toString() || '');
@@ -73,6 +77,33 @@ export const CourseForm: React.FC<CourseFormProps> = ({
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    if (coursesError) {
+      clearCourseError();
+    }
+  }, [coursesError, clearCourseError]);
+
+  useEffect(() => {
+    if (course) {
+      setTitle(course.title || '');
+      setDescription(course.description || '');
+      setThumbnail(course.thumbnail || '');
+      setPrice(course.price?.toString() || '0');
+      setOriginalPrice(course.originalPrice?.toString() || '');
+      setLevel(
+        course.level && ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(course.level as any)
+          ? (course.level as 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED')
+          : 'BEGINNER'
+      );
+      setLanguage(course.language || 'English');
+      setDuration(course.duration || '');
+      setTotalHours(course.totalHours?.toString() || '');
+      setCategoryId(course.categoryId || '');
+      setIsBestseller(course.isBestseller || false);
+      setIsTrending(course.isTrending || false);
+    }
+  }, [course]);
+
   const selectedCategory = categories.find(c => c.id === categoryId);
 
   const handleSubmit = async () => {
@@ -85,18 +116,24 @@ export const CourseForm: React.FC<CourseFormProps> = ({
       return;
     }
 
-    const courseData: CreateCourseInput = {
+    const parsedPrice = Number.parseFloat(price);
+    const parsedOriginalPrice = originalPrice ? Number.parseFloat(originalPrice) : undefined;
+    const parsedTotalHours = totalHours ? Number.parseFloat(totalHours) : undefined;
+
+    const basePayload = {
       title: title.trim(),
       description: description.trim() || undefined,
       thumbnail: thumbnail || undefined,
-      price: parseFloat(price) || 0,
-      originalPrice: originalPrice ? parseFloat(originalPrice) : undefined,
+      price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+      originalPrice: Number.isFinite(parsedOriginalPrice as number) ? parsedOriginalPrice : undefined,
       level,
       language: language || 'English',
       duration: duration || undefined,
-      totalHours: totalHours ? parseFloat(totalHours) : undefined,
+      totalHours: Number.isFinite(parsedTotalHours as number) ? parsedTotalHours : undefined,
       categoryId,
     };
+
+    const courseData = basePayload as CreateCourseInput;
 
     try {
       let result: Course;
@@ -117,10 +154,6 @@ export const CourseForm: React.FC<CourseFormProps> = ({
     setThumbnailUrl('');
     setShowThumbnailModal(false);
   };
-
-  if (coursesError) {
-    clearCourseError();
-  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F8FAFC' }}>

@@ -85,6 +85,17 @@ export class CloudinaryStorageService implements StorageService {
     }
   }
 
+  private isRetryableCloudinaryError(error: unknown): boolean {
+    const statusCode = (error as { http_code?: number })?.http_code;
+    const message = (error as { message?: string })?.message?.toLowerCase() || '';
+
+    return [408, 429, 499, 500, 502, 503, 504].includes(statusCode ?? -1) ||
+      message.includes('timeout') ||
+      message.includes('temporarily unavailable') ||
+      message.includes('socket hang up') ||
+      message.includes('econnreset');
+  }
+
   async uploadVideo(options: UploadOptions): Promise<UploadResult> {
     const { fileName, mimeType, buffer, folder } = options;
 
@@ -99,58 +110,71 @@ export class CloudinaryStorageService implements StorageService {
       bufferSize: buffer.length,
     });
 
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'video',
-          folder,
-          public_id: publicId,
-          overwrite: false,
-          eager: [
+    const attempts = 3;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
             {
-              format: 'mp4',
-              video_codec: 'auto',
-              audio_codec: 'auto',
+              resource_type: 'video',
+              folder,
+              public_id: publicId,
+              overwrite: false,
+              timeout: 600000,
+              chunk_size: 6 * 1024 * 1024,
+            },
+            (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
+              if (error) {
+                console.error(`[Cloudinary] Upload error (attempt ${attempt}/${attempts}):`, error);
+                return reject(error);
+              }
+              if (!result) {
+                return reject(new Error('Cloudinary upload returned no result'));
+              }
+
+              resolve(result);
             }
-          ],
-          eager_async: true,
-          timeout: 600000, // 10 minutes for large files
-        },
-        (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
-          if (error) {
-            console.error('[Cloudinary] Upload error:', error);
-            return reject(error);
-          }
-          if (!result) {
-            return reject(new Error('Cloudinary upload returned no result'));
-          }
-          
-          console.log('[Cloudinary] Upload successful:', {
-            publicId: result.public_id,
-            url: result.secure_url,
-            bytes: result.bytes,
-            duration: result.duration,
-          });
+          );
 
-          // Extract duration from Cloudinary response
-          const duration = result.duration 
-            ? `${Math.floor(result.duration / 60)}:${Math.floor(result.duration % 60).toString().padStart(2, '0')}`
-            : undefined;
+          streamifier.createReadStream(buffer).pipe(uploadStream);
+        });
 
-          resolve({
-            url: result.secure_url,
-            fileId: result.public_id,
-            fileName,
-            mimeType,
-            size: result.bytes ?? buffer.length,
-            duration,
-          });
+        console.log('[Cloudinary] Upload successful:', {
+          publicId: result.public_id,
+          url: result.secure_url,
+          bytes: result.bytes,
+          duration: result.duration,
+        });
+
+        const duration = result.duration
+          ? `${Math.floor(result.duration / 60)}:${Math.floor(result.duration % 60).toString().padStart(2, '0')}`
+          : undefined;
+
+        return {
+          url: result.secure_url,
+          fileId: result.public_id,
+          fileName,
+          mimeType,
+          size: result.bytes ?? buffer.length,
+          duration,
+        };
+      } catch (error) {
+        lastError = error;
+
+        if (attempt < attempts && this.isRetryableCloudinaryError(error)) {
+          const delayMs = attempt * 2000;
+          console.warn(`[Cloudinary] Retrying upload in ${delayMs}ms due to:`, error);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
         }
-      );
 
-      // Pipe the buffer to the upload stream
-      streamifier.createReadStream(buffer).pipe(uploadStream);
-    });
+        throw error;
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error('Cloudinary upload failed');
   }
 
   async deleteFile(fileId: string): Promise<void> {

@@ -5,6 +5,7 @@ import {
   Section,
   Lesson,
   InstructorStats,
+  CourseAnalytics,
   CreateCourseInput,
   UpdateCourseInput,
   CreateSectionInput,
@@ -84,7 +85,16 @@ class InstructorService {
   }
 
   async getStats(): Promise<InstructorStats> {
-    const response = await api.get('/api/courses/stats');
+    const response = await api.get('/api/instructors/stats/dashboard');
+    return response.data.data;
+  }
+
+  async getCourseAnalytics(courseId?: string): Promise<CourseAnalytics> {
+    const queryParams = new URLSearchParams();
+    if (courseId) queryParams.append('courseId', courseId);
+
+    const endpoint = `/api/instructors/analytics/courses${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await api.get(endpoint);
     return response.data.data;
   }
 
@@ -169,9 +179,7 @@ class InstructorService {
   // ============================================
 
   async uploadVideo(lessonId: string, formData: FormData): Promise<VideoUploadResult> {
-    const response = await api.post(`/api/lessons/${lessonId}/upload-video`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await api.post(`/api/lessons/${lessonId}/upload-video`, formData);
     return response.data.data;
   }
 

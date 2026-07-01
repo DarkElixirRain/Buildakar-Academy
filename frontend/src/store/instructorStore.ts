@@ -7,6 +7,7 @@ import {
   Section, 
   Lesson, 
   InstructorStats,
+  CourseAnalytics,
   CreateCourseInput,
   UpdateCourseInput,
   CreateSectionInput,
@@ -47,6 +48,9 @@ interface InstructorState {
   // Stats
   stats: InstructorStats | null;
   statsLoading: boolean;
+  analytics: CourseAnalytics | null;
+  analyticsLoading: boolean;
+  analyticsError: string | null;
 
   // Video upload
   uploadProgress: number;
@@ -68,7 +72,9 @@ interface InstructorState {
   updateCourseStatus: (id: string, status: 'DRAFT' | 'UNDER_REVIEW' | 'PUBLISHED') => Promise<Course>;
   duplicateCourse: (id: string) => Promise<Course>;
   fetchStats: () => Promise<void>;
+  fetchAnalytics: (courseId?: string) => Promise<void>;
   clearCourseError: () => void;
+  clearAnalyticsError: () => void;
   setCurrentCourse: (course: Course | null) => void;
 
   // Section actions
@@ -94,7 +100,7 @@ interface InstructorState {
   setCurrentLesson: (lesson: Lesson | null) => void;
 
   // Video upload
-  uploadVideo: (lessonId: string, file: { uri: string; name: string; mimeType: string; size: number }) => Promise<void>;
+  uploadVideo: (lessonId: string, file: { uri: string; name: string; mimeType: string; size: number; file?: any }) => Promise<void>;
   deleteVideo: (lessonId: string) => Promise<void>;
   getVideoStreamUrl: (lessonId: string) => Promise<string>;
   resetUploadProgress: () => void;
@@ -164,6 +170,9 @@ const initialState = {
   lessonsError: null,
   stats: null,
   statsLoading: false,
+  analytics: null,
+  analyticsLoading: false,
+  analyticsError: null,
   uploadProgress: 0,
   uploadLoading: false,
   uploadError: null,
@@ -318,7 +327,21 @@ export const useInstructorStore = create<InstructorState>()(
         }
       },
 
+      fetchAnalytics: async (courseId?: string) => {
+        set({ analyticsLoading: true, analyticsError: null });
+        try {
+          const analytics = await instructorApi.getCourseAnalytics(courseId);
+          set({ analytics, analyticsLoading: false, analyticsError: null });
+        } catch (error: any) {
+          set({
+            analyticsLoading: false,
+            analyticsError: error?.response?.data?.message || error?.message || 'Failed to fetch analytics',
+          });
+        }
+      },
+
       clearCourseError: () => set({ coursesError: null }),
+      clearAnalyticsError: () => set({ analyticsError: null }),
       setCurrentCourse: (course: Course | null) => set({ currentCourse: course }),
 
       // Section actions
@@ -550,18 +573,21 @@ export const useInstructorStore = create<InstructorState>()(
       setCurrentLesson: (lesson: Lesson | null) => set({ currentLesson: lesson }),
 
       // Video upload
-      uploadVideo: async (lessonId: string, file: { uri: string; name: string; mimeType: string; size: number }) => {
+      uploadVideo: async (lessonId: string, file: { uri: string; name: string; mimeType: string; size: number; file?: any }) => {
         set({ uploadLoading: true, uploadProgress: 0, uploadError: null });
         try {
           const formData = new FormData();
-          formData.append('video', {
-            uri: file.uri,
-            name: file.name,
-            type: file.mimeType,
-          } as any);
 
-          // Note: axios doesn't support progress for FormData in React Native
-          // You might need to use a different approach for progress tracking
+          if (Platform.OS === 'web' && file.file) {
+            formData.append('video', file.file as any);
+          } else {
+            formData.append('video', {
+              uri: file.uri,
+              name: file.name,
+              type: file.mimeType,
+            } as any);
+          }
+
           await instructorApi.uploadVideo(lessonId, formData);
           
           set({ uploadLoading: false, uploadProgress: 100, uploadError: null });

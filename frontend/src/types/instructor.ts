@@ -144,6 +144,13 @@ export interface Lesson {
   updatedAt: string;
 }
 
+export interface CourseAnalytics {
+  totalEnrollments: number;
+  completedEnrollments: number;
+  completionRate: number;
+  averageProgress: number;
+}
+
 export interface InstructorStats {
   totalCourses: number;
   publishedCourses: number;

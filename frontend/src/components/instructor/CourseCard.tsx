@@ -87,7 +87,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               </Text>
               {showActions && (
                 <TouchableOpacity
-                  onPress={onEdit}
+                  onPress={(event) => {
+                    event.stopPropagation?.();
+                    onEdit?.();
+                  }}
                   style={{ padding: 4 }}
                   activeOpacity={0.7}
                 >
@@ -160,7 +163,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       {showActions && (
         <View style={{ position: 'absolute', top: 12, right: 12, zIndex: 20 }}>
           <TouchableOpacity
-            onPress={onEdit}
+            onPress={(event) => {
+              event.stopPropagation?.();
+              onEdit?.();
+            }}
             style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 8 }}
             activeOpacity={0.7}
           >
