@@ -21,9 +21,7 @@ import { useTheme } from '@/context/themeContext';
 
 import { CustomVideoPlayer } from '../../components/course/CustomVideoPlayer';
 import { LessonsList } from '../../components/course/LessonsList';
-
-// API Configuration
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { courseService, CourseData } from '@/services/courseService';
 
 // Types
 interface Instructor {
@@ -51,6 +49,7 @@ interface Lesson {
   locked?: boolean;
   isPreview?: boolean;
   description?: string;
+ 
   content?: string;
 }
 
@@ -63,34 +62,6 @@ interface Section {
   _count?: {
     lessons: number;
   };
-}
-
-interface CourseData {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  price: number;
-  originalPrice?: number;
-  level: string;
-  language: string;
-  rating: number;
-  studentsCount: number;
-  isPublished: boolean;
-  status: string;
-  instructorId: string;
-  categoryId: string;
-  instructor: Instructor;
-  category: Category;
-  sections: Section[];
-  _count: {
-    enrollments: number;
-    reviews: number;
-    lessons: number;
-  };
-  learningObjectives?: string[];
-  requirements?: string[];
-  whatYouWillLearn?: string[];
 }
 
 // Skeleton Components
@@ -159,23 +130,17 @@ export default function CourseScreen() {
       setIsLoading(true);
       console.log(`🌐 Fetching course details for ID: ${id}`);
 
-      const response = await fetch(`${API_URL}/api/courses/${id}`);
+      const result = await courseService.getCourseById(id!);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!result) {
+        throw new Error('Course not found');
       }
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch course');
-      }
-
-      console.log('✅ Course loaded:', result.data.title);
-      setCourseData(result.data);
+      console.log('✅ Course loaded:', result.title);
+      setCourseData(result);
 
       // Initialize lessons
-      const allLessons = getAllLessons(result.data.sections);
+      const allLessons = getAllLessons(result.sections);
       const firstIncomplete = allLessons.find((l) => !l.completed && !l.locked);
       setActiveLessonId(firstIncomplete?.id ?? allLessons[0]?.id ?? '');
       setCompletedIds(new Set(allLessons.filter((l) => l.completed).map((l) => l.id)));

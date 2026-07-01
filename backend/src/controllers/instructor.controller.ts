@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { instructorService } from '../services/instructor.service';
 import { schemas } from '../utils/validation';
-import { AppError } from '../utils/errorHandler';
+import { AppError } from '../utils/AppError';
 
 export const instructorController = {
   // Get top instructors for homepage

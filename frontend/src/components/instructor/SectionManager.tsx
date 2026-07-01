@@ -4,6 +4,8 @@ import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal, Alert, Keyb
 import { Ionicons } from '@expo/vector-icons';
 import { Section, CreateSectionInput, UpdateSectionInput } from '@/types/instructor';
 import { useInstructorStore } from '@/store/instructorStore';
+import { StatusBadge, LevelBadge } from './StatusBadge';
+import { LessonManager } from './LessonManager';
 
 interface SectionManagerProps {
   courseId: string;
@@ -36,6 +38,9 @@ export const SectionManager: React.FC<SectionManagerProps> = ({
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  
+  const [showLessonManager, setShowLessonManager] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
 
   useEffect(() => {
     fetchSections(courseId);
@@ -169,6 +174,16 @@ export const SectionManager: React.FC<SectionManagerProps> = ({
       {/* Actions */}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TouchableOpacity
+          onPress={() => {
+            setSelectedSection(section);
+            setShowLessonManager(true);
+          }}
+          style={{ padding: 8, backgroundColor: '#F3E8FF', borderRadius: 8 }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="list-outline" size={20} color="#9333EA" />
+        </TouchableOpacity>
+        <TouchableOpacity
           onPress={() => handleEditSection(section)}
           style={{ padding: 8, backgroundColor: '#EFF6FF', borderRadius: 8 }}
           activeOpacity={0.7}
@@ -246,7 +261,7 @@ export const SectionManager: React.FC<SectionManagerProps> = ({
           </View>
         ) : (
           <View style={{ marginBottom: 100 }}>
-            {sections.map((section, index) => renderSectionItem(section, index))}
+            {sections.map((section: Section, index: number) => renderSectionItem(section, index))}
           </View>
         )}
 
@@ -434,6 +449,22 @@ export const SectionManager: React.FC<SectionManagerProps> = ({
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
+      </Modal>
+
+      {/* Lesson Manager Modal */}
+      <Modal visible={showLessonManager} animationType="slide">
+        {selectedSection && (
+          <LessonManager
+            sectionId={selectedSection.id}
+            sectionTitle={selectedSection.title}
+            courseId={courseId}
+            onClose={() => {
+              setShowLessonManager(false);
+              setSelectedSection(null);
+              fetchSections(courseId); // refresh section counts
+            }}
+          />
+        )}
       </Modal>
     </SafeAreaView>
   );

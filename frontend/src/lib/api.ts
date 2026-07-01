@@ -1,6 +1,7 @@
 // frontend/src/lib/api.ts
 import axios from 'axios';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Your computer's IP from ifconfig (for Android physical device)
 const YOUR_COMPUTER_IP = '192.168.1.10';
@@ -18,125 +19,180 @@ const getBaseURL = () => {
     }
     
     if (Platform.OS === 'android') {
-      // For physical device - use your computer's IP
       return process.env.EXPO_PUBLIC_API_URL_ANDROID || `http://${YOUR_COMPUTER_IP}:${BACKEND_PORT}`;
-      // For Android emulator, use: `http://10.0.2.2:${BACKEND_PORT}`
     }
   }
   
   return process.env.EXPO_PUBLIC_API_URL || 'https://your-production-api.com';
 };
 
-// Platform-specific storage utility
-const getStorage = () => {
-  if (Platform.OS === 'web') {
-    return {
-      getItem: (name: string) => {
-        try {
-          const value = localStorage.getItem(name);
-          return value ? JSON.parse(value) : null;
-        } catch {
-          return null;
-        }
-      },
-      setItem: (name: string, value: any) => {
-        try {
-          localStorage.setItem(name, JSON.stringify(value));
-        } catch (error) {
-          console.error('Error saving to localStorage:', error);
-        }
-      },
-      removeItem: (name: string) => {
-        try {
-          localStorage.removeItem(name);
-        } catch (error) {
-          console.error('Error removing from localStorage:', error);
-        }
-      },
-    };
-  } else {
-    try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return {
-        getItem: (name: string) => AsyncStorage.getItem(name).then((value: string) => value ? JSON.parse(value) : null),
-        setItem: (name: string, value: any) => AsyncStorage.setItem(name, JSON.stringify(value)),
-        removeItem: (name: string) => AsyncStorage.removeItem(name),
-      };
-    } catch {
-      return {
-        getItem: async () => null,
-        setItem: async () => {},
-        removeItem: async () => {},
-      };
-    }
-  }
-};
-
-// ✅ FIXED: Create axios instance WITHOUT default Content-Type
+// ✅ Create axios instance
 const api = axios.create({
   baseURL: getBaseURL(),
   timeout: 300000, // 5 minutes for large file uploads
   headers: {
     'Accept': 'application/json',
-    // ❌ REMOVED: 'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
 
-// Helper to get token from storage
+// ✅ FIXED: Get token from AsyncStorage (same as apiClient)
 const getTokenFromStorage = async (): Promise<string | null> => {
   try {
-    const storage = getStorage();
-    const data = await storage.getItem('auth-storage');
-    if (data && data.state && data.state.token) {
-      return data.state.token;
+    // Use the same storage key as apiClient
+    if (Platform.OS === 'web') {
+      // For web, check localStorage with the same key
+      const token = localStorage.getItem('auth_token');
+      console.log('🔑 Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'null');
+      return token;
+    } else {
+      // For native, use AsyncStorage
+      const token = await AsyncStorage.getItem('auth_token');
+      console.log('🔑 Token from AsyncStorage:', token ? `${token.substring(0, 20)}...` : 'null');
+      return token;
     }
-    return null;
-  } catch {
+  } catch (error) {
+    console.error('❌ Error getting token from storage:', error);
     return null;
   }
 };
 
-// Helper to clear auth from storage
-const clearAuthFromStorage = async (): Promise<void> => {
+// ✅ Also check Zustand store as fallback
+const getTokenFromStore = (): string | null => {
   try {
-    const storage = getStorage();
-    await storage.removeItem('auth-storage');
+    const { useAuthStore } = require('@/store/authStore');
+    const state = useAuthStore.getState();
+    const token = state.token;
+    if (token) {
+      console.log('🔑 Token from Zustand store:', token.substring(0, 20) + '...');
+    }
+    return token;
   } catch (error) {
-    console.error('Error clearing auth from storage:', error);
+    return null;
   }
 };
 
 // Request interceptor to add token
 api.interceptors.request.use(
   async (config) => {
-    if (!config.headers.Authorization) {
+    console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // ✅ Try multiple sources for token
+    let token = null;
+    
+    // 1. Try AsyncStorage first (same as apiClient)
+    token = await getTokenFromStorage();
+    
+    // 2. If not found, try Zustand store
+    if (!token) {
+      token = getTokenFromStore();
+    }
+    
+    // 3. If still not found, try the auth-storage key
+    if (!token && Platform.OS === 'web') {
       try {
-        const token = await getTokenFromStorage();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          if (parsed.state?.token) {
+            token = parsed.state.token;
+            console.log('🔑 Token from auth-storage fallback');
+          }
         }
-      } catch (error) {
-        console.error('Error getting token for request:', error);
+      } catch (e) {
+        // Ignore
       }
     }
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log(`✅ Token added to ${config.url}`);
+    } else {
+      console.log(`⚠️ No token available for ${config.url}`);
+    }
+    
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor to handle auth errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`📥 ${response.status} ${response.config.url}`);
+    return response;
+  },
   async (error) => {
-    if (error.response?.status === 401) {
-      await clearAuthFromStorage();
-      console.log('Authentication error - token cleared');
+    if (error.response) {
+      console.log(`❌ API Error ${error.response.status}: ${error.config?.url}`);
+      
+      if (error.response.status === 401) {
+        console.log('🔴 401 Unauthorized - Token may be invalid or expired');
+        // Clear token from all storage
+        try {
+          if (Platform.OS === 'web') {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth-storage');
+          } else {
+            await AsyncStorage.removeItem('auth_token');
+          }
+        } catch (e) {
+          console.error('Error clearing auth:', e);
+        }
+      }
+    } else if (error.request) {
+      console.log('❌ No response received:', error.message);
+    } else {
+      console.log('❌ Request error:', error.message);
     }
+    
     return Promise.reject(error);
   }
 );
+
+// Debug helper
+export const debugAuth = async () => {
+  console.log('🔐 Auth Debug:');
+  
+  // Check AsyncStorage
+  if (Platform.OS === 'web') {
+    const token = localStorage.getItem('auth_token');
+    console.log('  localStorage auth_token:', token ? '✅ Present' : '❌ Missing');
+    if (token) {
+      console.log('  Token preview:', token.substring(0, 30) + '...');
+    }
+    
+    const authStorage = localStorage.getItem('auth-storage');
+    console.log('  localStorage auth-storage:', authStorage ? '✅ Present' : '❌ Missing');
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        console.log('  auth-storage keys:', Object.keys(parsed));
+        if (parsed.state) {
+          console.log('  state keys:', Object.keys(parsed.state));
+          console.log('  state.token:', parsed.state.token ? '✅ Present' : '❌ Missing');
+        }
+      } catch (e) {
+        console.log('  Error parsing auth-storage');
+      }
+    }
+  } else {
+    const token = await AsyncStorage.getItem('auth_token');
+    console.log('  AsyncStorage auth_token:', token ? '✅ Present' : '❌ Missing');
+  }
+  
+  // Check Zustand store
+  try {
+    const { useAuthStore } = require('@/store/authStore');
+    const state = useAuthStore.getState();
+    console.log('  Zustand store token:', state.token ? '✅ Present' : '❌ Missing');
+    console.log('  Zustand isAuthenticated:', state.isAuthenticated);
+  } catch (e) {
+    console.log('  Error accessing Zustand store:', e);
+  }
+};
 
 export default api;

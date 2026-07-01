@@ -150,6 +150,16 @@ export interface InstructorStats {
   draftCourses: number;
   underReviewCourses: number;
   totalStudents: number;
+  totalEarnings: number;
+  totalRevenue: number;
+  averageRating: number;
+  totalReviews: number;
+  topCourses?: Array<{
+    id: string;
+    title: string;
+    studentsCount: number;
+    revenue: number;
+  }>;
 }
 
 export interface PaginatedResponse<T> {

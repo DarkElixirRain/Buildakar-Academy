@@ -2,7 +2,7 @@
 import api from '../lib/api';
 
 export interface CourseData {
-  id?: string;
+  id: string;
   title: string;
   subtitle?: string;
   description: string;
@@ -26,6 +26,14 @@ export interface CourseData {
   totalStudents?: number;
   createdAt?: string;
   updatedAt?: string;
+  // Additional fields from backend response
+  rating?: number;
+  studentsCount?: number;
+  _count?: {
+    enrollments?: number;
+    reviews?: number;
+    lessons?: number;
+  };
 }
 
 export interface CourseFilterOptions {

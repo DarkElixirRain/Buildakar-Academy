@@ -1,6 +1,6 @@
 // backend/src/services/instructor.service.ts
 import { prisma } from '../lib/prisma';
-import { AppError } from '../utils/errorHandler';
+import { AppError } from '../utils/AppError';
 import { Prisma } from '@prisma/client';
 
 export interface InstructorFilters {
@@ -393,6 +393,7 @@ export const instructorService = {
       totalStudents: overall?.totalStudents || 0,
       totalCourses: overall?.totalCourses || 0,
       totalRevenue: overall?.totalRevenue || 0,
+      totalEarnings: overall?.totalRevenue || 0,
       averageRating: overall?.averageRating || 0,
       totalReviews: overall?.totalReviews || 0,
       topCourses: topCourses.map(course => ({

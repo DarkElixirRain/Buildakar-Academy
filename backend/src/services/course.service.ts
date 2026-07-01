@@ -542,6 +542,8 @@ export class CourseService {
       draftCourses,
       underReviewCourses,
       totalStudents,
+      totalRevenue: 0,
+      totalEarnings: 0,
     };
   }
 

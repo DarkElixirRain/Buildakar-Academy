@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt.utils';
 import { prisma } from '../lib/prisma';
-import { AppError } from '../utils/errorHandler';
+import { AppError } from '../utils/AppError';
 
 declare global {
   namespace Express {
@@ -77,10 +77,21 @@ export const authenticate = async (
     };
 
     next();
-  } catch (error) {
-    return res.status(401).json({
+  } catch (error: any) {
+    console.error('Auth middleware error:', error);
+    
+    // If it's a JWT error, return 401
+    if (error && (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' || error.name === 'NotBeforeError')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired token',
+      });
+    }
+
+    // Otherwise it's likely a database connection error
+    return res.status(503).json({
       success: false,
-      message: 'Invalid or expired token',
+      message: 'Service unavailable due to database connection issue.',
     });
   }
 };

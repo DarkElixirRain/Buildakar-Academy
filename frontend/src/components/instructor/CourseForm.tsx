@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CreateCourseInput, UpdateCourseInput, Course } from '@/types/instructor';
 import { useInstructorStore } from '@/store/instructorStore';
 import { StatusBadge, LevelBadge } from './StatusBadge';
+import api from '@/lib/api';
 
 interface CourseFormProps {
   course?: Course | null;
@@ -43,17 +44,34 @@ export const CourseForm: React.FC<CourseFormProps> = ({
   const [showThumbnailModal, setShowThumbnailModal] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
 
-  // Mock categories - in real app, fetch from API
-  const categories = [
-    { id: 'cat1', name: 'Development', slug: 'development' },
-    { id: 'cat2', name: 'AI & Machine Learning', slug: 'ai-machine-learning' },
-    { id: 'cat3', name: 'Data Science', slug: 'data-science' },
-    { id: 'cat4', name: 'Design', slug: 'design' },
-    { id: 'cat5', name: 'Marketing', slug: 'marketing' },
-    { id: 'cat6', name: 'Business', slug: 'business' },
-    { id: 'cat7', name: 'Finance', slug: 'finance' },
-    { id: 'cat8', name: 'Languages', slug: 'languages' },
+  const [categories, setCategories] = useState<any[]>([]);
+
+  // Mock categories with valid CUIDs from database as fallback
+  const mockCategories = [
+    { id: 'cmqxh0ddp0001kxqhabo8frga', name: 'Development', slug: 'development' },
+    { id: 'cmqzaduqj0001a5duptuqgxyk', name: 'Data Science & AI', slug: 'data-science-and-ai' },
+    { id: 'cmqzae74m0003a5du697juydd', name: 'Mobile Development', slug: 'mobile-development' },
+    { id: 'cmqzaf0vb0005a5du4xz4obf1', name: 'Cloud Computing', slug: 'cloud-computing' },
+    { id: 'cmqzafexm0009a5dubpzi3vr1', name: 'Cybersecurity', slug: 'cybersecurity' },
+    { id: 'cmqzaf7v70007a5du4e5h97k8', name: 'UI/UX Design', slug: 'uiux-design' },
   ];
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/api/categories');
+        if (response.data && response.data.data && response.data.data.length > 0) {
+          setCategories(response.data.data);
+        } else {
+          setCategories(mockCategories);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        setCategories(mockCategories);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const selectedCategory = categories.find(c => c.id === categoryId);
 
