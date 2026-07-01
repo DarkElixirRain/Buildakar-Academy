@@ -12,12 +12,15 @@ import {
   StatusBar,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/themeContext';
+import { useAuthStore } from '@/store/authStore';
+import api from '@/lib/api';
 
 import { CustomVideoPlayer } from '../../components/course/CustomVideoPlayer';
 import { CourseCurriculum } from '../../components/course-details/CourseCurriculum';
@@ -103,6 +106,14 @@ interface ApiCourse {
   whatYouWillLearn?: string[];
 }
 
+// Enrollment Status Response
+interface EnrollmentStatus {
+  isEnrolled: boolean;
+  progress: number;
+  isCompleted: boolean;
+  enrollmentId?: string;
+}
+
 // Skeleton Components
 const Skeleton = ({ className = '', bgColor = '#E2E8F0' }: { className?: string; bgColor?: string }) => (
   <View className={`rounded-lg animate-pulse ${className}`} style={{ backgroundColor: bgColor }} />
@@ -122,6 +133,14 @@ export default function CourseDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { isDarkMode, colors } = useTheme();
+  
+  // ✅ Get auth state
+  const authStore = useAuthStore();
+  const { 
+    user, 
+    token, 
+    isAuthenticated,
+  } = authStore;
 
   // State
   const [isLoading, setIsLoading] = useState(true);
@@ -130,7 +149,39 @@ export default function CourseDetailsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [previewVisible, setPreviewVisible] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  
+  // ✅ Enrollment state
   const [enrolled, setEnrolled] = useState(false);
+  const [enrollmentLoading, setEnrollmentLoading] = useState(false);
+  const [enrollmentStatus, setEnrollmentStatus] = useState<EnrollmentStatus | null>(null);
+  const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
+
+  // ✅ Check enrollment status on load
+  const checkEnrollmentStatus = async () => {
+    if (!isAuthenticated || !token || !id) {
+      setIsCheckingEnrollment(false);
+      return;
+    }
+
+    try {
+      const response = await api.get(`/api/enroll/${id}/status`);
+      
+      if (response.data.success) {
+        const status = response.data.data;
+        setEnrollmentStatus(status);
+        setEnrolled(status.isEnrolled);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        // Course not found or not enrolled - that's fine
+        setEnrolled(false);
+      } else {
+        console.error('❌ Failed to check enrollment status:', error);
+      }
+    } finally {
+      setIsCheckingEnrollment(false);
+    }
+  };
 
   // Fetch course details from API
   const fetchCourseDetails = async () => {
@@ -164,6 +215,72 @@ export default function CourseDetailsScreen() {
     }
   };
 
+  // ✅ Handle Enrollment
+  const handleEnroll = async () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Login Required',
+        'Please login to enroll in this course.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => router.push('/(auth)/login') }
+        ]
+      );
+      return;
+    }
+
+    if (enrolled) {
+      // If already enrolled, navigate to course
+      router.push(`/course/${courseData?.id}`);
+      return;
+    }
+
+    try {
+      setEnrollmentLoading(true);
+      
+      console.log(`📚 Enrolling in course: ${id}`);
+      const response = await api.post(`/api/enroll/${id}`);
+      
+      if (response.data.success) {
+        setEnrolled(true);
+        setEnrollmentStatus({
+          isEnrolled: true,
+          progress: 0,
+          isCompleted: false,
+          enrollmentId: response.data.data.id,
+        });
+        
+        Alert.alert(
+          '🎉 Success!',
+          'You have been successfully enrolled in this course!',
+          [
+            {
+              text: 'Start Learning',
+              onPress: () => router.push(`/course/${courseData?.id}`)
+            },
+            { text: 'Continue Browsing', style: 'cancel' }
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error('❌ Enrollment failed:', error);
+      
+      let errorMessage = 'Failed to enroll. Please try again.';
+      if (error.response?.status === 409) {
+        errorMessage = 'You are already enrolled in this course.';
+        setEnrolled(true);
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Instructors cannot enroll in their own courses.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      Alert.alert('Enrollment Failed', errorMessage);
+    } finally {
+      setEnrollmentLoading(false);
+    }
+  };
+
   // Initial fetch
   useEffect(() => {
     if (id) {
@@ -171,10 +288,22 @@ export default function CourseDetailsScreen() {
     }
   }, [id]);
 
+  // Check enrollment status after course loads
+  useEffect(() => {
+    if (courseData && isAuthenticated) {
+      checkEnrollmentStatus();
+    } else {
+      setIsCheckingEnrollment(false);
+    }
+  }, [courseData, isAuthenticated, id]);
+
   // Handle refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchCourseDetails();
+    if (isAuthenticated) {
+      await checkEnrollmentStatus();
+    }
   };
 
   // Handle back navigation
@@ -198,11 +327,13 @@ export default function CourseDetailsScreen() {
 
   // Handle primary action
   const handlePrimaryAction = () => {
-    if (!enrolled) {
-      setEnrolled(true);
-      Alert.alert('Success', 'You have been enrolled in this course!');
+    if (enrolled) {
+      // Continue learning
+      router.push(`/course/${courseData?.id}`);
+    } else {
+      // Enroll
+      handleEnroll();
     }
-    router.push(`/course/${courseData?.id}`);
   };
 
   // Helper: Get instructor full name
@@ -253,32 +384,29 @@ export default function CourseDetailsScreen() {
   };
 
   // Helper: Map API lessons to component lessons
-  // app/course-details/[id].tsx - Updated mapLessons function
-
-// Helper: Map API lessons to component lessons
-const mapLessons = (sections: ApiSection[]): Lesson[] => {
-  if (!sections) return [];
-  const allLessons: Lesson[] = [];
-  sections.forEach(section => {
-    section.lessons?.forEach(lesson => {
-      allLessons.push({
-        id: lesson.id,
-        title: lesson.title,
-        duration: lesson.duration || 'N/A',
-        videoUrl: lesson.videoUrl,
-        youtubeId: lesson.videoUrl, // Fallback
-        completed: lesson.completed || false, // ✅ Default to false if undefined
-        locked: false,
-        isPreview: lesson.isPreview || false,
-        description: lesson.description,
-        content: lesson.content,
-        order: lesson.order,
-        isFree: lesson.isFree || false,
+  const mapLessons = (sections: ApiSection[]): Lesson[] => {
+    if (!sections) return [];
+    const allLessons: Lesson[] = [];
+    sections.forEach(section => {
+      section.lessons?.forEach(lesson => {
+        allLessons.push({
+          id: lesson.id,
+          title: lesson.title,
+          duration: lesson.duration || 'N/A',
+          videoUrl: lesson.videoUrl,
+          youtubeId: lesson.videoUrl,
+          completed: lesson.completed || false,
+          locked: false,
+          isPreview: lesson.isPreview || false,
+          description: lesson.description,
+          content: lesson.content,
+          order: lesson.order,
+          isFree: lesson.isFree || false,
+        });
       });
     });
-  });
-  return allLessons;
-};
+    return allLessons;
+  };
 
   // Loading Skeleton
   if (isLoading) {
@@ -397,6 +525,16 @@ const mapLessons = (sections: ApiSection[]): Lesson[] => {
     ? Math.round((1 - courseData.price / courseData.originalPrice) * 100)
     : 0;
   const lessons = mapLessons(courseData.sections);
+
+  // Determine button text and state
+  const getButtonText = () => {
+    if (enrollmentLoading) return 'Enrolling...';
+    if (enrolled) return 'Continue Learning';
+    if (isCheckingEnrollment) return 'Checking...';
+    return 'Enroll Now';
+  };
+
+  const isButtonDisabled = enrollmentLoading || isCheckingEnrollment;
 
   return (
     <View className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -625,7 +763,7 @@ const mapLessons = (sections: ApiSection[]): Lesson[] => {
         )}
       </ScrollView>
 
-      {/* Sticky enroll bar */}
+      {/* ✅ Sticky enroll bar with enrollment logic */}
       <View
         className="flex-row items-center px-4 py-3 border-t"
         style={{
@@ -635,32 +773,53 @@ const mapLessons = (sections: ApiSection[]): Lesson[] => {
         }}
       >
         <View className="mr-4">
-          <View className="flex-row items-center">
-            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
-              ${(courseData.price || 0).toFixed(2)}
-            </Text>
-            {courseData.originalPrice && (
-              <Text style={{ color: colors.textSecondary, fontSize: 12, textDecorationLine: 'line-through', marginLeft: 8 }}>
-                ${courseData.originalPrice.toFixed(2)}
+          {!enrolled ? (
+            <>
+              <View className="flex-row items-center">
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
+                  ${(courseData.price || 0).toFixed(2)}
+                </Text>
+                {courseData.originalPrice && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, textDecorationLine: 'line-through', marginLeft: 8 }}>
+                    ${courseData.originalPrice.toFixed(2)}
+                  </Text>
+                )}
+              </View>
+              {discountPercent > 0 && (
+                <Text style={{ color: '#16A34A', fontSize: 12, fontWeight: '600' }}>
+                  {discountPercent}% off
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={{ color: '#16A34A', fontSize: 16, fontWeight: 'bold' }}>
+                ✅ Enrolled
               </Text>
-            )}
-          </View>
-          {discountPercent > 0 && (
-            <Text style={{ color: '#16A34A', fontSize: 12, fontWeight: '600' }}>
-              {discountPercent}% off
-            </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                {enrollmentStatus?.progress || 0}% complete
+              </Text>
+            </>
           )}
         </View>
 
         <TouchableOpacity
           onPress={handlePrimaryAction}
+          disabled={isButtonDisabled}
           className="flex-1 py-3.5 rounded-full items-center"
-          style={{ backgroundColor: colors.primary }}
+          style={{ 
+            backgroundColor: enrolled ? '#16A34A' : colors.primary,
+            opacity: isButtonDisabled ? 0.7 : 1,
+          }}
           activeOpacity={0.85}
         >
-          <Text className="text-white font-bold text-sm">
-            {enrolled ? 'Continue Learning' : 'Enroll Now'}
-          </Text>
+          {enrollmentLoading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text className="text-white font-bold text-sm">
+              {getButtonText()}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 

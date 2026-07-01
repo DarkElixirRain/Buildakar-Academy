@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,39 +10,44 @@ datasource db {
 }
 
 model User {
-  id                     String                @id @default(cuid())
-  email                  String                @unique
+  id                     String       @id @default(cuid())
+  email                  String       @unique
   password               String
   firstName              String
   lastName               String
-  role                   Role                  @default(STUDENT)
-  isVerified             Boolean               @default(false)
-  isActive               Boolean               @default(true)
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
-  authProvider           AuthProvider          @default(EMAIL)
-  googleId               String?               @unique
-  hasCompletedOnboarding Boolean               @default(false)
-  averageRating          Float                 @default(0)
+  role                   Role         @default(STUDENT)
+  isVerified             Boolean      @default(false)
+  isActive               Boolean      @default(true)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  authProvider           AuthProvider @default(EMAIL)
+  googleId               String?      @unique
+  hasCompletedOnboarding Boolean      @default(false)
+  averageRating          Float        @default(0)
   bio                    String?
   expertise              String?
-  isVerifiedInstructor   Boolean               @default(false)
+  isVerifiedInstructor   Boolean      @default(false)
   payoutMethod           String?
   photo                  String?
   socialLinks            Json?
   stripeAccountId        String?
   title                  String?
-  totalCourses           Int                   @default(0)
-  totalRevenue           Float                 @default(0)
-  totalReviews           Int                   @default(0)
-  totalStudents          Int                   @default(0)
-  createdCategories      Category[]            @relation("UserCreatedCategories")
-  courses                Course[]              @relation("InstructorCourses")
-  enrolledCourses        Enrollment[]
-  analytics              InstructorAnalytics[]
-  followers              InstructorFollow[]    @relation("Following")
-  following              InstructorFollow[]    @relation("Followers")
-  reviews                Review[]
+  totalCourses           Int          @default(0)
+  totalRevenue           Float        @default(0)
+  totalReviews           Int          @default(0)
+  totalStudents          Int          @default(0)
+
+  // Relations
+  createdCategories Category[]            @relation("UserCreatedCategories")
+  courses           Course[]              @relation("InstructorCourses")
+  enrolledCourses   Enrollment[]
+  analytics         InstructorAnalytics[]
+  followers         InstructorFollow[]    @relation("Following")
+  following         InstructorFollow[]    @relation("Followers")
+  reviews           Review[]
+  recentSearches    RecentSearch[] // ✅ Added
+
+  @@map("users")
 }
 
 model Category {
@@ -104,22 +111,22 @@ model Section {
 }
 
 model Lesson {
-  id          String           @id @default(cuid())
-  title       String
-  description String?
-  videoUrl    String?
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  videoUrl      String?
   videoPublicId String?
-  duration    String?
-  order       Int
-  isPreview   Boolean          @default(false)
-  isFree      Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  courseId    String
-  sectionId   String?
-  course      Course           @relation(fields: [courseId], references: [id])
-  section     Section?         @relation(fields: [sectionId], references: [id])
-  progress    LessonProgress[]
+  duration      String?
+  order         Int
+  isPreview     Boolean          @default(false)
+  isFree        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  courseId      String
+  sectionId     String?
+  course        Course           @relation(fields: [courseId], references: [id])
+  section       Section?         @relation(fields: [sectionId], references: [id])
+  progress      LessonProgress[]
 }
 
 model Enrollment {
@@ -136,6 +143,19 @@ model Enrollment {
   lessonProgress LessonProgress[]
 
   @@unique([userId, courseId])
+}
+
+model RecentSearch {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  query     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, query])
+  @@map("recent_searches")
 }
 
 model LessonProgress {

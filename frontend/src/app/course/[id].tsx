@@ -18,6 +18,8 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/themeContext';
+import { useAuthStore } from '@/store/authStore';
+import api from '@/lib/api';
 
 import { CustomVideoPlayer } from '../../components/course/CustomVideoPlayer';
 import { LessonsList } from '../../components/course/LessonsList';
@@ -49,7 +51,6 @@ interface Lesson {
   locked?: boolean;
   isPreview?: boolean;
   description?: string;
- 
   content?: string;
 }
 
@@ -62,6 +63,16 @@ interface Section {
   _count?: {
     lessons: number;
   };
+}
+
+// Enrollment Progress Response
+interface EnrollmentProgress {
+  progress: number;
+  isCompleted: boolean;
+  completedLessons: number;
+  totalLessons: number;
+  lastAccessed: string;
+  enrollmentId: string;
 }
 
 // Skeleton Components
@@ -99,11 +110,23 @@ export default function CourseScreen() {
   const { width, height } = useWindowDimensions();
   const { isDarkMode, colors } = useTheme();
 
+  // ✅ Get auth state
+  const authStore = useAuthStore();
+  const { 
+    user, 
+    token, 
+    isAuthenticated,
+  } = authStore;
+
   // State
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [courseData, setCourseData] = useState<CourseData | null>(null);
   const [videoHeight, setVideoHeight] = useState(width * (9 / 16));
+
+  // ✅ Enrollment progress state
+  const [enrollmentProgress, setEnrollmentProgress] = useState<EnrollmentProgress | null>(null);
+  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
 
   // Comments state
   const [comments, setComments] = useState<Comment[]>([]);
@@ -124,6 +147,67 @@ export default function CourseScreen() {
     setVideoHeight(Math.min(calculatedHeight, maxHeight));
   }, [width, height]);
 
+  // ✅ Fetch course progress from backend
+  const fetchCourseProgress = async () => {
+    if (!isAuthenticated || !token || !id) return;
+
+    try {
+      setIsLoadingProgress(true);
+      console.log(`📊 Fetching progress for course: ${id}`);
+      
+      const response = await api.get(`/api/enroll/${id}/status`);
+      
+      if (response.data.success) {
+        const status = response.data.data;
+        setEnrollmentProgress({
+          progress: status.progress || 0,
+          isCompleted: status.isCompleted || false,
+          completedLessons: status.completedLessons || 0,
+          totalLessons: status.totalLessons || 0,
+          lastAccessed: status.lastAccessed || new Date().toISOString(),
+          enrollmentId: status.enrollmentId || '',
+        });
+        
+        // Update completed lessons
+        if (status.completedLessons && status.completedLessons > 0) {
+          // We'll update the completed IDs from the server response
+          // The server should return which lessons are completed
+        }
+      }
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        // User is not enrolled - that's fine
+        console.log('User not enrolled in this course');
+      } else {
+        console.error('❌ Failed to fetch course progress:', error);
+      }
+    } finally {
+      setIsLoadingProgress(false);
+    }
+  };
+
+  // ✅ Update lesson progress on backend
+  const updateLessonProgress = async (lessonId: string, isCompleted: boolean) => {
+    if (!isAuthenticated || !token) return;
+
+    try {
+      console.log(`📝 Updating lesson progress: ${lessonId} -> ${isCompleted}`);
+      
+      const response = await api.patch(`/api/enroll/lessons/${lessonId}/progress`, {
+        isCompleted,
+      });
+      
+      if (response.data.success) {
+        console.log('✅ Lesson progress updated successfully');
+        // Refresh progress after update
+        await fetchCourseProgress();
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to update lesson progress:', error);
+      Alert.alert('Error', 'Failed to update progress. Please try again.');
+    }
+  };
+
   // Fetch course details from API
   const fetchCourseDetails = async () => {
     try {
@@ -141,12 +225,32 @@ export default function CourseScreen() {
 
       // Initialize lessons
       const allLessons = getAllLessons(result.sections);
+      
+      // ✅ Use progress from backend if available
+      if (enrollmentProgress && enrollmentProgress.completedLessons > 0) {
+        // Mark lessons as completed based on backend data
+        const completedIdsSet = new Set<string>();
+        // The backend should return which lessons are completed
+        // For now, we'll mark based on progress percentage
+        const total = allLessons.length;
+        const completed = Math.round((enrollmentProgress.progress / 100) * total);
+        for (let i = 0; i < Math.min(completed, total); i++) {
+          completedIdsSet.add(allLessons[i].id);
+        }
+        setCompletedIds(completedIdsSet);
+      } else {
+        // Use local completed status from lessons
+        setCompletedIds(new Set(allLessons.filter((l) => l.completed).map((l) => l.id)));
+      }
+      
       const firstIncomplete = allLessons.find((l) => !l.completed && !l.locked);
       setActiveLessonId(firstIncomplete?.id ?? allLessons[0]?.id ?? '');
-      setCompletedIds(new Set(allLessons.filter((l) => l.completed).map((l) => l.id)));
 
       // Fetch comments
       await fetchComments();
+      
+      // ✅ Fetch enrollment progress
+      await fetchCourseProgress();
     } catch (error: any) {
       console.error('❌ Failed to fetch course:', error);
       Alert.alert(
@@ -250,29 +354,43 @@ export default function CourseScreen() {
   const nextLesson = allLessons[activeIndex + 1];
   const isActiveCompleted = completedIds.has(activeLessonId);
   const completedCount = allLessons.filter((l) => completedIds.has(l.id)).length;
-  const overallProgress = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
+  
+  // ✅ Use progress from backend or calculate locally
+  const overallProgress = enrollmentProgress 
+    ? enrollmentProgress.progress 
+    : (allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0);
 
   // Handlers
   const handleSelectLesson = (lessonId: string) => {
     setActiveLessonId(lessonId);
   };
 
-  const handleMarkComplete = () => {
+  const handleMarkComplete = async () => {
     if (isActiveCompleted) return;
+    
+    // Update local state
     setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+    
+    // ✅ Update backend
+    await updateLessonProgress(activeLessonId, true);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!nextLesson) return;
+    
     if (!isActiveCompleted) {
+      // Mark current as complete
       setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+      await updateLessonProgress(activeLessonId, true);
     }
+    
     setActiveLessonId(nextLesson.id);
   };
 
-  const handleVideoEnd = () => {
+  const handleVideoEnd = async () => {
     if (!isActiveCompleted) {
       setCompletedIds((prev) => new Set(prev).add(activeLessonId));
+      await updateLessonProgress(activeLessonId, true);
     }
   };
 
@@ -584,12 +702,15 @@ export default function CourseScreen() {
             </Text>
           </View>
 
+          {/* ✅ Progress Section with Real Stats */}
           <View className="mt-3">
             <View className="flex-row justify-between mb-1">
               <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                {completedCount} of {allLessons.length} lessons complete
+                {isLoadingProgress ? 'Loading progress...' : `${completedCount} of ${allLessons.length} lessons complete`}
               </Text>
-              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>{overallProgress}%</Text>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>
+                {isLoadingProgress ? '...' : `${overallProgress}%`}
+              </Text>
             </View>
             <View className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: colors.backgroundSelected }}>
               <View
@@ -597,6 +718,27 @@ export default function CourseScreen() {
                 style={{ width: `${overallProgress}%`, backgroundColor: colors.primary }}
               />
             </View>
+            
+            {/* ✅ Show enrollment status */}
+            {enrollmentProgress && (
+              <View className="mt-2 flex-row items-center">
+                <Ionicons 
+                  name={enrollmentProgress.isCompleted ? 'checkmark-circle' : 'time-outline'} 
+                  size={14} 
+                  color={enrollmentProgress.isCompleted ? '#16A34A' : colors.textSecondary} 
+                />
+                <Text style={{ color: colors.textSecondary, fontSize: 11, marginLeft: 4 }}>
+                  {enrollmentProgress.isCompleted 
+                    ? 'Course completed! 🎉' 
+                    : `${overallProgress}% complete`}
+                </Text>
+                {enrollmentProgress.lastAccessed && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 10, marginLeft: 8 }}>
+                    • Last accessed: {new Date(enrollmentProgress.lastAccessed).toLocaleDateString()}
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         </View>
 

@@ -1,4 +1,5 @@
 // types/home.ts
+
 export interface UserProgress {
   streak: number;
   enrolled: number;
@@ -51,9 +52,17 @@ export interface RecommendedCourse extends BaseCourse {
   isSaved: boolean;
 }
 
+// ✅ FIXED: Added courseId field for navigation
 export interface ContinueLearningCourse extends BaseCourse {
   progress: number;
   remainingTime: string;
+  courseId: string; // ✅ Added - actual course ID for navigation
+  isCompleted?: boolean;
+  enrolledAt?: string | null;
+  completedAt?: string | null;
+  lastAccessed?: string | null;
+  level?: string;
+  category?: string;
 }
 
 export interface RecentlyViewedCourse extends BaseCourse {
@@ -304,11 +313,38 @@ export interface NotificationApiResponse {
   items?: NotificationItem[];
 }
 
+// ✅ UPDATED: ContinueLearningApiResponse to match actual API response
 export interface ContinueLearningApiResponse {
-  id: string;
-  title: string;
-  instructor: string;
-  thumbnail: string;
+  id: string; // Enrollment ID
+  courseId: string; // Actual course ID
+  userId: string;
   progress: number;
-  remainingTime: string;
+  isCompleted: boolean;
+  completedAt: string | null;
+  enrolledAt: string;
+  updatedAt: string;
+  course: {
+    id: string;
+    title: string;
+    thumbnail: string;
+    level: string;
+    instructor: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      photo?: string;
+    };
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+      icon: string;
+      color: string;
+    };
+    _count?: {
+      lessons: number;
+      enrollments: number;
+    };
+  };
 }

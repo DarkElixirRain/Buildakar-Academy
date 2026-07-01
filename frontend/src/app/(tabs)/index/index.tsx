@@ -34,10 +34,17 @@ const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  
+  const authStore = useAuthStore();
+  const { 
+    user, 
+    token, 
+    isAuthenticated,
+  } = authStore;
+  
   const { isDarkMode, colors } = useTheme();
   const {
-    loading,
+    loading: homeLoading,
     refreshing,
     error,
     data,
@@ -63,6 +70,17 @@ export default function HomeScreen() {
   const [localTopInstructors, setLocalTopInstructors] = useState<any[]>([]);
   const [localFeaturedCourses, setLocalFeaturedCourses] = useState<any[]>([]);
 
+  // Debug: Log auth status
+  useEffect(() => {
+    console.log('🔐 HomeScreen Auth Status:', {
+      isAuthenticated,
+      hasToken: !!token,
+      userEmail: user?.email || 'No user',
+      authStoreKeys: Object.keys(authStore),
+    });
+  }, [isAuthenticated, token, user, authStore]);
+
+  // Load home data and instructors
   useEffect(() => {
     fetchHomeData();
     loadTopInstructors();
@@ -80,14 +98,15 @@ export default function HomeScreen() {
 
   const onRefresh = useCallback(async () => {
     await refreshHomeData();
-    await loadTopInstructors(); // Refresh instructors too
+    await loadTopInstructors();
   }, [refreshHomeData]);
 
+  // ✅ FIXED: Navigate to /result instead of /(search)
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     if (query.trim()) {
       router.push({
-        pathname: "/(search)",
+        pathname: "/result",  // ✅ This will give you /result?q=query
         params: { q: query },
       } as any);
     }
@@ -150,7 +169,6 @@ export default function HomeScreen() {
 
   const handleInstructorFollow = (instructorId: string) => {
     console.log("Following instructor:", instructorId);
-    // Refresh instructors after follow/unfollow
     loadTopInstructors();
   };
 
@@ -171,12 +189,11 @@ export default function HomeScreen() {
 
   const statusBarStyle = isDarkMode ? 'light' : 'dark';
 
-  // Use real instructors from local state or store
   const displayInstructors = localTopInstructors.length > 0 
     ? localTopInstructors 
     : topInstructors || [];
 
-  if (loading && !data) {
+  if (homeLoading && !data) {
     return <LoadingSkeleton />;
   }
 
@@ -246,16 +263,14 @@ export default function HomeScreen() {
           </View>
 
           {/* Continue Learning Section */}
-          {continueLearning && continueLearning.length > 0 && (
-            <View style={{ marginBottom: 24 }}>
-              <ContinueLearning
-                courses={continueLearning}
-                onCoursePress={handleCoursePress}
-              />
-            </View>
-          )}
+          <View style={{ marginBottom: 24 }}>
+            <ContinueLearning
+              onCoursePress={handleCoursePress}
+              limit={10}
+            />
+          </View>
 
-          {/* Featured Courses Carousel - NOW FETCHES DATA INTERNALLY */}
+          {/* Featured Courses Carousel */}
           <View style={{ marginBottom: 24 }}>
             <FeaturedCourses onCoursePress={handleCourseDetailsPress} />
           </View>
@@ -305,7 +320,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Top Instructors - Using real data */}
+          {/* Top Instructors */}
           {displayInstructors.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <TopInstructors

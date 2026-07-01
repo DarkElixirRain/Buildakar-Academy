@@ -223,6 +223,25 @@ export const instructorIdSchema = z.object({
   instructorId: z.string().cuid('Invalid instructor ID format'),
 });
 
+// ============= ENROLLMENT SCHEMAS =============
+
+export const enrollParamsSchema = z.object({
+  courseId: z.string().cuid('Invalid course ID format'),
+});
+
+export const updateLessonProgressSchema = z.object({
+  isCompleted: z.boolean().optional(),
+});
+
+export const enrollmentPaginationSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  isCompleted: z
+    .enum(['true', 'false'])
+    .transform((val) => val === 'true')
+    .optional(),
+});
+
 // ============= EXPORT ALL SCHEMAS =============
 
 export const schemas = {
@@ -236,7 +255,7 @@ export const schemas = {
   resetPassword: resetPasswordSchema,
   verifyEmail: verifyEmailSchema,
   updateRole: updateRoleSchema,
-  
+
   // Course schemas
   createCourse: createCourseSchema,
   updateCourse: updateCourseSchema,
@@ -252,11 +271,16 @@ export const schemas = {
   videoUpload: videoUploadSchema,
   updateCourseStatus: updateCourseStatusSchema,
   pagination: paginationSchema,
-  
+
   // Instructor schemas
   updateInstructorProfile: updateInstructorProfileSchema,
   getInstructors: getInstructorsSchema,
   instructorId: instructorIdSchema,
+
+  // Enrollment schemas
+  enrollParams: enrollParamsSchema,
+  updateLessonProgress: updateLessonProgressSchema,
+  enrollmentPagination: enrollmentPaginationSchema,
 };
 
 // ============= TYPE INFERENCE =============
@@ -287,3 +311,7 @@ export type PaginationInput = z.infer<typeof paginationSchema>;
 export type UpdateInstructorProfileInput = z.infer<typeof updateInstructorProfileSchema>;
 export type GetInstructorsInput = z.infer<typeof getInstructorsSchema>;
 export type InstructorIdInput = z.infer<typeof instructorIdSchema>;
+
+export type EnrollParamsInput = z.infer<typeof enrollParamsSchema>;
+export type UpdateLessonProgressInput = z.infer<typeof updateLessonProgressSchema>;
+export type EnrollmentPaginationInput = z.infer<typeof enrollmentPaginationSchema>;

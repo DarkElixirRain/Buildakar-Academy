@@ -13,10 +13,11 @@ import {
   Notification,
   RecentlyViewedCourse,
   ApiResponse,
-  CategoryApiResponse,
-  InstructorApiResponse,
   Course,
   CourseApiResponse,
+  InstructorApiResponse,
+  CategoryApiResponse,
+  ContinueLearningApiResponse,
 } from '@/types/home';
 import { apiClient } from '@/lib/apiClient';
 import { cacheManager } from '@/lib/cacheManager';
@@ -82,16 +83,7 @@ const MOCK_DATA: HomeData = {
     },
   ],
   categories: [],
-  continueLearning: [
-    {
-      id: '10',
-      title: 'React Native Mastery',
-      instructor: 'John Doe',
-      thumbnail: 'https://picsum.photos/seed/rnmastery/400/300',
-      progress: 65,
-      remainingTime: '4h 20m',
-    },
-  ],
+  continueLearning: [],
   learningPaths: [
     {
       id: 'path1',
@@ -147,7 +139,6 @@ const MOCK_DATA: HomeData = {
 // Response-shape helpers
 // ---------------------------------------------------------------------------
 
-// Type guard for the standard { success, message, data } envelope
 function isApiResponse<T>(response: any): response is ApiResponse<T> {
   return (
     response &&
@@ -158,8 +149,6 @@ function isApiResponse<T>(response: any): response is ApiResponse<T> {
   );
 }
 
-// Unwraps a list endpoint whether it comes back wrapped ({success, data: [...]})
-// or as a bare array.
 function extractList<T>(response: any): T[] {
   if (isApiResponse<T[]>(response)) {
     return response.success && Array.isArray(response.data) ? response.data : [];
@@ -167,9 +156,8 @@ function extractList<T>(response: any): T[] {
   if (Array.isArray(response)) {
     return response;
   }
-  // If response is an object but not an array, try to find an array property
   if (response && typeof response === 'object') {
-    const possibleArrays = ['instructors', 'items', 'results', 'rows', 'list', 'courses', 'categories'];
+    const possibleArrays = ['instructors', 'items', 'results', 'rows', 'list', 'courses', 'categories', 'data'];
     for (const key of possibleArrays) {
       if (response[key] && Array.isArray(response[key])) {
         console.log(`🔍 Found array in response.${key}`);
@@ -180,7 +168,6 @@ function extractList<T>(response: any): T[] {
   return [];
 }
 
-// Same idea, for single-item endpoints (e.g. GET /instructors/:id)
 function extractItem<T>(response: any): T | null {
   if (isApiResponse<T>(response)) {
     return response.success ? (response.data ?? null) : null;
@@ -192,9 +179,6 @@ function extractItem<T>(response: any): T | null {
 // Mapping Functions
 // ---------------------------------------------------------------------------
 
-// Shape of the social links bag on an instructor. Adjust this to match
-// whatever `socialLinks` actually looks like on your Instructor type in
-// types/home.ts if it differs.
 interface InstructorSocialLinks {
   youtube?: string;
   twitter?: string;
@@ -202,9 +186,6 @@ interface InstructorSocialLinks {
   website?: string;
 }
 
-// Pulls social links out of whatever shape the API sends them in.
-// Handles a nested `socialLinks` object, flat top-level fields, or
-// alternate naming (e.g. `x` instead of `twitter`, `web` instead of `website`).
 function mapSocialLinks(apiInstructor: any): InstructorSocialLinks {
   const raw = apiInstructor.socialLinks || apiInstructor.social || {};
 
@@ -216,17 +197,13 @@ function mapSocialLinks(apiInstructor: any): InstructorSocialLinks {
   };
 }
 
-// Map instructor from API response to Instructor type
 function mapInstructor(apiInstructor: any): Instructor {
-  // Debug logging to see what we're getting
   if (apiInstructor && typeof apiInstructor === 'object') {
     console.log('🔍 Mapping instructor with keys:', Object.keys(apiInstructor));
   }
 
-  // Try multiple possible property names for each field
   const id = apiInstructor.id || apiInstructor._id || apiInstructor.instructorId || '';
   
-  // Handle name - could be 'name', 'fullName', or firstName + lastName
   let name = '';
   if (apiInstructor.name) {
     name = apiInstructor.name;
@@ -238,7 +215,6 @@ function mapInstructor(apiInstructor: any): Instructor {
     name = 'Instructor';
   }
 
-  // Handle photo/avatar
   let photo = apiInstructor.photo || 
               apiInstructor.avatar || 
               apiInstructor.profileImage || 
@@ -251,7 +227,6 @@ function mapInstructor(apiInstructor: any): Instructor {
     photo = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=150&background=4F46E5&color=fff`;
   }
 
-  // Handle expertise
   const expertise = apiInstructor.expertise || 
                     apiInstructor.specialization || 
                     apiInstructor.field || 
@@ -259,48 +234,40 @@ function mapInstructor(apiInstructor: any): Instructor {
                     apiInstructor.specialty ||
                     'Expert Instructor';
 
-  // Handle rating
   const rating = typeof apiInstructor.rating === 'number' ? apiInstructor.rating :
                  typeof apiInstructor.averageRating === 'number' ? apiInstructor.averageRating :
                  typeof apiInstructor.avgRating === 'number' ? apiInstructor.avgRating :
                  0;
 
-  // Handle student count
   const studentsCount = typeof apiInstructor.studentsCount === 'number' ? apiInstructor.studentsCount :
                         typeof apiInstructor.totalStudents === 'number' ? apiInstructor.totalStudents :
                         typeof apiInstructor.studentCount === 'number' ? apiInstructor.studentCount :
                         0;
 
-  // Handle course count
   const coursesCount = typeof apiInstructor.coursesCount === 'number' ? apiInstructor.coursesCount :
                        typeof apiInstructor.totalCourses === 'number' ? apiInstructor.totalCourses :
                        typeof apiInstructor.courseCount === 'number' ? apiInstructor.courseCount :
                        0;
 
-  // Handle follow status
   const isFollowing = apiInstructor.isFollowing === true || 
                       apiInstructor.following === true || 
                       apiInstructor.isFollowed === true ||
                       false;
 
-  // Handle bio
   const bio = apiInstructor.bio || 
               apiInstructor.biography || 
               apiInstructor.about || 
               '';
 
-  // Handle verification status
   const isVerified = apiInstructor.isVerifiedInstructor === true || 
                      apiInstructor.isVerified === true ||
                      apiInstructor.verified === true ||
                      false;
 
-  // Handle follower count
   const followerCount = typeof apiInstructor.followerCount === 'number' ? apiInstructor.followerCount :
                         typeof apiInstructor.followers === 'number' ? apiInstructor.followers :
                         0;
 
-  // Handle social links (required field on Instructor)
   const socialLinks = mapSocialLinks(apiInstructor);
 
   const mappedInstructor: Instructor = {
@@ -313,7 +280,6 @@ function mapInstructor(apiInstructor: any): Instructor {
     coursesCount,
     bio,
     isFollowing,
-    // Additional fields that might be used elsewhere
     firstName: apiInstructor.firstName || '',
     lastName: apiInstructor.lastName || '',
     totalStudents: studentsCount,
@@ -329,7 +295,6 @@ function mapInstructor(apiInstructor: any): Instructor {
   return mappedInstructor;
 }
 
-// Map category from API response to Category type
 function mapCategory(apiCategory: any): Category {
   return {
     id: apiCategory.id || '',
@@ -341,6 +306,63 @@ function mapCategory(apiCategory: any): Category {
     courseCount: apiCategory._count?.courses || apiCategory.courseCount || 0,
     description: apiCategory.description || '',
     isActive: apiCategory.isActive !== undefined ? apiCategory.isActive : true,
+  };
+}
+
+// ✅ Calculate remaining time based on progress
+function calculateRemainingTime(progress: number): string {
+  if (progress >= 100) return 'Completed ✅';
+  if (progress === 0) return 'Not started';
+  
+  // Estimate remaining time (assuming 40 hours total course)
+  const totalHours = 40;
+  const remainingPercent = (100 - progress) / 100;
+  const remainingHours = Math.round(totalHours * remainingPercent);
+  
+  if (remainingHours > 24) {
+    return `${Math.round(remainingHours / 24)} days left`;
+  } else if (remainingHours > 1) {
+    return `${remainingHours}h left`;
+  } else if (remainingHours === 1) {
+    return '1h left';
+  } else {
+    return '< 1h left';
+  }
+}
+
+// ✅ Map continue learning from API response
+function mapContinueLearning(apiItem: any): ContinueLearningCourse {
+  // The API returns an object with course data and enrollment data
+  const course = apiItem.course || apiItem;
+  const instructor = course.instructor || {};
+  
+  // Calculate remaining time based on progress
+  const progress = apiItem.progress || 0;
+  const remainingTime = calculateRemainingTime(progress);
+  
+  // Get the course ID from the enrollment or course object
+  const courseId = course.id || apiItem.courseId || apiItem.id || '';
+  
+  // Get instructor name
+  const instructorName = instructor.name || 
+                         `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 
+                         'Instructor';
+  
+  return {
+    id: apiItem.id || courseId, // Enrollment ID if available, otherwise course ID
+    courseId: courseId, // Store the actual course ID separately
+    title: course.title || 'Untitled Course',
+    instructor: instructorName,
+    thumbnail: course.thumbnail || 'https://via.placeholder.com/400x300',
+    progress: progress,
+    remainingTime: remainingTime,
+    // Additional fields
+    isCompleted: apiItem.isCompleted || false,
+    enrolledAt: apiItem.enrolledAt || null,
+    completedAt: apiItem.completedAt || null,
+    lastAccessed: apiItem.updatedAt || null,
+    level: course.level || 'BEGINNER',
+    category: course.category?.name || '',
   };
 }
 
@@ -388,29 +410,19 @@ export const homeService = {
       }
 
       console.log(`🌐 Fetching top ${limit} instructors from backend...`);
-      
-      // Make the API call
       const response = await apiClient.get('/api/instructors', { limit });
-      
       console.log('📥 Instructors response received');
       
-      // Extract the data from the response
       const extractedData = extractList<any>(response);
-      
       console.log(`📥 Extracted ${extractedData.length} instructors from response`);
       
-      // If we have data, log the first item to see its structure
       if (extractedData.length > 0) {
-        console.log('📥 First instructor raw data:', JSON.stringify(extractedData[0], null, 2));
         console.log('📥 First instructor keys:', Object.keys(extractedData[0]));
       }
       
-      // Map each instructor
       const instructors = extractedData.map(mapInstructor);
-      
       console.log(`✅ Fetched ${instructors.length} top instructors from backend`);
       
-      // Cache the results
       if (instructors.length > 0) {
         await cacheManager.set(CACHE_KEYS.TOP_INSTRUCTORS, instructors);
       }
@@ -418,11 +430,63 @@ export const homeService = {
       return instructors;
     } catch (error: any) {
       console.error('❌ Failed to fetch top instructors:', error.message);
-      
-      // Try to return cached data on error
       const cached = await cacheManager.get<Instructor[]>(CACHE_KEYS.TOP_INSTRUCTORS);
       if (cached && cached.length > 0) {
         console.log('📦 Returning cached instructors on error');
+        return cached;
+      }
+      return [];
+    }
+  },
+
+  // ---------------- ✅ Continue Learning — real backend (GET /api/enroll/continue-learning) ----------------
+  getContinueLearning: async (limit: number = 10, forceRefresh: boolean = false): Promise<ContinueLearningCourse[]> => {
+    try {
+      // Check cache first
+      if (!forceRefresh) {
+        const cached = await cacheManager.get<ContinueLearningCourse[]>(CACHE_KEYS.CONTINUE_LEARNING);
+        if (cached && cached.length > 0) {
+          console.log('📦 Using cached continue learning');
+          return cached;
+        }
+      }
+
+      console.log(`🌐 Fetching continue learning from backend (limit: ${limit})...`);
+      
+      // Make the API call to the real endpoint
+      const response = await apiClient.get(`/api/enroll/continue-learning?limit=${limit}`);
+      
+      console.log('📥 Continue learning response received');
+      
+      // Extract the data from the response
+      const extractedData = extractList<any>(response);
+      
+      console.log(`📥 Extracted ${extractedData.length} continue learning items from response`);
+      
+      // Log the first item to debug
+      if (extractedData.length > 0) {
+        console.log('📥 First item keys:', Object.keys(extractedData[0]));
+        console.log('📥 First item sample:', JSON.stringify(extractedData[0], null, 2));
+      }
+      
+      // Map each item to ContinueLearningCourse
+      const continueLearning = extractedData.map(mapContinueLearning);
+      
+      console.log(`✅ Fetched ${continueLearning.length} continue learning courses from backend`);
+      
+      // Cache the results
+      if (continueLearning.length > 0) {
+        await cacheManager.set(CACHE_KEYS.CONTINUE_LEARNING, continueLearning);
+      }
+      
+      return continueLearning;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch continue learning:', error.message);
+      
+      // Try to return cached data on error
+      const cached = await cacheManager.get<ContinueLearningCourse[]>(CACHE_KEYS.CONTINUE_LEARNING);
+      if (cached && cached.length > 0) {
+        console.log('📦 Returning cached continue learning on error');
         return cached;
       }
       
@@ -443,20 +507,23 @@ export const homeService = {
 
     console.log('🌐 Fetching home data...');
     
-    const [categories, topInstructors] = await Promise.all([
+    const [categories, topInstructors, continueLearning] = await Promise.all([
       homeService.getCategories(forceRefresh),
       homeService.getTopInstructors(10, forceRefresh),
+      homeService.getContinueLearning(10, forceRefresh),
     ]);
 
     const data: HomeData = { 
       ...MOCK_DATA, 
       categories, 
-      topInstructors 
+      topInstructors,
+      continueLearning,
     };
 
     await cacheManager.set(CACHE_KEYS.HOME_DATA, data);
     console.log(
-      `💾 Home data cached with ${categories.length} categories and ${topInstructors.length} instructors`
+      `💾 Home data cached with ${categories.length} categories, ` +
+      `${topInstructors.length} instructors, and ${continueLearning.length} continue learning courses`
     );
     return data;
   },
@@ -468,7 +535,6 @@ export const homeService = {
       await apiClient.post(`/api/instructors/${instructorId}/follow`);
       console.log('✅ Followed successfully');
       
-      // Invalidate caches
       await cacheManager.remove(CACHE_KEYS.TOP_INSTRUCTORS);
       await cacheManager.remove(CACHE_KEYS.HOME_DATA);
     } catch (error: any) {
@@ -483,7 +549,6 @@ export const homeService = {
       await apiClient.post(`/api/instructors/${instructorId}/follow`);
       console.log('✅ Unfollowed successfully');
       
-      // Invalidate caches
       await cacheManager.remove(CACHE_KEYS.TOP_INSTRUCTORS);
       await cacheManager.remove(CACHE_KEYS.HOME_DATA);
     } catch (error: any) {
@@ -525,6 +590,9 @@ export const homeService = {
         duration: course.duration || '',
         price: course.price || 0,
         level: course.level || 'Beginner',
+        isPublished: course.isPublished || false,
+        instructorId: course.instructorId || '',
+        categoryId: course.categoryId || '',
       }));
       
       console.log(`✅ Fetched ${courses.length} courses for instructor`);
@@ -538,7 +606,6 @@ export const homeService = {
   // ---------------- Mock data endpoints (to be replaced with real API calls) ----------------
   getRecommendedCourses: async (page: number = 1, limit: number = 10): Promise<RecommendedCourse[]> => {
     try {
-      // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const moreCourses: RecommendedCourse[] = Array.from({ length: Math.min(limit, 3) }, (_, i) => ({
@@ -564,15 +631,6 @@ export const homeService = {
       return MOCK_DATA.popularCourses;
     } catch (error) {
       console.error('Failed to fetch popular courses:', error);
-      return [];
-    }
-  },
-
-  getContinueLearning: async (): Promise<ContinueLearningCourse[]> => {
-    try {
-      return MOCK_DATA.continueLearning;
-    } catch (error) {
-      console.error('Failed to fetch continue learning:', error);
       return [];
     }
   },

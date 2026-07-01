@@ -13,7 +13,7 @@ export interface CourseData {
   whatYouWillLearn?: string[];
   requirements?: string[];
   targetAudience?: string[];
-  thumbnail?: string;
+  thumbnail?: string; // Made optional to match the main file
   status?: 'DRAFT' | 'UNDER_REVIEW' | 'PUBLISHED' | 'REJECTED';
   isPublished?: boolean;
   sections?: any[];

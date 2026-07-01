@@ -9,6 +9,8 @@ import courseRoutes from './routes/course.routes';
 import sectionRoutes from './routes/section.routes';
 import lessonRoutes from './routes/lesson.routes';
 import instructorRoutes from './routes/instructor.routes';
+import enrollmentRoutes from './routes/enrollment.routes';
+import searchRoutes from './routes/search.routes';
 
 const app = express();
 
@@ -57,13 +59,37 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Routes
+// ============================================
+// ROUTES
+// ============================================
+
+// Auth routes
 app.use('/api/auth', authRoutes);
+
+// Category routes
 app.use('/api/categories', categoryRoutes);
+
+// Course routes
 app.use('/api/courses', courseRoutes);
+
+// Instructor routes
 app.use('/api/instructors', instructorRoutes);
+
+// Section routes
 app.use('/api', sectionRoutes);
+
+// Lesson routes
 app.use('/api', lessonRoutes);
+
+// ✅ ENROLLMENT ROUTES - FIXED
+// Mount enrollment router with /api/enroll base path
+app.use('/api/enroll', enrollmentRoutes);
+
+app.use('/api/search', searchRoutes);
+
+// ============================================
+// HEALTH CHECK & ROOT
+// ============================================
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
@@ -89,19 +115,72 @@ app.get('/', (req: Request, res: Response) => {
         login: '/api/auth/login',
         me: '/api/auth/me',
       },
+      categories: '/api/categories',
+      courses: '/api/courses',
+      instructors: '/api/instructors',
+      enrollment: {
+        enroll: 'POST /api/enroll/:courseId',
+        unenroll: 'DELETE /api/enroll/:courseId',
+        status: 'GET /api/enroll/:courseId/status',
+        myEnrollments: 'GET /api/enroll/my-enrollments',
+        continueLearning: 'GET /api/enroll/continue-learning',
+        updateProgress: 'PATCH /api/enroll/lessons/:id/progress',
+        courseProgress: 'GET /api/enroll/courses/:courseId/progress',
+      },
     },
   });
 });
 
-// 404 handler
+// ============================================
+// DEBUG: Print all registered routes (optional)
+// ============================================
+if (process.env.NODE_ENV === 'development') {
+  const printRoutes = (stack: any[], basePath: string = '') => {
+    stack.forEach((layer: any) => {
+      if (layer.route) {
+        const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+        console.log(`  \x1b[33m${methods}\x1b[0m ${basePath}${layer.route.path}`);
+      } else if (layer.name === 'router' && layer.handle.stack) {
+        // Get the base path from the layer
+        let path = '';
+        if (layer.regexp) {
+          path = layer.regexp.source
+            .replace(/\\/g, '')
+            .replace(/\^/g, '')
+            .replace(/\?/g, '')
+            .replace(/\(\?:\(\[\^\\\/\]\+\?\)\)/g, ':param')
+            .replace(/\(\?:\(\?:\(\[\^\\\/\]\+\?\)\)\)/g, ':param')
+            .replace(/\/\//g, '/')
+            .replace(/\$/g, '');
+        }
+        printRoutes(layer.handle.stack, path);
+      }
+    });
+  };
+
+  console.log('\n\x1b[36m📋 All Registered Routes:\x1b[0m');
+  const routerStack = (app as any)._router?.stack || [];
+  printRoutes(routerStack);
+  console.log('');
+}
+
+// ============================================
+// 404 HANDLER
+// ============================================
+
+// 404 handler - Keep this AFTER all routes
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found',
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
 });
 
-// Error handling middleware
+// ============================================
+// ERROR HANDLING MIDDLEWARE
+// ============================================
+
+// Error handling middleware - Keep this LAST
 app.use(errorHandler);
 
 export default app;

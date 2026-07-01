@@ -9,8 +9,12 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
-    primary: '#2563EB', // Added: Blue for light mode
-    primaryLight: '#60A5FA', // Added: Lighter blue for light mode
+    primary: '#2563EB', // Blue for light mode
+    primaryLight: '#60A5FA', // Lighter blue for light mode
+    error: '#EF4444', // ✅ Added: Red for errors
+    success: '#22C55E', // ✅ Added: Green for success
+    warning: '#F59E0B', // ✅ Added: Yellow for warnings
+    info: '#3B82F6', // ✅ Added: Blue for info
   },
   dark: {
     text: '#ffffff',
@@ -18,8 +22,12 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
-    primary: '#60A5FA', // Added: Blue for dark mode
-    primaryLight: '#93C5FD', // Added: Lighter blue for dark mode
+    primary: '#60A5FA', // Blue for dark mode
+    primaryLight: '#93C5FD', // Lighter blue for dark mode
+    error: '#F87171', // ✅ Added: Red for errors (lighter for dark mode)
+    success: '#34D399', // ✅ Added: Green for success (lighter for dark mode)
+    warning: '#FBBF24', // ✅ Added: Yellow for warnings (lighter for dark mode)
+    info: '#60A5FA', // ✅ Added: Blue for info (lighter for dark mode)
   },
 } as const;
 
