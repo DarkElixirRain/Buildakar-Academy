@@ -48,9 +48,6 @@ export default function HomeScreen() {
     refreshing,
     error,
     data,
-    featuredCourses,
-    recommendedCourses,
-    popularCourses,
     categories,
     continueLearning,
     learningPaths,
@@ -62,13 +59,11 @@ export default function HomeScreen() {
     recentlyViewed,
     fetchHomeData,
     refreshHomeData,
-    loadMoreRecommendations,
     clearError,
   } = useHomeStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [localTopInstructors, setLocalTopInstructors] = useState<any[]>([]);
-  const [localFeaturedCourses, setLocalFeaturedCourses] = useState<any[]>([]);
 
   // Debug: Log auth status
   useEffect(() => {
@@ -101,12 +96,12 @@ export default function HomeScreen() {
     await loadTopInstructors();
   }, [refreshHomeData]);
 
-  // ✅ FIXED: Navigate to /result instead of /(search)
+  // Navigate to /result
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     if (query.trim()) {
       router.push({
-        pathname: "/result",  // ✅ This will give you /result?q=query
+        pathname: "/result",
         params: { q: query },
       } as any);
     }
@@ -114,10 +109,6 @@ export default function HomeScreen() {
 
   const handleNotificationPress = () => {
     router.push("/(notifications)" as any);
-  };
-
-  const handleContinueLearning = () => {
-    router.push("/(my-learning)" as any);
   };
 
   const handleCoursePress = (courseId: string) => {
@@ -172,19 +163,8 @@ export default function HomeScreen() {
     loadTopInstructors();
   };
 
-  const handleAchievementPress = () => {
-    router.push("/(achievements)" as any);
-  };
-
   const handleInstructorPress = (instructorId: string) => {
     router.push(`/instructor/${instructorId}` as any);
-  };
-
-  const handlePathPress = (pathId: string) => {
-    router.push({
-      pathname: "/(path)/[id]",
-      params: { id: pathId },
-    } as any);
   };
 
   const statusBarStyle = isDarkMode ? 'light' : 'dark';
@@ -192,6 +172,17 @@ export default function HomeScreen() {
   const displayInstructors = localTopInstructors.length > 0 
     ? localTopInstructors 
     : topInstructors || [];
+
+  // Helper function to check if continue learning has data
+  const hasContinueLearningData = () => {
+    if (continueLearning && continueLearning.length > 0) {
+      return true;
+    }
+    if (!continueLearning && data?.continueLearning && data.continueLearning.length > 0) {
+      return true;
+    }
+    return false;
+  };
 
   if (homeLoading && !data) {
     return <LoadingSkeleton />;
@@ -262,20 +253,22 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* Continue Learning Section */}
-          <View style={{ marginBottom: 24 }}>
-            <ContinueLearning
-              onCoursePress={handleCoursePress}
-              limit={10}
-            />
-          </View>
+          {/* Continue Learning Section - Only show if there's data */}
+          {hasContinueLearningData() && (
+            <View style={{ marginBottom: 24 }}>
+              <ContinueLearning
+                onCoursePress={handleCoursePress}
+                limit={10}
+              />
+            </View>
+          )}
 
-          {/* Featured Courses Carousel */}
+          {/* Featured Courses - Always render, fetches its own data */}
           <View style={{ marginBottom: 24 }}>
             <FeaturedCourses onCoursePress={handleCourseDetailsPress} />
           </View>
 
-          {/* Categories Section */}
+          {/* Categories Section - Only render if categories exist */}
           {categories && categories.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <Categories
@@ -286,30 +279,23 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Recommended For You */}
-          {recommendedCourses && recommendedCourses.length > 0 && (
-            <View style={{ marginBottom: 24 }}>
-              <RecommendedCourses
-                courses={recommendedCourses}
-                onCoursePress={handleCourseDetailsPress}
-                onSeeAll={() => handleSeeAll("recommended")}
-                onLoadMore={loadMoreRecommendations}
-              />
-            </View>
-          )}
+          {/* Recommended Courses - Always render, fetches its own data */}
+          <View style={{ marginBottom: 24 }}>
+            <RecommendedCourses
+              onCoursePress={handleCourseDetailsPress}
+              onSeeAll={() => handleSeeAll("recommended")}
+            />
+          </View>
 
-          {/* Popular Courses */}
-          {popularCourses && popularCourses.length > 0 && (
-            <View style={{ marginBottom: 24 }}>
-              <PopularCourses
-                courses={popularCourses}
-                onCoursePress={handleCourseDetailsPress}
-                onSeeAll={() => handleSeeAll("popular")}
-              />
-            </View>
-          )}
+          {/* Popular Courses - Always render, fetches its own data */}
+          <View style={{ marginBottom: 24 }}>
+            <PopularCourses
+              onCoursePress={handleCourseDetailsPress}
+              onSeeAll={() => handleSeeAll("popular")}
+            />
+          </View>
 
-          {/* Upcoming Live Classes */}
+          {/* Upcoming Live Classes - Only render if liveClasses exist */}
           {liveClasses && liveClasses.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <LiveClasses
@@ -320,7 +306,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Top Instructors */}
+          {/* Top Instructors - Only render if instructors exist */}
           {displayInstructors.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <TopInstructors
@@ -331,7 +317,7 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Recently Viewed */}
+          {/* Recently Viewed - Only render if recentlyViewed exist */}
           {recentlyViewed && recentlyViewed.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <RecentlyViewed

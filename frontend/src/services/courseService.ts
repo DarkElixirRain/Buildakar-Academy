@@ -60,7 +60,7 @@ export interface PaginatedResponse<T> {
 }
 
 class CourseService {
-  private baseUrl = '/courses';
+  private baseUrl = '/api/courses';
 
   // Create a new course
   async createCourse(data: Partial<CourseData>): Promise<CourseData> {
