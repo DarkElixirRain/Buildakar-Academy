@@ -27,10 +27,8 @@ model User {
   bio                    String?
   expertise              String?
   isVerifiedInstructor   Boolean      @default(false)
-  payoutMethod           String?
   photo                  String?
   socialLinks            Json?
-  stripeAccountId        String?
   title                  String?
   totalCourses           Int          @default(0)
   totalRevenue           Float        @default(0)
@@ -45,7 +43,12 @@ model User {
   followers         InstructorFollow[]    @relation("Following")
   following         InstructorFollow[]    @relation("Followers")
   reviews           Review[]
-  recentSearches    RecentSearch[] // ✅ Added
+  recentSearches    RecentSearch[]
+
+  // Payment relations
+  payments      Payment[]
+  payoutAccount PayoutAccount?
+  payouts       Payout[]
 
   @@map("users")
 }
@@ -73,6 +76,7 @@ model Course {
   thumbnail     String?
   price         Float        @default(0)
   originalPrice Float?
+  currency      String       @default("USD")
   level         Level        @default(BEGINNER)
   language      String       @default("English")
   duration      String?
@@ -93,6 +97,7 @@ model Course {
   lessons       Lesson[]
   reviews       Review[]
   sections      Section[]
+  payments      Payment[]
 }
 
 model Section {
@@ -141,6 +146,7 @@ model Enrollment {
   course         Course           @relation(fields: [courseId], references: [id])
   user           User             @relation(fields: [userId], references: [id])
   lessonProgress LessonProgress[]
+  payment        Payment?
 
   @@unique([userId, courseId])
 }
@@ -217,6 +223,102 @@ model InstructorAnalytics {
   @@index([date])
 }
 
+// ---------------------------------------------------------------------------
+// Payment system (provider-agnostic — no Stripe-specific fields)
+// ---------------------------------------------------------------------------
+
+/// A single purchase transaction for a course, made through any supported
+/// payment gateway (configured at the application layer, e.g. Razorpay,
+/// PayPal, Paddle, a local gateway, etc.)
+model Payment {
+  id       String @id @default(cuid())
+  userId   String
+  courseId String
+
+  amount   Float
+  currency String @default("USD")
+
+  status   PaymentStatus  @default(PENDING)
+  provider PaymentProvider
+
+  /// Opaque reference to the transaction on the provider's side
+  /// (e.g. order id / charge id / payment intent id). Not provider-specific.
+  providerReference String? @unique
+
+  /// Raw metadata returned by the provider (receipt url, method details, etc.)
+  metadata Json?
+
+  failureReason String?
+  paidAt        DateTime?
+  refundedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  /// Set once the payment succeeds and the enrollment is created
+  enrollmentId String?     @unique
+  enrollment   Enrollment? @relation(fields: [enrollmentId], references: [id])
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@map("payments")
+}
+
+/// Where an instructor wants their earnings sent. Provider-agnostic: holds
+/// whichever identifier/details the configured payout provider needs.
+model PayoutAccount {
+  id           String @id @default(cuid())
+  instructorId String @unique
+
+  provider PayoutProvider
+
+  /// Opaque account identifier on the payout provider's side
+  /// (e.g. connected account id, merchant id, wallet id).
+  providerAccountId String?
+
+  /// Bank/UPI/wallet details as needed by the chosen provider.
+  details Json?
+
+  isVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  instructor User @relation(fields: [instructorId], references: [id])
+
+  @@map("payout_accounts")
+}
+
+/// A withdrawal of accumulated earnings to an instructor's payout account.
+model Payout {
+  id           String @id @default(cuid())
+  instructorId String
+
+  amount   Float
+  currency String @default("USD")
+
+  status PayoutStatus @default(PENDING)
+
+  /// Opaque reference to the payout/transfer on the provider's side.
+  providerReference String? @unique
+
+  failureReason String?
+  processedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  instructor User @relation(fields: [instructorId], references: [id])
+
+  @@index([instructorId])
+  @@index([status])
+  @@map("payouts")
+}
+
 enum Role {
   STUDENT
   INSTRUCTOR
@@ -245,4 +347,34 @@ enum InstructorAnalyticsPeriod {
   WEEK
   MONTH
   YEAR
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+/// Add/remove values here as you wire up actual gateways —
+/// nothing else in the schema depends on which ones exist.
+enum PaymentProvider {
+  RAZORPAY
+  PAYPAL
+  PADDLE
+  MANUAL
+}
+
+enum PayoutProvider {
+  BANK_TRANSFER
+  PAYPAL
+  UPI
+  MANUAL
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
 }
