@@ -7,6 +7,7 @@ import {
   Text,
   Animated,
   Platform,
+  Keyboard,
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -33,8 +34,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const inputRef = useRef<TextInput>(null);
 
-  // ✅ Load recent searches from backend
+  // Load recent searches from backend
   const loadRecentSearches = async () => {
     if (!isAuthenticated) {
       loadLocalRecentSearches();
@@ -57,7 +59,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
-  // ✅ Load recent searches from local storage
+  // Load recent searches from local storage
   const loadLocalRecentSearches = () => {
     try {
       if (Platform.OS === "web") {
@@ -79,7 +81,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
-  // ✅ Save recent search to backend
+  // Save recent search to backend
   const saveRecentSearch = async (query: string) => {
     try {
       if (isAuthenticated) {
@@ -90,7 +92,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
 
-  // ✅ Save to local storage
+  // Save to local storage
   const saveLocalRecentSearch = (query: string) => {
     try {
       const updated = [
@@ -118,17 +120,20 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       toValue: 1.02,
       useNativeDriver: true,
     }).start();
+    // Load recent searches when focusing
+    loadRecentSearches();
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
+    // Delay hiding recent searches to allow clicks to register
+    setTimeout(() => {
+      setIsFocused(false);
+    }, 200);
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
     }).start();
   };
-
-  // components/home/SearchBar.tsx - Updated navigation
 
   const handleSubmit = () => {
     if (value.trim()) {
@@ -137,10 +142,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       // Add to recent searches
       saveRecentSearch(query);
       saveLocalRecentSearch(query);
+      
+      // Close keyboard and blur
+      Keyboard.dismiss();
+      setIsFocused(false);
 
-      // ✅ Navigate to search results page - using absolute path
+      // Navigate to search results page
       router.push({
-        pathname: "/result", // Changed from '/(search)/result' to '/result'
+        pathname: "/result",
         params: { q: query },
       });
 
@@ -149,11 +158,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   const handleRecentSearchPress = (search: string) => {
+    // Update input value
     onChangeText(search);
+    
+    // Close keyboard and blur
+    Keyboard.dismiss();
+    setIsFocused(false);
 
-    // ✅ Navigate to search results page - using absolute path
+    // Navigate to search results page
     router.push({
-      pathname: "/result", // Changed from '/(search)/result' to '/result'
+      pathname: "/result",
       params: { q: search },
     });
 
@@ -162,6 +176,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const clearSearch = () => {
     onChangeText("");
+    // Keep focus on input
+    inputRef.current?.focus();
   };
 
   const handleVoiceSearch = () => {
@@ -170,16 +186,37 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const handleClearAll = async () => {
     try {
+      // Clear from backend
       if (isAuthenticated) {
         await searchService.clearRecentSearches();
       }
+      // Clear from local state
       setRecentSearches([]);
+      // Clear from local storage
       if (Platform.OS === "web") {
         localStorage.removeItem("recent_searches");
       }
+      // Keep focus on input
+      inputRef.current?.focus();
     } catch (error) {
       console.error("Failed to clear recent searches:", error);
     }
+  };
+
+  const handleRemoveSingleSearch = (searchToRemove: string) => {
+    const updated = recentSearches.filter((s) => s !== searchToRemove);
+    setRecentSearches(updated);
+    if (Platform.OS === "web") {
+      localStorage.setItem("recent_searches", JSON.stringify(updated));
+    }
+    // Keep focus on input
+    inputRef.current?.focus();
+  };
+
+  const handleCloseSearchBar = () => {
+    Keyboard.dismiss();
+    setIsFocused(false);
+    inputRef.current?.blur();
   };
 
   return (
@@ -195,6 +232,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
         {/* Input */}
         <TextInput
+          ref={inputRef}
           style={{
             width: "100%",
             height: 48,
@@ -225,7 +263,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         {/* Right Actions */}
         <View className="absolute right-2 top-1/2 -translate-y-1/2 flex-row items-center space-x-1">
           {value.length > 0 && (
-            <TouchableOpacity className="p-1.5" onPress={clearSearch}>
+            <TouchableOpacity 
+              className="p-1.5" 
+              onPress={clearSearch}
+              activeOpacity={0.7}
+            >
               <Feather name="x" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
@@ -237,6 +279,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               backgroundColor: isDarkMode ? "#334155" : "#F1F5F9",
             }}
             onPress={handleVoiceSearch}
+            activeOpacity={0.7}
           >
             <Ionicons name="mic" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -255,21 +298,30 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             borderColor: colors.backgroundSelected,
           }}
         >
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: "500",
-              marginBottom: 8,
-              color: colors.textSecondary,
-            }}
-          >
-            Recent Searches
-          </Text>
+          <View className="flex-row justify-between items-center mb-2">
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "500",
+                color: colors.textSecondary,
+              }}
+            >
+              Recent Searches
+            </Text>
+            <TouchableOpacity 
+              onPress={handleCloseSearchBar}
+              activeOpacity={0.7}
+            >
+              <Feather name="chevron-down" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          
           {recentSearches.map((search, index) => (
             <TouchableOpacity
               key={index}
               className="py-2 flex-row items-center"
               onPress={() => handleRecentSearchPress(search)}
+              activeOpacity={0.7}
             >
               <Feather name="clock" size={16} color={colors.textSecondary} />
               <Text
@@ -279,27 +331,25 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                   flex: 1,
                   color: colors.text,
                 }}
+                numberOfLines={1}
               >
                 {search}
               </Text>
               <TouchableOpacity
-                onPress={() => {
-                  const updated = recentSearches.filter((s) => s !== search);
-                  setRecentSearches(updated);
-                  if (Platform.OS === "web") {
-                    localStorage.setItem(
-                      "recent_searches",
-                      JSON.stringify(updated),
-                    );
-                  }
-                }}
+                onPress={() => handleRemoveSingleSearch(search)}
+                activeOpacity={0.7}
+                style={{ padding: 4 }}
               >
                 <Feather name="x" size={16} color={colors.textSecondary} />
               </TouchableOpacity>
             </TouchableOpacity>
           ))}
 
-          <TouchableOpacity className="mt-2 py-1" onPress={handleClearAll}>
+          <TouchableOpacity 
+            className="mt-2 py-2" 
+            onPress={handleClearAll}
+            activeOpacity={0.7}
+          >
             <Text
               style={{
                 fontSize: 14,

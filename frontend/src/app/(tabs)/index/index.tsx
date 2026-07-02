@@ -71,6 +71,7 @@ export default function HomeScreen() {
       isAuthenticated,
       hasToken: !!token,
       userEmail: user?.email || 'No user',
+      userRole: user?.role || 'No role',
       authStoreKeys: Object.keys(authStore),
     });
   }, [isAuthenticated, token, user, authStore]);
@@ -183,6 +184,9 @@ export default function HomeScreen() {
     }
     return false;
   };
+
+  // Check if user is a student
+  const isStudent = user?.role === 'STUDENT';
 
   if (homeLoading && !data) {
     return <LoadingSkeleton />;
@@ -306,8 +310,8 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* Top Instructors - Only render if instructors exist */}
-          {displayInstructors.length > 0 && (
+          {/* Top Instructors - Only show if user is NOT a student */}
+          {!isStudent && displayInstructors.length > 0 && (
             <View style={{ marginBottom: 24 }}>
               <TopInstructors
                 onFollowPress={handleInstructorFollow}

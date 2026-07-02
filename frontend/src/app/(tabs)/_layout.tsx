@@ -13,6 +13,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { isDarkMode, colors } = useTheme();
   const user = useAuthStore(state => state.user);
+
+  // Check if user is instructor or admin (roles are UPPERCASE)
   const isInstructor = user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN';
 
   // Calculate responsive tab bar height
@@ -111,21 +113,23 @@ export default function TabsLayout() {
         }}
       />
 
-      {isInstructor && (
-        <Tabs.Screen
-          name="instructor"
-          options={{
-            title: 'Instructor',
-            tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons
-                name={focused ? 'school' : 'school-outline'}
-                size={size || 24}
-                color={color}
-              />
-            ),
-          }}
-        />
-      )}
+      {/* File actually lives at app/(tabs)/dashboard/index.tsx, so the
+          screen name must be "dashboard" to match. Always render it and
+          use href: null to hide it from students without breaking the route. */}
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: 'Instructor',
+          href: isInstructor ? undefined : null,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'school' : 'school-outline'}
+              size={size || 24}
+              color={color}
+            />
+          ),
+        }}
+      />
 
       <Tabs.Screen
         name="setting"

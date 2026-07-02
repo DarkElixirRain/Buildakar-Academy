@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Modal, S
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/themeContext';
+import { useAuthStore } from '@/store/authStore';
 import { useInstructorStore } from '@/store/instructorStore';
 import { CourseCard } from '@/components/instructor/CourseCard';
 import { CourseForm } from '@/components/instructor/CourseForm';
@@ -11,6 +12,9 @@ import { Course } from '@/types/instructor';
 export default function InstructorDashboard() {
   const router = useRouter();
   const { colors } = useTheme();
+  const user = useAuthStore(state => state.user);
+  const isInstructor = user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN';
+
   const {
     courses,
     coursesLoading,
@@ -27,13 +31,22 @@ export default function InstructorDashboard() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Redirect non-instructors away (deep link, back button, role change, etc.)
+  useEffect(() => {
+    if (!isInstructor) {
+      router.replace('/(tabs)' as any);
+    }
+  }, [isInstructor, router]);
+
   const loadData = useCallback(async () => {
     await Promise.all([fetchCourses({ page: 1, limit: 6 }), fetchStats(), fetchAnalytics()]);
   }, [fetchCourses, fetchStats, fetchAnalytics]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    if (isInstructor) {
+      void loadData();
+    }
+  }, [isInstructor, loadData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -74,6 +87,12 @@ export default function InstructorDashboard() {
     ],
     [colors.primary, stats]
   );
+
+  // Don't render instructor data/UI for students, and don't flash content
+  // before the redirect above kicks in.
+  if (!isInstructor) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
