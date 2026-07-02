@@ -361,8 +361,7 @@ enum PaymentStatus {
 enum PaymentProvider {
   RAZORPAY
   PAYPAL
-  PADDLE
-  MANUAL
+  ESEWA
 }
 
 enum PayoutProvider {
