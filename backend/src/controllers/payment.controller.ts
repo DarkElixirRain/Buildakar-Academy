@@ -70,7 +70,7 @@ export class PaymentController {
         `${frontendUrl}/payment/success?courseId=${result.courseId}&paymentId=${result.paymentId}`
       );
     } catch (error: any) {
-      console.error('❌ [Payment] Success verification failed:', error.message);
+      console.error(' [Payment] Success verification failed:', error.message);
 
       const reason = encodeURIComponent(error.message || 'verification_failed');
       return res.redirect(
@@ -95,7 +95,7 @@ export class PaymentController {
         `${frontendUrl}/payment/failure?reason=payment_cancelled`
       );
     } catch (error: any) {
-      console.error('⚠️ [Payment] Failure handler error:', error.message);
+      console.error('[Payment] Failure handler error:', error.message);
 
       return res.redirect(
         `${frontendUrl}/payment/failure?reason=unknown`
