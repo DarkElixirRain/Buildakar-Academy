@@ -12,7 +12,8 @@ import instructorRoutes from './routes/instructor.routes';
 import enrollmentRoutes from './routes/enrollment.routes';
 import searchRoutes from './routes/search.routes';
 import paymentRoutes from './routes/payment.routes';
-import reviewRoutes from './routes/review.routes'
+import reviewRoutes from './routes/review.routes';
+import notificationRoutes from './routes/notification.routes'
 
 const app = express();
 
@@ -94,6 +95,10 @@ app.use('/api/payments', paymentRoutes)
 
 //Review Routes
 app.use('/api', reviewRoutes)
+
+//Notification Routes
+app.use('/api/notification', notificationRoutes)
+
 
 // ============================================
 // HEALTH CHECK & ROOT
