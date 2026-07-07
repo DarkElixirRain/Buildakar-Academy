@@ -50,6 +50,10 @@ model User {
   payoutAccount PayoutAccount?
   payouts       Payout[]
 
+  // Notification
+  notifications     Notification[]
+  pushToken         String? 
+
   @@map("users")
 }
 
@@ -227,9 +231,6 @@ model InstructorAnalytics {
 // Payment system (provider-agnostic — no Stripe-specific fields)
 // ---------------------------------------------------------------------------
 
-/// A single purchase transaction for a course, made through any supported
-/// payment gateway (configured at the application layer, e.g. Razorpay,
-/// PayPal, Paddle, a local gateway, etc.)
 model Payment {
   id       String @id @default(cuid())
   userId   String
@@ -276,8 +277,6 @@ model PayoutAccount {
 
   provider PayoutProvider
 
-  /// Opaque account identifier on the payout provider's side
-  /// (e.g. connected account id, merchant id, wallet id).
   providerAccountId String?
 
   /// Bank/UPI/wallet details as needed by the chosen provider.
@@ -376,4 +375,33 @@ enum PayoutStatus {
   PROCESSING
   PAID
   FAILED
+}
+
+
+// Notification
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?            // extra context (courseId, paymentId, etc.)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ENROLLMENT       // student enrolled in a course
+  PAYMENT_SUCCESS  // payment confirmed
+  PAYMENT_FAILED   // payment failed
+  NEW_REVIEW       // instructor got a new review
+  COURSE_PUBLISHED // instructor's course got published by admin
+  COURSE_APPROVED  // course approved/rejected
+  SYSTEM           // general platform announcements
 }
