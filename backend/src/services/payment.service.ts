@@ -7,6 +7,7 @@ import {
   verifyEsewaSignature,
   verifyEsewaPayment,
 } from '../utils/esewa';
+import { notifyEnrollment, notifyPaymentFailed, notifyPaymentSuccess } from './notification.service';
 
 const prisma = new PrismaClient();
 
@@ -129,7 +130,12 @@ export class PaymentService {
         return enroll;
       });
 
-      console.log(`✅ [Payment] Free enrollment: user=${userId} course=${courseId}`);
+      console.log(`[Payment] Free enrollment: user=${userId} course=${courseId}`);
+
+      notifyEnrollment(userId, course.title, courseId)
+        .catch((err) =>
+          console.error('[Notification] Free enrollment notify failed:', err)
+        );
 
       return {
         isFree: true,
@@ -280,6 +286,13 @@ export class PaymentService {
         },
       });
 
+
+      // ── NOTIFICATION: payment failed (API unreachable) ─────────
+     notifyPaymentFailed(payment.userId, payment.course.title, payment.courseId)
+        .catch((err) =>
+          console.error('[Notification] Payment failed notify error:', err)
+        );
+
       throw createError('Payment verification failed. Please contact support.', 400);
     }
 
@@ -292,6 +305,12 @@ export class PaymentService {
           failureReason: `eSewa returned status: ${esewaStatus.status}`,
         },
       });
+
+         // ── NOTIFICATION: payment not completed ────────────────────
+      notifyPaymentFailed(payment.userId, payment.course.title, payment.courseId)
+        .catch((err) =>
+          console.error('⚠️ [Notification] Payment failed notify error:', err)
+        );
 
       throw createError(`Payment not completed. Status: ${esewaStatus.status}`, 400);
     }
@@ -352,8 +371,25 @@ export class PaymentService {
     });
 
     console.log(
-      `✅ [Payment] SUCCEEDED: payment=${payment.id} user=${payment.userId} course=${payment.courseId}`
+      `[Payment] SUCCEEDED: payment=${payment.id} user=${payment.userId} course=${payment.courseId}`
     );
+    // ── NOTIFICATIONS: payment success + enrollment ─────────────
+    // Both fire after transaction commits — non-blocking
+  notifyPaymentSuccess(
+        payment.userId,
+        payment.course.title,
+        payment.courseId,
+        payment.amount,
+        payment.currency
+      )
+      .catch((err) =>
+        console.error('[Notification] Payment success notify error:', err)
+      );
+
+    notifyEnrollment(payment.userId, payment.course.title, payment.courseId)
+      .catch((err) =>
+        console.error('[Notification] Enrollment notify error:', err)
+      );
 
     return {
       success: true,
@@ -400,7 +436,22 @@ export class PaymentService {
         },
       });
 
-      console.log(`❌ [Payment] Marked FAILED: ${payment.id}`);
+      console.log(` [Payment] Marked FAILED: ${payment.id}`);
+       // ── NOTIFICATION: payment cancelled ────────────────────────
+
+       const course = await prisma.course.findFirst({where:{id:payment.courseId }})
+
+       if(!course){
+        throw new Error("Course not found")
+       }
+    notifyPaymentFailed(
+          payment.userId,
+          course?.title,
+          payment.courseId
+        )
+        .catch((err) =>
+          console.error('⚠️ [Notification] Payment failure notify error:', err)
+        );
     } catch (error) {
       console.error('⚠️ [Payment] Error in handlePaymentFailure:', error);
     }

@@ -191,6 +191,23 @@ export async function notifyEnrollment(userId: string, courseTitle: string, cour
     });
 }
 
+// Add this function to notification.service.ts
+// Place it after notifyCourseApproved
+
+export async function notifyCoursePublished(
+  instructorId: string,
+  courseTitle: string,
+  courseId: string
+) {
+  await createAndSend({
+    userId: instructorId,
+    type: NotificationType.COURSE_PUBLISHED,
+    title: '🚀 Course Published!',
+    body: `Your course "${courseTitle}" is now live and available to students.`,
+    data: { courseId, type: 'COURSE_PUBLISHED' },
+  });
+}
+
  export async function notifyPaymentSuccess(
     userId: string,
     courseTitle: string,

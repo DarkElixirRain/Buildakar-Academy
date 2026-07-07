@@ -3,6 +3,7 @@ import {
   recalculateCourseRating,
   recalculateInstructorRating,
 } from '../utils/rating';
+import { notifyNewReview } from './notification.service';
  
 const prisma = new PrismaClient();
  
@@ -72,12 +73,16 @@ const enrollment = await prisma.enrollment.findUnique({
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      select: { instructorId: true },
+      select: { instructorId: true,title:true },
     });
  
     if (!course) {
       throw createError('Course not found', 404);
     }
+    const student = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { firstName: true, lastName: true },
+  });
 
     const review = await prisma.$transaction(async (tx) => {
       const created = await tx.review.create({
@@ -92,6 +97,20 @@ const enrollment = await prisma.enrollment.findUnique({
  
       return created;
     });
+      const studentName = student
+    ? `${student.firstName}   student.lastName}`.trim()
+    : 'A student';
+ 
+  notifyNewReview(
+      course.instructorId,
+      studentName,
+      course.title,
+      courseId,
+      rating
+    )
+    .catch((err) =>
+      console.error('⚠️ [Notification] New review notify error:', err)
+    );
  
     return review as ReviewWithUser;
 

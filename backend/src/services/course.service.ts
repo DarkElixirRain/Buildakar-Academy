@@ -1,5 +1,11 @@
-// backend/src/services/course.service.ts
+
 import { PrismaClient, CourseStatus, Role, Level } from "@prisma/client";
+import {
+  createAndSend,
+  createAndSendBulk,
+  notifyCoursePublished,
+  notifyCourseApproved,
+} from "./notification.service";
 
 const prisma = new PrismaClient();
 
@@ -55,28 +61,19 @@ interface PaginatedResult<T> {
 }
 
 export class CourseService {
-  // Valid status transitions
-  private static readonly validTransitions: Record<
-    CourseStatus,
-    CourseStatus[]
-  > = {
+  private static readonly validTransitions: Record<CourseStatus, CourseStatus[]> = {
     DRAFT: ["UNDER_REVIEW"],
     UNDER_REVIEW: ["PUBLISHED", "DRAFT"],
-    PUBLISHED: ["DRAFT"], // Admin can unpublish
+    PUBLISHED: ["DRAFT"],
   };
 
-  // Create a new course (instructor only)
   async createCourse(data: CreateCourseData) {
-    // Verify category exists
     const category = await prisma.category.findUnique({
       where: { id: data.categoryId },
     });
 
-    if (!category) {
-      throw new Error("Category not found");
-    }
+    if (!category) throw new Error("Category not found");
 
-    // Create course with DRAFT status
     const course = await prisma.course.create({
       data: {
         title: data.title,
@@ -104,7 +101,6 @@ export class CourseService {
     return course;
   }
 
-  // Get courses with filters and pagination
   async getCourses(filters: CourseFilters = {}): Promise<PaginatedResult<any>> {
     const {
       instructorId,
@@ -130,24 +126,13 @@ export class CourseService {
       ];
     }
 
-    // Build orderBy
     let orderBy: any = { createdAt: "desc" };
     switch (sortBy) {
-      case "oldest":
-        orderBy = { createdAt: "asc" };
-        break;
-      case "title":
-        orderBy = { title: "asc" };
-        break;
-      case "updatedAt":
-        orderBy = { updatedAt: "desc" };
-        break;
-      case "rating":
-        orderBy = { rating: "desc" };
-        break;
-      case "students":
-        orderBy = { studentsCount: "desc" };
-        break;
+      case "oldest": orderBy = { createdAt: "asc" }; break;
+      case "title": orderBy = { title: "asc" }; break;
+      case "updatedAt": orderBy = { updatedAt: "desc" }; break;
+      case "rating": orderBy = { rating: "desc" }; break;
+      case "students": orderBy = { studentsCount: "desc" }; break;
     }
 
     const [courses, total] = await Promise.all([
@@ -159,9 +144,7 @@ export class CourseService {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
           sections: {
-            include: {
-              lessons: true,
-            },
+            include: { lessons: true },
             orderBy: { order: "asc" },
           },
           _count: {
@@ -187,7 +170,6 @@ export class CourseService {
     };
   }
 
-  // Get course by ID
   async getCourseById(id: string) {
     const course = await prisma.course.findUnique({
       where: { id },
@@ -198,9 +180,7 @@ export class CourseService {
         },
         sections: {
           include: {
-            lessons: {
-              orderBy: { order: "asc" },
-            },
+            lessons: { orderBy: { order: "asc" } },
           },
           orderBy: { order: "asc" },
         },
@@ -213,9 +193,6 @@ export class CourseService {
     return course;
   }
 
-  // backend/src/services/course.service.ts
-
-  // Add this new method to the CourseService class
   async getPublishedCourses(filters: {
     page?: number;
     limit?: number;
@@ -227,20 +204,13 @@ export class CourseService {
     const { page = 1, limit = 10, categoryId, search, sortBy, level } = filters;
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: any = {
       status: "PUBLISHED",
       isPublished: true,
     };
 
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    if (level) {
-      where.level = level;
-    }
-
+    if (categoryId) where.categoryId = categoryId;
+    if (level) where.level = level;
     if (search) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
@@ -248,21 +218,13 @@ export class CourseService {
       ];
     }
 
-    // Build order by
     let orderBy: any = { createdAt: "desc" };
-    if (sortBy === "rating") {
-      orderBy = { rating: "desc" };
-    } else if (sortBy === "popularity") {
-      orderBy = { studentsCount: "desc" };
-    } else if (sortBy === "newest") {
-      orderBy = { createdAt: "desc" };
-    } else if (sortBy === "priceLow") {
-      orderBy = { price: "asc" };
-    } else if (sortBy === "priceHigh") {
-      orderBy = { price: "desc" };
-    }
+    if (sortBy === "rating") orderBy = { rating: "desc" };
+    else if (sortBy === "popularity") orderBy = { studentsCount: "desc" };
+    else if (sortBy === "newest") orderBy = { createdAt: "desc" };
+    else if (sortBy === "priceLow") orderBy = { price: "asc" };
+    else if (sortBy === "priceHigh") orderBy = { price: "desc" };
 
-    // Get courses with relations
     const [data, total] = await Promise.all([
       prisma.course.findMany({
         where,
@@ -286,10 +248,7 @@ export class CourseService {
             },
           },
           _count: {
-            select: {
-              enrollments: true,
-              reviews: true,
-            },
+            select: { enrollments: true, reviews: true },
           },
         },
         orderBy,
@@ -299,7 +258,6 @@ export class CourseService {
       prisma.course.count({ where }),
     ]);
 
-    // Format response
     const formattedData = data.map((course: any) => ({
       ...course,
       studentsCount: course._count?.enrollments || 0,
@@ -318,34 +276,25 @@ export class CourseService {
     };
   }
 
-  // Update course
   async updateCourse(
     id: string,
     data: UpdateCourseData,
     userId: string,
-    userRole: Role,
+    userRole: Role
   ) {
-    const course = await prisma.course.findUnique({
-      where: { id },
-    });
+    const course = await prisma.course.findUnique({ where: { id } });
 
-    if (!course) {
-      throw new Error("Course not found");
-    }
+    if (!course) throw new Error("Course not found");
 
-    // Check ownership (instructors can only update their own courses)
     if (userRole !== Role.ADMIN && course.instructorId !== userId) {
       throw new Error("Not authorized to update this course");
     }
 
-    // If category is being updated, verify it exists
     if (data.categoryId) {
       const category = await prisma.category.findUnique({
         where: { id: data.categoryId },
       });
-      if (!category) {
-        throw new Error("Category not found");
-      }
+      if (!category) throw new Error("Category not found");
     }
 
     const updatedCourse = await prisma.course.update({
@@ -362,65 +311,47 @@ export class CourseService {
     return updatedCourse;
   }
 
-  // Delete course
   async deleteCourse(id: string, userId: string, userRole: Role) {
-    const course = await prisma.course.findUnique({
-      where: { id },
-    });
+    const course = await prisma.course.findUnique({ where: { id } });
 
-    if (!course) {
-      throw new Error("Course not found");
-    }
+    if (!course) throw new Error("Course not found");
 
-    // Check ownership
     if (userRole !== Role.ADMIN && course.instructorId !== userId) {
       throw new Error("Not authorized to delete this course");
     }
 
-    // Check if course has enrollments
     const enrollmentCount = await prisma.enrollment.count({
       where: { courseId: id },
     });
 
     if (enrollmentCount > 0) {
       throw new Error(
-        "Cannot delete course with active enrollments. Archive instead.",
+        "Cannot delete course with active enrollments. Archive instead."
       );
     }
 
-    await prisma.course.delete({
-      where: { id },
-    });
+    await prisma.course.delete({ where: { id } });
 
     return { success: true, message: "Course deleted successfully" };
   }
 
-  // Update course status with validation
   async updateCourseStatus(
     id: string,
     newStatus: CourseStatus,
     userId: string,
-    userRole: Role,
+    userRole: Role
   ) {
-    const course = await prisma.course.findUnique({
-      where: { id },
-    });
+    const course = await prisma.course.findUnique({ where: { id } });
 
-    if (!course) {
-      throw new Error("Course not found");
-    }
+    if (!course) throw new Error("Course not found");
 
-    // Check permissions
     const canSubmitForReview =
       userRole === Role.INSTRUCTOR && course.instructorId === userId;
-    const canPublish = userRole === Role.ADMIN;
 
-    // Validate transition
     const currentStatus = course.status;
     const allowedTransitions =
       CourseService.validTransitions[currentStatus] || [];
 
-    // Instructors can only move DRAFT -> UNDER_REVIEW
     if (userRole === Role.INSTRUCTOR) {
       if (!canSubmitForReview) {
         throw new Error("Not authorized to update this course status");
@@ -433,16 +364,14 @@ export class CourseService {
       }
     }
 
-    // Admins can do any valid transition
     if (userRole === Role.ADMIN) {
       if (!allowedTransitions.includes(newStatus)) {
         throw new Error(
-          `Invalid status transition from ${currentStatus} to ${newStatus}`,
+          `Invalid status transition from ${currentStatus} to ${newStatus}`
         );
       }
     }
 
-    // Additional validation for publishing
     if (newStatus === CourseStatus.PUBLISHED) {
       await this.validateCourseForPublishing(id);
     }
@@ -461,42 +390,98 @@ export class CourseService {
       },
     });
 
+    // ── NOTIFICATIONS ─────────────────────────────────────────────
+
+    // UNDER_REVIEW → PUBLISHED: admin approved
+    if (
+      currentStatus === CourseStatus.UNDER_REVIEW &&
+      newStatus === CourseStatus.PUBLISHED
+    ) {
+      notifyCoursePublished(course.instructorId, course.title, course.id)
+        .catch((err) =>
+          console.error("⚠️ [Notification] Course published error:", err)
+        );
+
+      notifyCourseApproved(course.instructorId, course.title, course.id, true)
+        .catch((err) =>
+          console.error("⚠️ [Notification] Course approved error:", err)
+        );
+
+      const enrolledUsers = await prisma.enrollment.findMany({
+        where: { courseId: course.id },
+        select: { userId: true },
+      });
+
+      if (enrolledUsers.length > 0) {
+        createAndSendBulk(
+          enrolledUsers.map((e) => e.userId),
+          {
+            type: "SYSTEM" as any,
+            title: "📚 Course is now live!",
+            body: `"${course.title}" has been published and is ready to learn.`,
+            data: { courseId: course.id, type: "SYSTEM" },
+          }
+        ).catch((err) =>
+          console.error("⚠️ [Notification] Students bulk notify error:", err)
+        );
+      }
+    }
+
+    // UNDER_REVIEW → DRAFT: admin rejected
+    if (
+      currentStatus === CourseStatus.UNDER_REVIEW &&
+      newStatus === CourseStatus.DRAFT
+    ) {
+      notifyCourseApproved(course.instructorId, course.title, course.id, false)
+        .catch((err) =>
+          console.error("⚠️ [Notification] Course rejected error:", err)
+        );
+    }
+
+    // PUBLISHED → DRAFT: admin unpublished
+    if (
+      currentStatus === CourseStatus.PUBLISHED &&
+      newStatus === CourseStatus.DRAFT
+    ) {
+      createAndSend({
+        userId: course.instructorId,
+        type: "SYSTEM" as any,
+        title: "⚠️ Course Unpublished",
+        body: `Your course "${course.title}" has been unpublished by an admin.`,
+        data: { courseId: course.id, type: "SYSTEM" },
+      }).catch((err) =>
+        console.error("⚠️ [Notification] Course unpublished error:", err)
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────
+
     return updatedCourse;
   }
 
-  // Validate course has required content for publishing
   private async validateCourseForPublishing(courseId: string) {
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       include: {
         sections: {
-          include: {
-            lessons: true,
-          },
+          include: { lessons: true },
         },
       },
     });
 
-    if (!course) {
-      throw new Error("Course not found");
-    }
+    if (!course) throw new Error("Course not found");
 
-    // Check if course has at least one section
     if (!course.sections || course.sections.length === 0) {
-      throw new Error(
-        "Course must have at least one section before publishing",
-      );
+      throw new Error("Course must have at least one section before publishing");
     }
 
-    // Check if at least one section has lessons
     const hasLessons = course.sections.some(
-      (section) => section.lessons.length > 0,
+      (section) => section.lessons.length > 0
     );
     if (!hasLessons) {
       throw new Error("Course must have at least one lesson before publishing");
     }
 
-    // Check for required fields
     if (!course.title || !course.description) {
       throw new Error("Course must have a title and description");
     }
@@ -510,7 +495,6 @@ export class CourseService {
     }
   }
 
-  // Get instructor's courses stats
   async getInstructorStats(instructorId: string) {
     const [
       totalCourses,
@@ -520,20 +504,10 @@ export class CourseService {
       totalStudents,
     ] = await Promise.all([
       prisma.course.count({ where: { instructorId } }),
-      prisma.course.count({
-        where: { instructorId, status: CourseStatus.PUBLISHED },
-      }),
-      prisma.course.count({
-        where: { instructorId, status: CourseStatus.DRAFT },
-      }),
-      prisma.course.count({
-        where: { instructorId, status: CourseStatus.UNDER_REVIEW },
-      }),
-      prisma.enrollment.count({
-        where: {
-          course: { instructorId },
-        },
-      }),
+      prisma.course.count({ where: { instructorId, status: CourseStatus.PUBLISHED } }),
+      prisma.course.count({ where: { instructorId, status: CourseStatus.DRAFT } }),
+      prisma.course.count({ where: { instructorId, status: CourseStatus.UNDER_REVIEW } }),
+      prisma.enrollment.count({ where: { course: { instructorId } } }),
     ]);
 
     return {
@@ -547,28 +521,22 @@ export class CourseService {
     };
   }
 
-  // Duplicate course (for creating similar courses)
   async duplicateCourse(id: string, instructorId: string) {
     const course = await prisma.course.findUnique({
       where: { id },
       include: {
         sections: {
-          include: {
-            lessons: true,
-          },
+          include: { lessons: true },
         },
       },
     });
 
-    if (!course) {
-      throw new Error("Course not found");
-    }
+    if (!course) throw new Error("Course not found");
 
     if (course.instructorId !== instructorId) {
       throw new Error("Not authorized to duplicate this course");
     }
 
-    // Create new course as draft
     const newCourse = await prisma.course.create({
       data: {
         title: `${course.title} (Copy)`,
@@ -587,12 +555,9 @@ export class CourseService {
         isBestseller: false,
         isTrending: false,
       },
-      include: {
-        category: true,
-      },
+      include: { category: true },
     });
 
-    // Create sections and lessons
     for (const section of course.sections) {
       const newSection = await prisma.section.create({
         data: {
@@ -603,7 +568,6 @@ export class CourseService {
         },
       });
 
-      // Create lessons for this section
       for (const lesson of section.lessons) {
         await prisma.lesson.create({
           data: {
@@ -621,7 +585,6 @@ export class CourseService {
       }
     }
 
-    // Fetch the complete course with sections and lessons
     const completeCourse = await prisma.course.findUnique({
       where: { id: newCourse.id },
       include: {

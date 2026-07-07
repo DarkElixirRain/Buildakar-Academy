@@ -1,5 +1,5 @@
 import type { Request,Response,NextFunction } from "express";
-import { createReview, deleteReview, getCourseReviews, getMyReview, updateReview } from "../services/review.services";
+import { createReview, deleteReview, getCourseReviews, getMyReview, updateReview } from "../services/review.service";
 
 export async function CreateReview(req:Request,res:Response,next:NextFunction) {
     try {
