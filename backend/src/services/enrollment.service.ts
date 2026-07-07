@@ -1,5 +1,5 @@
 import { PrismaClient, Role, CourseStatus } from "@prisma/client";
-
+import { notifyEnrollment } from "./notification.service";
 const prisma = new PrismaClient();
 
 interface PaginationFilters {
@@ -50,6 +50,14 @@ export class EnrollmentService {
         data: { totalStudents: { increment: 1 } },
       }),
     ]);
+
+    //Notification: Enroll successfully
+        notifyEnrollment(userId, course.title, courseId)
+      .catch((err) =>
+        console.error("⚠️ [Notification] Enrollment notify error:", err)
+      );
+   
+ 
 
     return enrollment;
   }

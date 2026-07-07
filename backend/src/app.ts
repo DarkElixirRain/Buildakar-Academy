@@ -97,7 +97,7 @@ app.use('/api/payments', paymentRoutes)
 app.use('/api', reviewRoutes)
 
 //Notification Routes
-app.use('/api/notification', notificationRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 
 // ============================================
