@@ -56,6 +56,7 @@ model User {
 
   // live
   liveClasses LiveClass[] @relation("InstructorLiveClasses")
+  liveClassParticipations LiveClassParticipant[]
 
   @@map("users")
 }
@@ -425,6 +426,8 @@ model LiveClass {
   maxParticipants Int         @default(100)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  // LiveClass
+  participants LiveClassParticipant[]
 
   course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   instructor User     @relation("InstructorLiveClasses", fields: [instructorId], references: [id])
@@ -440,4 +443,22 @@ enum LiveClassStatus {
   LIVE
   ENDED
   CANCELLED
+}
+
+model LiveClassParticipant {
+  id          String   @id @default(cuid())
+  liveClassId String
+  userId      String
+
+  joinedAt    DateTime @default(now())
+  leftAt      DateTime?
+
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([liveClassId, userId])
+  @@index([liveClassId])
+  @@index([userId])
+
+  @@map("live_class_participants")
 }
