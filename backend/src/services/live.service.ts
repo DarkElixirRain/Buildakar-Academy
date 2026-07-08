@@ -4,6 +4,7 @@ import {
   CourseStatus,
 } from "@prisma/client";
 import { generateRoomName } from "../utils/generateRoomName";
+import { notifyLiveClassCancelled, notifyLiveClassScheduled, notifyLiveClassStarted, notifyLiveClassUpdated } from "./notification.service";
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,20 @@ interface UpdateLiveClassData {
   description?: string;
   scheduledAt?: Date;
   maxParticipants?: number;
+}
+
+// Helper
+async function getEnrolledStudentIds(courseId: string) {
+  const students = await prisma.enrollment.findMany({
+    where: {
+      courseId,
+    },
+    select: {
+      userId: true,
+    },
+  });
+
+  return students.map(student => student.userId);
 }
 
 
@@ -80,6 +95,21 @@ export async function createLiveClass(data:CreateLiveClassData){
     },
   });
 
+ const studentIds = await getEnrolledStudentIds(liveClass.courseId);
+
+if (studentIds.length > 0) {
+  try {
+    await notifyLiveClassScheduled(
+      studentIds,
+      liveClass.title,
+      liveClass.id,
+      liveClass.courseId,
+      liveClass.scheduledAt
+    );
+  } catch (error) {
+    console.error("Failed to send live class notifications:", error);
+  }
+}
 
 
 
@@ -95,35 +125,20 @@ export async function getInstructorLiveClasses(instructorId:string){
     where: {
       instructorId,
     },
-    include: {
-      course: {
-        select: {
-          id: true,
-          title: true,
-          thumbnail: true,
-        },
-      },
-    
-        select: {
-          course: {
-            select: false,
-          },
-      },
+        include: {
+  course: {
+    select: {
+      id: true,
+      title: true,
+      thumbnail: true,
     },
-    orderBy: [
-      
-      {
-        scheduledAt: "asc",
-      },
-      {
-        createdAt: "desc",
-      },
-    ],
+  },
+},
   });
 
-  if(!data)
-    throw new Error("No live classes is Going Live")
-
+  if (data.length === 0) {
+    return [];
+}
   return data
 }
 
@@ -205,7 +220,6 @@ export async function updateLiveClass(
   data: UpdateLiveClassData,
   instructorId: string
 ) {
-
   const liveClass = await prisma.liveClass.findUnique({
     where: { id },
   });
@@ -225,7 +239,7 @@ export async function updateLiveClass(
     throw new Error("This live class can no longer be edited.");
   }
 
-  return await prisma.liveClass.update({
+  const updatedLiveClass = await prisma.liveClass.update({
     where: { id },
     data,
     include: {
@@ -246,6 +260,23 @@ export async function updateLiveClass(
       },
     },
   });
+
+  const studentIds = await getEnrolledStudentIds(updatedLiveClass.courseId);
+
+  if (studentIds.length > 0) {
+    try {
+      await notifyLiveClassUpdated(
+        studentIds,
+        updatedLiveClass.title,
+        updatedLiveClass.id,
+        updatedLiveClass.courseId
+      );
+    } catch (error) {
+      console.error("Failed to notify students:", error);
+    }
+  }
+
+  return updatedLiveClass;
 }
 
 export async function deleteLiveClass(
@@ -253,9 +284,7 @@ export async function deleteLiveClass(
   instructorId: string
 ) {
   const liveClass = await prisma.liveClass.findUnique({
-    where: {
-      id,
-    },
+    where: { id },
   });
 
   if (!liveClass) {
@@ -267,16 +296,168 @@ export async function deleteLiveClass(
   }
 
   if (liveClass.status === LiveClassStatus.LIVE) {
-    throw new Error("Cannot delete a live class that is currently live.");
+    throw new Error("Cannot cancel a live class that is currently live.");
   }
 
-  return await prisma.liveClass.update({
-    where: {
-      id,
-    },
+  const updatedLiveClass = await prisma.liveClass.update({
+    where: { id },
     data: {
       status: LiveClassStatus.CANCELLED,
     },
   });
+
+  const studentIds = await getEnrolledStudentIds(updatedLiveClass.courseId);
+
+  if (studentIds.length > 0) {
+    try {
+      await notifyLiveClassCancelled(
+        studentIds,
+        updatedLiveClass.title,
+        updatedLiveClass.id,
+        updatedLiveClass.courseId
+      );
+    } catch (error) {
+      console.error(
+        "Failed to send live class cancellation notifications:",
+        error
+      );
+    }
+  }
+
+  return updatedLiveClass;
+}
+
+export async function startLiveClass(
+  id: string,
+  instructorId: string
+) {
+  const liveClass = await prisma.liveClass.findUnique({
+    where: { id },
+  });
+
+  if (!liveClass) {
+    throw new Error("Live class not found");
+  }
+
+  if (liveClass.instructorId !== instructorId) {
+    throw new Error("You are not authorized to start this live class.");
+  }
+
+  if (liveClass.status !== LiveClassStatus.SCHEDULED) {
+    throw new Error("Only scheduled classes can be started.");
+  }
+
+  const updatedLiveClass = await prisma.liveClass.update({
+    where: { id },
+    data: {
+      status: LiveClassStatus.LIVE,
+      startedAt: new Date(),
+    },
+    include: {
+      course: true,
+      instructor: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+  });
+
+  const studentIds = await getEnrolledStudentIds(updatedLiveClass.courseId);
+
+  if (studentIds.length > 0) {
+    try {
+      await notifyLiveClassStarted(
+        studentIds,
+        updatedLiveClass.title,
+        updatedLiveClass.id,
+        updatedLiveClass.courseId
+      );
+    } catch (error) {
+      console.error("Failed to send live class start notifications:", error);
+    }
+  }
+
+  return updatedLiveClass;
+}
+
+export async function endLiveClass(
+  id: string,
+  instructorId: string
+) {
+  const liveClass = await prisma.liveClass.findUnique({
+    where: { id },
+  });
+
+  if (!liveClass) {
+    throw new Error("Live class not found");
+  }
+
+  if (liveClass.instructorId !== instructorId) {
+    throw new Error("You are not authorized.");
+  }
+
+  if (liveClass.status !== LiveClassStatus.LIVE) {
+    throw new Error("Only live classes can be ended.");
+  }
+
+  return await prisma.liveClass.update({
+    where: { id },
+    data: {
+      status: LiveClassStatus.ENDED,
+      endedAt: new Date(),
+    },
+  });
+}
+
+export async function joinLiveClass(
+  id: string,
+  userId: string
+) {
+  const liveClass = await prisma.liveClass.findUnique({
+    where: { id },
+    include: {
+      course: true,
+    },
+  });
+
+  if (!liveClass) {
+    throw new Error("Live class not found");
+  }
+
+  if (liveClass.status !== LiveClassStatus.LIVE) {
+    throw new Error("This class is not currently live.");
+  }
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: {
+      userId_courseId: {
+        userId,
+        courseId: liveClass.courseId,
+      },
+    },
+  });
+
+  if (!enrollment) {
+    throw new Error("You are not enrolled in this course.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  });
+
+  return {
+    roomName: liveClass.roomName,
+    displayName: `${user?.firstName} ${user?.lastName}`,
+    email: user?.email,
+    liveClassId: liveClass.id,
+  };
 }
 

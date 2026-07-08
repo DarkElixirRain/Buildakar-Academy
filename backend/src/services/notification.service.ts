@@ -367,3 +367,94 @@ export  async function removePushToken(userId: string): Promise<void> {
       data: { pushToken: null },
     });
   }
+
+
+  // live class
+export async function notifyLiveClassScheduled(
+    userIds: string[],
+    title: string,
+    liveClassId: string,
+    courseId: string,
+    scheduledAt: Date | null
+) {
+    return createAndSendBulk(
+        userIds,
+        {
+            type: "SYSTEM" ,
+            title: " New Live Class Scheduled",
+            body: `"${title}" has been scheduled for ${
+                scheduledAt
+                    ? scheduledAt.toLocaleString()
+                    : "later"
+            }.`,
+            data: {
+                type: "LIVE_CLASS_SCHEDULED",
+                liveClassId,
+                courseId,
+            },
+        }
+    );
+}
+
+export async function notifyLiveClassStarted(
+    userIds: string[],
+    title: string,
+    liveClassId: string,
+    courseId: string
+) {
+    return createAndSendBulk(
+        userIds,
+        {
+            type: "SYSTEM" ,
+            title: " Live Class Started",
+            body: `"${title}" is live now. Join now!`,
+            data: {
+                type: "LIVE_CLASS_STARTED",
+                liveClassId,
+                courseId,
+            },
+        }
+    );
+}
+
+export async function notifyLiveClassUpdated(
+    userIds: string[],
+    title: string,
+    liveClassId: string,
+    courseId: string
+) {
+    return createAndSendBulk(
+        userIds,
+        {
+            type: "SYSTEM" as any,
+            title: " Live Class Updated",
+            body: `"${title}" has been updated.`,
+            data: {
+                type: "LIVE_CLASS_UPDATED",
+                liveClassId,
+                courseId,
+            },
+        }
+    );
+}
+
+export async function notifyLiveClassCancelled(
+    userIds: string[],
+    title: string,
+    liveClassId: string,
+    courseId: string
+) {
+    return createAndSendBulk(
+        userIds,
+        {
+            type: "SYSTEM",
+            title: "Live Class Cancelled",
+            body: `"${title}" has been cancelled.`,
+            data: {
+                type: "LIVE_CLASS_CANCELLED",
+                liveClassId,
+                courseId,
+            },
+        }
+    );
+}
