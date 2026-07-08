@@ -14,6 +14,7 @@ import searchRoutes from './routes/search.routes';
 import paymentRoutes from './routes/payment.routes';
 import reviewRoutes from './routes/review.routes';
 import notificationRoutes from './routes/notification.routes'
+import liveClassRoutes from './routes/liveClass.routes'
 
 const app = express();
 
@@ -98,6 +99,10 @@ app.use('/api', reviewRoutes)
 
 //Notification Routes
 app.use('/api/notifications', notificationRoutes)
+
+//Live Class Routes
+app.use('/api/live-classes', liveClassRoutes)
+
 
 
 // ============================================

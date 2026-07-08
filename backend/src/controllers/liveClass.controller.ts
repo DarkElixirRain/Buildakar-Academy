@@ -1,0 +1,205 @@
+import { Request, Response, NextFunction } from "express";
+import { createLiveClass, deleteLiveClass, endLiveClass, getCourseLiveClasses, getInstructorLiveClasses, getLiveClassById, joinLiveClass, startLiveClass, updateLiveClass } from "../services/live.service";
+
+export async function createliveClass(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const liveClass = await createLiveClass({
+      ...req.body,
+      instructorId: req.user!.id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Live class created successfully.",
+      data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getinstructorLiveClasses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const liveClasses =
+      await getInstructorLiveClasses(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Instructor live classes fetched successfully.",
+      data: liveClasses,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getcourseLiveClasses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { courseId } = req.params;
+
+    const liveClasses =
+      await getCourseLiveClasses(courseId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Course live classes fetched successfully.",
+      data: liveClasses,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getliveClassById(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    const liveClass =
+      await getLiveClassById(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Live class fetched successfully.",
+      data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateliveClass(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    const liveClass =
+      await updateLiveClass(
+        id,
+        req.body,
+        req.user!.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Live class updated successfully.",
+      data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function cancelliveClass(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    const liveClass =
+      await deleteLiveClass(
+        id,
+        req.user!.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Live class cancelled successfully.",
+      data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function startliveClass(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    const liveClass =
+      await startLiveClass(
+        id,
+        req.user!.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Live class started successfully.",
+      data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function endliveClass(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    const liveClass =
+      await endLiveClass(
+        id,
+        req.user!.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Live class ended successfully.",
+      data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function joinliveClass(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { id } = req.params;
+
+    const room =
+      await joinLiveClass(
+        id,
+        req.user!.id
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Live class joined successfully.",
+      data: room,
+    });
+  } catch (error) {
+    next(error);
+  }
+}

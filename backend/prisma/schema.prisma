@@ -426,7 +426,6 @@ model LiveClass {
   maxParticipants Int         @default(100)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  // LiveClass
   participants LiveClassParticipant[]
 
   course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
