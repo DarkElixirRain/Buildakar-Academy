@@ -1,4 +1,5 @@
 // backend/src/services/instructor.service.ts
+
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { Prisma } from '@prisma/client';
@@ -404,6 +405,25 @@ export const instructorService = {
         revenue: course.price * course.studentsCount,
       })),
     };
+  },
+
+  // ✅ NEW: Check follow status without toggling
+  async checkFollowStatus(instructorId: string, userId: string): Promise<boolean> {
+    try {
+      // Check if the user is following the instructor
+      const follow = await prisma.instructorFollow.findUnique({
+        where: {
+          followerId_instructorId: {
+            followerId: userId,
+            instructorId: instructorId,
+          },
+        },
+      });
+      return !!follow;
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
   },
 
   // Follow/unfollow instructor

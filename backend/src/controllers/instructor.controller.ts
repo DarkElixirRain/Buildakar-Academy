@@ -1,4 +1,5 @@
 // backend/src/controllers/instructor.controller.ts
+
 import { Request, Response, NextFunction } from 'express';
 import { instructorService } from '../services/instructor.service';
 import { schemas } from '../utils/validation';
@@ -17,9 +18,16 @@ export const instructorController = {
         const instructorsWithFollow = await Promise.all(
           instructors.map(async (instructor) => {
             try {
-              const result = await instructorService.toggleFollow(instructor.id, userId);
-              return { ...instructor, isFollowing: result.following };
-            } catch {
+              const isFollowing = await instructorService.checkFollowStatus(
+                instructor.id,
+                userId
+              );
+              return { ...instructor, isFollowing };
+            } catch (error) {
+              console.error(
+                `Error checking follow status for instructor ${instructor.id}:`,
+                error
+              );
               return { ...instructor, isFollowing: false };
             }
           })
@@ -54,9 +62,16 @@ export const instructorController = {
         const dataWithFollow = await Promise.all(
           result.data.map(async (instructor: any) => {
             try {
-              const followResult = await instructorService.toggleFollow(instructor.id, userId);
-              return { ...instructor, isFollowing: followResult.following };
-            } catch {
+              const isFollowing = await instructorService.checkFollowStatus(
+                instructor.id,
+                userId
+              );
+              return { ...instructor, isFollowing };
+            } catch (error) {
+              console.error(
+                `Error checking follow status for instructor ${instructor.id}:`,
+                error
+              );
               return { ...instructor, isFollowing: false };
             }
           })
@@ -141,7 +156,11 @@ export const instructorController = {
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
 
-      const result = await instructorService.getFollowers(instructorId, limit, offset);
+      const result = await instructorService.getFollowers(
+        instructorId,
+        limit,
+        offset
+      );
 
       res.status(200).json({
         success: true,
