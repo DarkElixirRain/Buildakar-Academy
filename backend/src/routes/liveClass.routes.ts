@@ -40,7 +40,7 @@ router.get(
 router.patch(
   "/:id",
   instructorOrAdmin,
-  validate(schemas.liveClassId),
+  validate(schemas.liveClassId,'params'),
   validate(schemas.updateLiveClass),
   updateliveClass
 );
@@ -49,7 +49,7 @@ router.patch(
 router.patch(
   "/:id/start",
   instructorOrAdmin,
-  validate(schemas.liveClassId),
+  validate(schemas.liveClassId,"params"),
   startliveClass
 );
 
@@ -57,7 +57,7 @@ router.patch(
 router.patch(
   "/:id/end",
   instructorOrAdmin,
-  validate(schemas.liveClassId),
+  validate(schemas.liveClassId,"params"),
   endliveClass
 );
 
@@ -65,7 +65,7 @@ router.patch(
 router.patch(
   "/:id/cancel",
   instructorOrAdmin,
-  validate(schemas.liveClassId),
+  validate(schemas.liveClassId,"params"),
   cancelliveClass
 );
 
@@ -74,7 +74,7 @@ router.patch(
 // POST /api/live-classes/:id/join
 router.post(
   "/:id/join",
-  validate(schemas.liveClassId),
+  validate(schemas.liveClassId,"params"),
 joinliveClass
 );
 
@@ -83,14 +83,14 @@ joinliveClass
 // GET /api/live-classes/:id
 router.get(
   "/:id",
-  validate(schemas.liveClassId),
+  validate(schemas.liveClassId,"params"),
 getliveClassById
 );
 
 // GET /api/live-classes/course/:courseId
 router.get(
   "/course/:courseId",
-  validate(schemas.courseId),
+  validate(schemas.courseId,'params'),
 getcourseLiveClasses
 );
 
