@@ -458,3 +458,21 @@ export async function notifyLiveClassCancelled(
         }
     );
 }
+
+// Follow
+export async function notifyFollow(
+  instructorId: string,
+  followerId: string,
+  followerName: string
+) {
+  return createAndSend({
+    userId: instructorId,
+    type: "SYSTEM",
+    title: "New Follower",
+    body: `${followerName} started following you.`,
+    data: {
+      type: "NEW_FOLLOWER",
+      followerId,
+    },
+  });
+}

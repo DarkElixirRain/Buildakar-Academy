@@ -2,6 +2,7 @@
 import { prisma } from '../lib/prisma';
 import { AppError } from '../utils/AppError';
 import { Prisma } from '@prisma/client';
+import { notifyFollow } from './notification.service';
 
 export interface InstructorFilters {
   search?: string;
@@ -452,6 +453,20 @@ export const instructorService = {
           instructorId,
         },
       });
+
+const follower = await prisma.user.findUnique({
+  where: {
+    id: followerId,
+  },
+  select: {
+    firstName: true,
+    lastName: true,
+  },
+});
+
+      //notification
+      await notifyFollow(instructorId,followerId,`${follower?.firstName} ${follower?.lastName}`)
+
       return { following: true, message: 'Followed successfully' };
     }
   },
