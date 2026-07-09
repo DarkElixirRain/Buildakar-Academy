@@ -485,3 +485,19 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+model EmailVerification {
+  id          Int      @id @default(autoincrement())
+
+  email       String
+
+  codeHash    String
+
+  expiresAt   DateTime
+
+  createdAt   DateTime @default(now())
+
+  verifiedAt  DateTime?
+
+  @@index([email])
+}

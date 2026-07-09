@@ -4,6 +4,8 @@ import googleAuthController from '../controllers/googleAuth.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { schemas } from '../utils/validation';
+import { sendVerificationCode, verifyVerificationCode } from '../controllers/verification.controller';
+
 
 const router = Router();
 
@@ -40,5 +42,12 @@ router.put(
 
 // Logout
 router.post('/logout', authController.logout);
+
+//verification
+router.post("/verify-email", authController.verifyEmail);
+
+router.post(
+  "/resend-verification",
+authController.resendVerification);
 
 export default router;
