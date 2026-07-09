@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "262671772910",
+    "project_id": "buildakar-academy",
+    "storage_bucket": "buildakar-academy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:262671772910:android:3ec82b4d09336f30d657ff",
+        "android_client_info": {
+          "package_name": "com.buildakarinnovations.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZkHiZQ5HrAlmSBp_d_rc4p-fGSf6L5Lk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
