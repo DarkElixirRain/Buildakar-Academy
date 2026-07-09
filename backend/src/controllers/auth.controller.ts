@@ -6,12 +6,24 @@ export class AuthController {
   async register(req: Request, res: Response, next: NextFunction) {
     try {
       const validatedData = schemas.register.parse(req.body);
+
       const result = await authService.register(validatedData);
+
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: result.refreshTokenExpiresAt,
+      });
 
       res.status(201).json({
         success: true,
         message: 'Registration successful',
-        data: result,
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          accessTokenExpiresAt: result.accessTokenExpiresAt,
+        },
       });
     } catch (error) {
       next(error);
@@ -21,12 +33,57 @@ export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const validatedData = schemas.login.parse(req.body);
+
       const result = await authService.login(validatedData);
+
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: result.refreshTokenExpiresAt,
+      });
 
       res.status(200).json({
         success: true,
         message: 'Login successful',
-        data: result,
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          accessTokenExpiresAt: result.accessTokenExpiresAt,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async refresh(req: Request, res: Response, next: NextFunction) {
+    try {
+      const refreshToken = req.cookies?.refreshToken;
+
+      if (!refreshToken) {
+        return res.status(401).json({
+          success: false,
+          message: 'Refresh token is missing.',
+        });
+      }
+
+      const result = await authService.refresh(refreshToken);
+
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: result.refreshTokenExpiresAt,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Token refreshed successfully.',
+        data: {
+          accessToken: result.accessToken,
+          accessTokenExpiresAt: result.accessTokenExpiresAt,
+        },
       });
     } catch (error) {
       next(error);
@@ -35,19 +92,21 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      // Get token from Authorization header
-      const authHeader = req.headers.authorization;
-      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+      const refreshToken = req.cookies?.refreshToken;
 
-      if (token) {
-        // Optional: Add token to blacklist
-        // await authService.blacklistToken(token);
-        console.log('[Logout] Token invalidated:', token.substring(0, 20) + '...');
+      if (refreshToken) {
+        await authService.logout(refreshToken);
       }
+
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
 
       res.status(200).json({
         success: true,
-        message: 'Logged out successfully',
+        message: 'Logged out successfully.',
       });
     } catch (error) {
       next(error);
@@ -56,17 +115,15 @@ export class AuthController {
 
   async getMe(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
+      if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'User not authenticated',
+          message: 'User not authenticated.',
         });
       }
 
-      const user = await authService.getMe(userId);
-      
+      const user = await authService.getMe(req.user.id);
+
       res.status(200).json({
         success: true,
         data: user,
@@ -78,21 +135,23 @@ export class AuthController {
 
   async updateRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      
-      if (!userId) {
+      if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'User not authenticated',
+          message: 'User not authenticated.',
         });
       }
 
       const validatedData = schemas.updateRole.parse(req.body);
-      const user = await authService.updateRole({ userId, role: validatedData.role });
+
+      const user = await authService.updateRole({
+        userId: req.user.id,
+        role: validatedData.role,
+      });
 
       res.status(200).json({
         success: true,
-        message: 'Role updated successfully',
+        message: 'Role updated successfully.',
         data: user,
       });
     } catch (error) {

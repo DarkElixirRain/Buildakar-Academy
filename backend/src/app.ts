@@ -15,6 +15,7 @@ import paymentRoutes from './routes/payment.routes';
 import reviewRoutes from './routes/review.routes';
 import notificationRoutes from './routes/notification.routes'
 import liveClassRoutes from './routes/liveClass.routes'
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
@@ -52,6 +53,9 @@ app.use(cors({
 app.options('*', cors());
 
 // Body parsing middleware
+
+
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

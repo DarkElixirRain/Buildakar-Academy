@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { config } from '../config';
-import { generateToken, TokenPayload } from '../utils/jwt.utils';
+import {
+  generateTokenPair,
+  hashRefreshToken,
+  AccessTokenPayload,
+} from '../utils/jwt.utils';
 import { hashPassword } from '../utils/password.utils';
 
 const prisma = new PrismaClient();
@@ -116,20 +120,38 @@ export const handleGoogleAuth = async (params: {
     }
   }
 
-  // Generate our JWT using existing util
-  const payload: TokenPayload = {
+// Generate your application's tokens
+const payload: AccessTokenPayload = {
+  userId: user.id,
+  email: user.email,
+  role: user.role,
+};
+
+const tokens = generateTokenPair(payload);
+
+// Remove any existing refresh tokens (single active session)
+await prisma.refreshToken.deleteMany({
+  where: {
     userId: user.id,
-    email: user.email,
-    role: user.role,
-  };
+  },
+});
 
-  const token = generateToken(payload);
+// Store hashed refresh token
+await prisma.refreshToken.create({
+  data: {
+    tokenHash: hashRefreshToken(tokens.refreshToken),
+    userId: user.id,
+    expiresAt: tokens.refreshTokenExpiresAt,
+  },
+});
 
-  // Return user without password
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password: _pw, ...userWithoutPassword } = user as any;
+// Return user without password
+const { password: _pw, ...userWithoutPassword } = user;
 
-  return { user: userWithoutPassword, token };
+return {
+  user: userWithoutPassword,
+  ...tokens,
+};
 };
 
 export default { handleGoogleAuth };

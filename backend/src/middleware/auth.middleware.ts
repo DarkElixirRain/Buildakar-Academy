@@ -1,8 +1,8 @@
 // backend/src/middleware/auth.middleware.ts
+
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt.utils';
+import { verifyAccessToken } from '../utils/jwt.utils';
 import { prisma } from '../lib/prisma';
-import { AppError } from '../utils/AppError';
 
 declare global {
   namespace Express {
@@ -27,20 +27,22 @@ export const authenticate = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'No token provided',
+        message: 'Authentication required.',
       });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+    const token = authHeader.substring(7);
 
-    // Check if user exists and is active
+    const payload = verifyAccessToken(token);
+
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: {
+        id: payload.userId,
+      },
       select: {
         id: true,
         email: true,
@@ -55,48 +57,41 @@ export const authenticate = async (
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'User not found',
+        message: 'User not found.',
       });
     }
 
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated',
+        message: 'Account is deactivated.',
       });
     }
 
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isVerified: user.isVerified,
-      isActive: user.isActive,
-    };
+    req.user = user;
 
     next();
   } catch (error: any) {
-    console.error('Auth middleware error:', error);
-    
-    // If it's a JWT error, return 401
-    if (error && (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' || error.name === 'NotBeforeError')) {
+    if (
+      error.name === 'JsonWebTokenError' ||
+      error.name === 'TokenExpiredError' ||
+      error.name === 'NotBeforeError'
+    ) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid or expired token',
+        message: 'Invalid or expired access token.',
       });
     }
 
-    // Otherwise it's likely a database connection error
-    return res.status(503).json({
+    console.error(error);
+
+    return res.status(500).json({
       success: false,
-      message: 'Service unavailable due to database connection issue.',
+      message: 'Authentication failed.',
     });
   }
 };
 
-// Optional: Middleware that allows optional authentication
 export const optionalAuthenticate = async (
   req: Request,
   res: Response,
@@ -104,16 +99,19 @@ export const optionalAuthenticate = async (
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader?.startsWith('Bearer ')) {
       return next();
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
+    const token = authHeader.substring(7);
+
+    const payload = verifyAccessToken(token);
 
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: {
+        id: payload.userId,
+      },
       select: {
         id: true,
         email: true,
@@ -126,20 +124,12 @@ export const optionalAuthenticate = async (
     });
 
     if (user && user.isActive) {
-      req.user = {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isVerified: user.isVerified,
-        isActive: user.isActive,
-      };
+      req.user = user;
     }
 
     next();
-  } catch (error) {
-    // Don't fail on invalid token for optional auth
+  } catch {
+    // Ignore invalid access token
     next();
   }
 };

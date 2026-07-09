@@ -1,6 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/password.utils';
-import { generateToken, TokenPayload } from '../utils/jwt.utils';
+import {
+  generateTokenPair,
+  hashRefreshToken,
+  AccessTokenPayload,
+} from '../utils/jwt.utils';
 
 const prisma = new PrismaClient();
 
@@ -26,7 +30,6 @@ export class AuthService {
   async register(data: RegisterData) {
     const { email, password, firstName, lastName, role = 'STUDENT' } = data;
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -35,10 +38,8 @@ export class AuthService {
       throw new Error('User already exists with this email');
     }
 
-    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email,
@@ -49,26 +50,33 @@ export class AuthService {
       },
     });
 
-    // Generate token
-    const tokenPayload: TokenPayload = {
+    const payload: AccessTokenPayload = {
       userId: user.id,
       email: user.email,
       role: user.role,
     };
-    const token = generateToken(tokenPayload);
 
-    // Return user without password
+    const tokens = generateTokenPair(payload);
+
+    await prisma.refreshToken.create({
+      data: {
+        tokenHash: hashRefreshToken(tokens.refreshToken),
+        userId: user.id,
+        expiresAt: tokens.refreshTokenExpiresAt,
+      },
+    });
+
     const { password: _, ...userWithoutPassword } = user;
+
     return {
       user: userWithoutPassword,
-      token,
+      ...tokens,
     };
   }
 
   async login(data: LoginData) {
     const { email, password } = data;
 
-    // Find user
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -77,30 +85,117 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    // Check if account is active
     if (!user.isActive) {
       throw new Error('Account is deactivated');
     }
 
-    // Verify password
-    const isPasswordValid = await comparePassword(password, user.password);
+    const isPasswordValid = await comparePassword(
+      password,
+      user.password,
+    );
+
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
     }
 
-    // Generate token
-    const tokenPayload: TokenPayload = {
+    const payload: AccessTokenPayload = {
       userId: user.id,
       email: user.email,
       role: user.role,
     };
-    const token = generateToken(tokenPayload);
 
-    // Return user without password
+    const tokens = generateTokenPair(payload);
+
+    await prisma.refreshToken.deleteMany({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    await prisma.refreshToken.create({
+      data: {
+        tokenHash: hashRefreshToken(tokens.refreshToken),
+        userId: user.id,
+        expiresAt: tokens.refreshTokenExpiresAt,
+      },
+    });
+
     const { password: _, ...userWithoutPassword } = user;
+
     return {
       user: userWithoutPassword,
-      token,
+      ...tokens,
+    };
+  }
+
+  async refresh(refreshToken: string) {
+    const tokenHash = hashRefreshToken(refreshToken);
+
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: {
+        tokenHash,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!storedToken) {
+      throw new Error('Invalid refresh token');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
+      await prisma.refreshToken.delete({
+        where: {
+          id: storedToken.id,
+        },
+      });
+
+      throw new Error('Refresh token expired');
+    }
+
+    if (!storedToken.user.isActive) {
+      throw new Error('Account is deactivated');
+    }
+
+    const payload: AccessTokenPayload = {
+      userId: storedToken.user.id,
+      email: storedToken.user.email,
+      role: storedToken.user.role,
+    };
+
+    const tokens = generateTokenPair(payload);
+
+    // Rotate refresh token
+    await prisma.$transaction([
+      prisma.refreshToken.delete({
+        where: {
+          id: storedToken.id,
+        },
+      }),
+      prisma.refreshToken.create({
+        data: {
+          tokenHash: hashRefreshToken(tokens.refreshToken),
+          userId: storedToken.user.id,
+          expiresAt: tokens.refreshTokenExpiresAt,
+        },
+      }),
+    ]);
+
+    return tokens;
+  }
+
+  async logout(refreshToken: string) {
+    const tokenHash = hashRefreshToken(refreshToken);
+
+    await prisma.refreshToken.deleteMany({
+      where: {
+        tokenHash,
+      },
+    });
+
+    return {
+      success: true,
     };
   }
 
@@ -131,7 +226,9 @@ export class AuthService {
     const { userId, role } = data;
 
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: {
+        id: userId,
+      },
       data: {
         role,
         hasCompletedOnboarding: true,
