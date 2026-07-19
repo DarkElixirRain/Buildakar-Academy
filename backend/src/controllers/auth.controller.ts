@@ -9,6 +9,9 @@ export class AuthController {
       const validatedData = schemas.register.parse(req.body);
 
       const result = await authService.register(validatedData);
+
+    // Send verification code to the user's email
+    await sendVerificationCode(result.user.email);
       
 
       res.cookie('refreshToken', result.refreshToken, {
@@ -20,7 +23,7 @@ export class AuthController {
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful',
+        message: 'Registration successful. Please check your email for the verification code.',
         data: {
           user: result.user,
           accessToken: result.accessToken,
@@ -37,6 +40,9 @@ export class AuthController {
       const validatedData = schemas.login.parse(req.body);
 
       const result = await authService.login(validatedData);
+      if (!result.user.isVerified) {
+  throw new Error('Please verify your email before logging in.');
+}
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,

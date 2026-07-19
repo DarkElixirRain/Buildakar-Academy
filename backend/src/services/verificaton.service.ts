@@ -17,8 +17,13 @@ export async function sendVerificationCode(email: string) {
   const codeHash = await hashCode(code);
 
   // Set expiration
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  const expiresInMinutes = Number(
+  process.env.VERIFICATION_CODE_EXPIRES_MINUTES ?? 10
+);
 
+const expiresAt = new Date(
+  Date.now() + expiresInMinutes * 60 * 1000
+);
 
   // Save the new code
   await prisma.emailVerification.create({

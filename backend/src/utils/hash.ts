@@ -6,7 +6,7 @@ export async function hashCode(code: string) {
 }
 
 export async function compareCode(
-    code: string,
+    code: string,   
     hash: string
 ) {
     return bcrypt.compare(code, hash);

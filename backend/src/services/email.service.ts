@@ -11,7 +11,8 @@ export async function sendVerificationEmail(
         throw new Error("Unauthorized")
     }
 
-    await resend.emails.send({
+
+   const res = await resend.emails.send({
 
         from: process.env.EMAIL_FROM!,
 
@@ -22,5 +23,7 @@ export async function sendVerificationEmail(
         html: verificationTemplate(code),
 
     });
+
+    console.log(res)
 
 }

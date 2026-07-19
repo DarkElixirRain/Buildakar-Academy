@@ -4,7 +4,6 @@ import googleAuthController from '../controllers/googleAuth.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { schemas } from '../utils/validation';
-import { sendVerificationCode, verifyVerificationCode } from '../controllers/verification.controller';
 
 
 const router = Router();
