@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { config } from './config';
@@ -19,11 +21,52 @@ import cookieParser from 'cookie-parser';
 
 const app = express();
 
+// Nonce generator for CSP
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('hex');
+  next();
+});
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginOpenerPolicy: { policy: "unsafe-none" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        (req, res) => `'nonce-${(res as any).locals?.nonce}'`,
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        (req, res) => `'nonce-${(res as any).locals?.nonce}'`,
+      ],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+      connectSrc: [
+        "'self'",
+        "https://accounts.google.com",
+        "https://www.googleapis.com",
+      ],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      frameSrc: ["'self'", "https://meet.jit.si"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
 }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests, please try again later.' },
+});
+
+app.use(limiter);
 
 // CORS configuration - ACCEPT ANY ORIGIN
 app.use(cors({
