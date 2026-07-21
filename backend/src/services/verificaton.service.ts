@@ -1,10 +1,8 @@
 
+import { prisma } from '../lib/prisma';
 import { generateVerificationCode } from "../utils/generateVerificationCode";
 import { hashCode, compareCode } from "../utils/hash";
 import { sendVerificationEmail } from "./email.service";
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export async function sendVerificationCode(email: string) {
   // Delete any existing code
