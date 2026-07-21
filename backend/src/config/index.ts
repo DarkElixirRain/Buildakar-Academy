@@ -1,20 +1,43 @@
 import dotenv from 'dotenv';
+import { z } from 'zod';
 
 dotenv.config();
 
+const envSchema = z.object({
+  PORT: z.coerce.number().default(3000),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  FRONTEND_URL: z.string().default('http://localhost:8081'),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error('\x1b[31m❌ Invalid environment variables:\x1b[0m');
+  const errors = parsed.error.flatten().fieldErrors;
+  for (const [key, msgs] of Object.entries(errors)) {
+    console.error(`  \x1b[31m• ${key}: ${msgs?.join(', ')}\x1b[0m`);
+  }
+  process.exit(1);
+}
+
 export const config = {
-  port: parseInt(process.env.PORT || '3000', 10),
-  nodeEnv: process.env.NODE_ENV || 'development',
+  port: parsed.data.PORT,
+  nodeEnv: parsed.data.NODE_ENV,
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    secret: parsed.data.JWT_SECRET,
+    expiresIn: parsed.data.JWT_EXPIRES_IN,
   },
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || '',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    clientId: parsed.data.GOOGLE_CLIENT_ID,
+    clientSecret: parsed.data.GOOGLE_CLIENT_SECRET,
   },
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:8081',
-  isDevelopment: process.env.NODE_ENV === 'development',
-  isProduction: process.env.NODE_ENV === 'production',
-  databaseUrl: process.env.DATABASE_URL || '',
+  frontendUrl: parsed.data.FRONTEND_URL,
+  isDevelopment: parsed.data.NODE_ENV === 'development',
+  isProduction: parsed.data.NODE_ENV === 'production',
+  databaseUrl: parsed.data.DATABASE_URL,
 };
