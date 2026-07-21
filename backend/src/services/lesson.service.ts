@@ -1,8 +1,6 @@
 // backend/src/services/lesson.service.ts
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { createStorageService } from './storageService';
-
-const prisma = new PrismaClient();
 
 export class LessonService {
   // Create a new lesson

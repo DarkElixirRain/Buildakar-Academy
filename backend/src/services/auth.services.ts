@@ -1,12 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { hashPassword, comparePassword } from '../utils/password.utils';
 import {
   generateTokenPair,
   hashRefreshToken,
   AccessTokenPayload,
 } from '../utils/jwt.utils';
-
-const prisma = new PrismaClient();
 
 interface RegisterData {
   email: string;

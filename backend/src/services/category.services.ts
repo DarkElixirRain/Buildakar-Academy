@@ -1,9 +1,6 @@
 // backend/src/services/category.service.ts
-import { PrismaClient } from '@prisma/client';
 import slugify from 'slugify';
-
-// Initialize Prisma Client with any type to bypass TypeScript issues
-const prisma: any = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export class CategoryService {
   // Get all categories

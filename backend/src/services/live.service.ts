@@ -1,12 +1,10 @@
 import {
-  PrismaClient,
   LiveClassStatus,
   CourseStatus,
 } from "@prisma/client";
+import { prisma } from '../lib/prisma';
 import { generateRoomName } from "../utils/generateRoomName";
 import { notifyLiveClassCancelled, notifyLiveClassScheduled, notifyLiveClassStarted, notifyLiveClassUpdated } from "./notification.service";
-
-const prisma = new PrismaClient();
 
 interface CreateLiveClassData {
   title: string;

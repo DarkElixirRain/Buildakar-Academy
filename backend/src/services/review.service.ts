@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import {
   recalculateCourseRating,
   recalculateInstructorRating,
 } from '../utils/rating';
 import { notifyNewReview } from './notification.service';
- 
-const prisma = new PrismaClient();
  
 function createError(message: string, statusCode: number): Error {
   return Object.assign(new Error(message), { statusCode });

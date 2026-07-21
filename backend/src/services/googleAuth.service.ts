@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { config } from '../config';
 import {
   generateTokenPair,
@@ -6,8 +6,6 @@ import {
   AccessTokenPayload,
 } from '../utils/jwt.utils';
 import { hashPassword } from '../utils/password.utils';
-
-const prisma = new PrismaClient();
 
 interface GoogleTokenResponse {
   access_token: string;

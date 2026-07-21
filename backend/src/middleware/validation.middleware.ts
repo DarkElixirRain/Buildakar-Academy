@@ -1,6 +1,6 @@
-// middleware/validation.middleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
+import { logger } from '../utils/logger';
 
 type ValidationSource = 'body' | 'params' | 'query';
 
@@ -9,36 +9,31 @@ export const validate = (schema: ZodSchema, source: ValidationSource = 'body') =
     try {
       const data = req[source];
 
-      // LOG: What's being validated
-      console.log(`📥 [Validation] Source: ${source}`);
-      console.log(`📥 [Validation] Data:`, JSON.stringify(data, null, 2));
-      if (source === 'body') {
-        console.log('📥 [Validation] Content-Type:', req.headers['content-type']);
-      }
+      logger.debug(`Validating ${source}`);
 
       const parsed = await schema.parseAsync(data);
 
-      // Replace with the parsed (and defaulted/coerced) data so downstream
-      // handlers get consistent types (e.g. paginationSchema's z.coerce.number())
       (req[source] as any) = parsed;
 
-      console.log('✅ [Validation] Validation passed');
+      logger.debug(`Validation passed for ${source}`);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const data = req[source];
-        console.error('❌ [Validation] Validation failed:', error.issues);
-        console.error(`📦 [Validation] Received ${source}:`, data);
+        logger.warn(`Validation failed for ${source}:`, {
+          fields: error.issues.map(err => err.path.join('.')),
+          errors: error.issues.map(err => ({
+            field: err.path.join('.'),
+            message: err.message,
+          })),
+        });
 
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
-          errors: error.issues.map((err: any) => ({
+          errors: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
-            received: err.path.length > 0 ? (data as any)?.[err.path[0]] : undefined,
           })),
-          receivedBody: data,
         });
       }
       next(error);

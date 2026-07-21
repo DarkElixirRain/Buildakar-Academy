@@ -1,6 +1,6 @@
-import { PrismaClient, Role, CourseStatus } from "@prisma/client";
+import { Role, CourseStatus } from "@prisma/client";
+import { prisma } from '../lib/prisma';
 import { notifyEnrollment } from "./notification.service";
-const prisma = new PrismaClient();
 
 interface PaginationFilters {
   page?: number;

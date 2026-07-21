@@ -1,7 +1,6 @@
-import { PrismaClient, NotificationType } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { messaging } from '../lib/firebase';
- 
-const prisma = new PrismaClient();
  
 function createError(message: string, statusCode: number): Error {
   return Object.assign(new Error(message), { statusCode });
