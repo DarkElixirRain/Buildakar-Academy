@@ -1,8 +1,6 @@
 // backend/src/middleware/ownership.middleware.ts
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 // Check if user owns the course (for course-level operations)
 export const checkCourseOwnership = async (

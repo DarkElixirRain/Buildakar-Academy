@@ -1,5 +1,6 @@
 
-import { PrismaClient, PaymentStatus, PaymentProvider, Enrollment } from '@prisma/client';
+import { PaymentStatus, PaymentProvider, Enrollment } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { createId } from '@paralleldrive/cuid2';
 import {
   buildEsewaFormPayload,
@@ -8,8 +9,6 @@ import {
   verifyEsewaPayment,
 } from '../utils/esewa';
 import { notifyEnrollment, notifyPaymentFailed, notifyPaymentSuccess } from './notification.service';
-
-const prisma = new PrismaClient();
 
 // types
 export interface InitiatePaymentResult {

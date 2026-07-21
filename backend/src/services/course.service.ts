@@ -1,13 +1,12 @@
 
-import { PrismaClient, CourseStatus, Role, Level } from "@prisma/client";
+import { CourseStatus, Role, Level } from "@prisma/client";
+import { prisma } from '../lib/prisma';
 import {
   createAndSend,
   createAndSendBulk,
   notifyCoursePublished,
   notifyCourseApproved,
 } from "./notification.service";
-
-const prisma = new PrismaClient();
 
 interface CreateCourseData {
   title: string;

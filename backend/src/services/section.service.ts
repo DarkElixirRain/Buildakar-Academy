@@ -1,7 +1,5 @@
 // backend/src/services/section.service.ts
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 interface CreateSectionData {
   title: string;
