@@ -55,7 +55,22 @@ app.use(helmet({
       upgradeInsecureRequests: [],
     },
   },
+  strictTransportSecurity: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 }));
+
+// Permissions-Policy (helmet v7 dropped built-in support; set manually)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), notifications=(), payment=(), display-capture=(), autoplay=(self)'
+  );
+  next();
+});
 
 // Rate limiting
 const limiter = rateLimit({

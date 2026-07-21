@@ -1,7 +1,7 @@
 {
-  "name": "coursera-backend",
+  "name": "buildacad-backend",
   "version": "1.0.0",
-  "description": "Backend for Coursera-like app",
+  "description": "Backend for buildacad (A learning platform)",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
