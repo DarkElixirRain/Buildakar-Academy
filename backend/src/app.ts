@@ -17,7 +17,9 @@ import paymentRoutes from './routes/payment.routes';
 import reviewRoutes from './routes/review.routes';
 import notificationRoutes from './routes/notification.routes'
 import liveClassRoutes from './routes/liveClass.routes'
+import adminRoutes from './routes/admin.routes'
 import cookieParser from 'cookie-parser';
+
 
 const app = express();
 
@@ -164,6 +166,9 @@ app.use('/api/notifications', notificationRoutes)
 
 //Live Class Routes
 app.use('/api/live-classes', liveClassRoutes)
+
+//admin Routes
+app.use('/api/admin', adminRoutes)
 
 
 
