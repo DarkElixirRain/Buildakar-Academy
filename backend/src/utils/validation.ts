@@ -93,9 +93,22 @@ export const resetPasswordSchema = z.object({
 });
 
 export const verifyEmailSchema = z.object({
-  token: z
+  email: z
     .string()
-    .min(1, 'Token is required'),
+    .email('Invalid email format')
+    .min(1, 'Email is required'),
+
+  code: z
+    .string()
+    .length(6, 'Verification code must be 6 digits')
+    .regex(/^\d+$/, 'Verification code must contain only numbers'),
+});
+
+export const resendVerificationSchema = z.object({
+  email: z
+    .string()
+    .email('Invalid email format')
+    .min(1, 'Email is required'),
 });
 
 export const updateRoleSchema = z.object({
@@ -254,6 +267,7 @@ export const schemas = {
   forgotPassword: forgotPasswordSchema,
   resetPassword: resetPasswordSchema,
   verifyEmail: verifyEmailSchema,
+  resendVerification: resendVerificationSchema,
   updateRole: updateRoleSchema,
 
   // Course schemas
@@ -291,6 +305,7 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import authService from '../services/auth.services';
 import { schemas } from '../utils/validation';
+import { sendVerificationCode, verifyverificationCode } from '../services/verificaton.service';
 
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction) {
@@ -8,6 +9,10 @@ export class AuthController {
       const validatedData = schemas.register.parse(req.body);
 
       const result = await authService.register(validatedData);
+
+    // Send verification code to the user's email
+    await sendVerificationCode(result.user.email);
+      
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
@@ -18,7 +23,7 @@ export class AuthController {
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful',
+        message: 'Registration successful. Please check your email for the verification code.',
         data: {
           user: result.user,
           accessToken: result.accessToken,
@@ -35,6 +40,9 @@ export class AuthController {
       const validatedData = schemas.login.parse(req.body);
 
       const result = await authService.login(validatedData);
+      if (!result.user.isVerified) {
+  throw new Error('Please verify your email before logging in.');
+}
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
@@ -158,6 +166,44 @@ export class AuthController {
       next(error);
     }
   }
+  async verifyEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { email, code } = schemas.verifyEmail.parse(req.body);
+
+    await verifyverificationCode(email, code);
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async resendVerification(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { email } = schemas.resendVerification.parse(req.body);
+
+    await sendVerificationCode(email);
+
+    res.status(200).json({
+      success: true,
+      message: "Verification code sent successfully.",
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+  
 }
 
 export default new AuthController();

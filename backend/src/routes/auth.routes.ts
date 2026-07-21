@@ -5,6 +5,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { schemas } from '../utils/validation';
 
+
 const router = Router();
 
 // Public Routes
@@ -40,5 +41,12 @@ router.put(
 
 // Logout
 router.post('/logout', authController.logout);
+
+//verification
+router.post("/verify-email", authController.verifyEmail);
+
+router.post(
+  "/resend-verification",
+authController.resendVerification);
 
 export default router;
