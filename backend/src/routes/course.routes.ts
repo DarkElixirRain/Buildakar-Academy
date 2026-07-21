@@ -35,7 +35,6 @@ router.get(
 router.use(authenticate);
 
 const instructorOrAdmin = roleMiddleware([Role.INSTRUCTOR, Role.ADMIN]);
-const adminOnly = roleMiddleware([Role.ADMIN]);
 
 // POST /api/courses - Create course (Instructor)
 router.post(
