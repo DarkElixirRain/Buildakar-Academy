@@ -36,7 +36,7 @@ router.post(
 router.get(
   '/sections/:id',
   instructorOrAdmin,
-  validate(schemas.sectionId),
+  validate(schemas.sectionId, 'params'),
   checkSectionOwnership,
   sectionController.getSectionById
 );
@@ -45,7 +45,7 @@ router.get(
 router.patch(
   '/sections/:id',
   instructorOrAdmin,
-  validate(schemas.sectionId),
+  validate(schemas.sectionId, 'params'),
   checkSectionOwnership,
   validate(schemas.updateSection),
   sectionController.updateSection
@@ -55,7 +55,7 @@ router.patch(
 router.delete(
   '/sections/:id',
   instructorOrAdmin,
-  validate(schemas.sectionId),
+  validate(schemas.sectionId, 'params'),
   checkSectionOwnership,
   sectionController.deleteSection
 );
@@ -73,7 +73,7 @@ router.post(
 router.patch(
   '/sections/:id/move',
   instructorOrAdmin,
-  validate(schemas.sectionId),
+  validate(schemas.sectionId, 'params'),
   checkSectionOwnership,
   sectionController.moveSection
 );

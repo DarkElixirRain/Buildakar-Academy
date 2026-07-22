@@ -1,78 +1,126 @@
-// lib/services/base_api_service.dart
-
+import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../types/api_response.dart';
 import '../config/app_config.dart';
 
 class BaseApiService {
   final http.Client _client = http.Client();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  // Token management
+  // ----- token management -----
   Future<String?> getToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('auth_token');
+      return await _secureStorage.read(key: 'token');
     } catch (e) {
+      print('❌ BaseApiService: Error getting token: $e');
       return null;
     }
   }
 
   Future<void> saveToken(String token) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('auth_token', token);
+      await _secureStorage.write(key: 'token', value: token);
     } catch (e) {
-      // Handle error
+      print('❌ BaseApiService: Error saving token: $e');
     }
   }
 
   Future<void> clearToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('auth_token');
+      await _secureStorage.delete(key: 'token');
     } catch (e) {
-      // Handle error
+      print('❌ BaseApiService: Error clearing token: $e');
     }
   }
 
-  // User management
+  // ----- refresh token management -----
+  Future<String?> getRefreshToken() async {
+    try {
+      return await _secureStorage.read(key: 'refreshToken');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> saveRefreshToken(String token) async {
+    try {
+      await _secureStorage.write(key: 'refreshToken', value: token);
+    } catch (e) {
+      print('❌ BaseApiService: Error saving refresh token: $e');
+    }
+  }
+
+  Future<void> clearRefreshToken() async {
+    try {
+      await _secureStorage.delete(key: 'refreshToken');
+    } catch (e) {
+      print('❌ BaseApiService: Error clearing refresh token: $e');
+    }
+  }
+
+  // ----- token expiry -----
+  Future<String?> getTokenExpiry() async {
+    try {
+      return await _secureStorage.read(key: 'tokenExpiresAt');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> saveTokenExpiry(String expiry) async {
+    try {
+      await _secureStorage.write(key: 'tokenExpiresAt', value: expiry);
+    } catch (e) {
+      print('❌ BaseApiService: Error saving token expiry: $e');
+    }
+  }
+
+  Future<void> clearTokenExpiry() async {
+    try {
+      await _secureStorage.delete(key: 'tokenExpiresAt');
+    } catch (e) {
+      print('❌ BaseApiService: Error clearing token expiry: $e');
+    }
+  }
+
+  // ----- user management -----
   Future<void> saveUser(Map<String, dynamic> userData) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_data', jsonEncode(userData));
+      await _secureStorage.write(
+        key: 'user',
+        value: jsonEncode(userData),
+      );
     } catch (e) {
-      // Handle error
+      print('❌ BaseApiService: Error saving user: $e');
     }
   }
 
   Future<Map<String, dynamic>?> getUser() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString('user_data');
-      if (userData != null) {
-        return jsonDecode(userData);
-      }
+      final userData = await _secureStorage.read(key: 'user');
+      if (userData != null) return jsonDecode(userData);
       return null;
     } catch (e) {
+      print('❌ BaseApiService: Error getting user: $e');
       return null;
     }
   }
 
   Future<void> clearUser() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('user_data');
+      await _secureStorage.delete(key: 'user');
     } catch (e) {
-      // Handle error
+      print('❌ BaseApiService: Error clearing user: $e');
     }
   }
 
-  // Session management
+  // ----- session management -----
   Future<void> clearSession() async {
     await clearToken();
+    await clearRefreshToken();
+    await clearTokenExpiry();
     await clearUser();
   }
 
@@ -81,7 +129,78 @@ class BaseApiService {
     await clearSession();
   }
 
-  // Headers
+  // ----- token refresh (internal, no 401 loop) -----
+  bool _refreshInProgress = false;
+  Completer<String?>? _refreshCompleter;
+
+  /// Attempt to refresh the access token by calling POST /auth/refresh
+  /// with the stored refresh token.  Uses a lock so only one refresh
+  /// runs at a time; concurrent callers await the same result.
+  Future<String?> refreshAccessToken() async {
+    // If a refresh is already in flight, wait for it
+    if (_refreshInProgress) {
+      return await _refreshCompleter?.future;
+    }
+
+    _refreshInProgress = true;
+    _refreshCompleter = Completer<String?>();
+
+    try {
+      final refreshToken = await getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('⚠️ BaseApiService: No refresh token stored');
+        _refreshCompleter!.complete(null);
+        return null;
+      }
+
+      print('🔄 BaseApiService: Refreshing access token...');
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh');
+      final response = await _client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = jsonResponse['data'] as Map<String, dynamic>?;
+
+        if (data != null) {
+          final newToken = data['accessToken'] as String?;
+          final newRefreshToken = data['refreshToken'] as String?;
+          final newExpiresAt = data['accessTokenExpiresAt'] as String?;
+
+          if (newToken != null && newToken.isNotEmpty) {
+            await saveToken(newToken);
+            if (newRefreshToken != null) {
+              await saveRefreshToken(newRefreshToken);
+            }
+            if (newExpiresAt != null) {
+              await saveTokenExpiry(newExpiresAt);
+            }
+            print('✅ BaseApiService: Token refreshed successfully');
+            _refreshCompleter!.complete(newToken);
+            return newToken;
+          }
+        }
+      }
+
+      // Refresh failed – clear everything
+      print('❌ BaseApiService: Token refresh failed (${response.statusCode})');
+      await clearSession();
+      _refreshCompleter!.complete(null);
+      return null;
+    } catch (e) {
+      print('❌ BaseApiService: Token refresh error: $e');
+      await clearSession();
+      _refreshCompleter!.complete(null);
+      return null;
+    } finally {
+      _refreshInProgress = false;
+    }
+  }
+
+  // ----- headers -----
   Future<Map<String, String>> getHeaders({bool requireAuth = false}) async {
     final headers = {
       'Content-Type': 'application/json',
@@ -98,13 +217,10 @@ class BaseApiService {
     return headers;
   }
 
-  // Helper method to get auth headers with validation
   Future<Map<String, String>?> getAuthHeadersWithValidation() async {
     final token = await getToken();
-    if (token == null || token.isEmpty) {
-      return null;
-    }
-    
+    if (token == null || token.isEmpty) return null;
+
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -112,207 +228,214 @@ class BaseApiService {
     };
   }
 
-  // ==================== HTTP METHODS ====================
+  // ----- low-level request with 401 retry -----
+  Future<ApiResponse> _request(
+    String method,
+    String endpoint, {
+    dynamic data,
+    Map<String, String>? extraHeaders,
+    bool requireAuth = false,
+  }) async {
+    final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+    final token = await getToken();
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    if (token != null && token.isNotEmpty && requireAuth) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    if (extraHeaders != null) headers.addAll(extraHeaders);
 
-  /// GET request
-  Future<ApiResponse> get(String endpoint, {Map<String, String>? headers}) async {
+    print('🌐 $method Request to: $url');
+    print('🔐 requireAuth: $requireAuth');
+    if (data != null && method != 'GET') {
+      print('📤 $method Data: $data');
+    }
+
+    http.Response response;
     try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final token = await getToken();
-      
-      print('🌐 GET Request to: $url');
-      
-      final response = await _client.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-      );
-      
-      print('📥 GET Response Status: ${response.statusCode}');
-      print('📥 GET Response Body: ${response.body}');
-      
-      return _handleResponse(response);
+      switch (method) {
+        case 'GET':
+          response = await _client.get(url, headers: headers);
+          break;
+        case 'POST':
+          response = await _client.post(
+            url,
+            headers: headers,
+            body: data != null ? jsonEncode(data) : null,
+          );
+          break;
+        case 'PUT':
+          response = await _client.put(
+            url,
+            headers: headers,
+            body: data != null ? jsonEncode(data) : null,
+          );
+          break;
+        case 'DELETE':
+          response = await _client.delete(url, headers: headers);
+          break;
+        case 'PATCH':
+          response = await _client.patch(
+            url,
+            headers: headers,
+            body: data != null ? jsonEncode(data) : null,
+          );
+          break;
+        default:
+          return ApiResponse.error('Unsupported HTTP method: $method');
+      }
     } catch (e) {
-      print('❌ GET Error: $e');
+      print('❌ $method Error: $e');
       return ApiResponse.error(e.toString());
     }
+
+    print('📥 $method Response Status: ${response.statusCode}');
+
+    // ── 401 → try token refresh once ──
+    if (response.statusCode == 401 && requireAuth) {
+      print('🔄 BaseApiService: Got 401, attempting token refresh...');
+      final newToken = await refreshAccessToken();
+
+      if (newToken != null) {
+        // Retry with the new token
+        headers['Authorization'] = 'Bearer $newToken';
+        print('🔄 BaseApiService: Retrying $method request after refresh...');
+        try {
+          switch (method) {
+            case 'GET':
+              response = await _client.get(url, headers: headers);
+              break;
+            case 'POST':
+              response = await _client.post(
+                url,
+                headers: headers,
+                body: data != null ? jsonEncode(data) : null,
+              );
+              break;
+            case 'PUT':
+              response = await _client.put(
+                url,
+                headers: headers,
+                body: data != null ? jsonEncode(data) : null,
+              );
+              break;
+            case 'DELETE':
+              response = await _client.delete(url, headers: headers);
+              break;
+            case 'PATCH':
+              response = await _client.patch(
+                url,
+                headers: headers,
+                body: data != null ? jsonEncode(data) : null,
+              );
+              break;
+          }
+        } catch (e) {
+          print('❌ $method Error (retry): $e');
+          return ApiResponse.error(e.toString());
+        }
+        print('📥 $method Retry Response Status: ${response.statusCode}');
+      } else {
+        // Refresh failed – return a clear error so the caller can redirect
+        return ApiResponse.error('Session expired. Please login again.');
+      }
+    }
+
+    return _handleResponse(response);
   }
 
-  /// POST request
-  Future<ApiResponse> post(String endpoint, {dynamic data, Map<String, String>? headers}) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final token = await getToken();
-      
-      print('🌐 POST Request to: $url');
-      print('📤 POST Data: $data');
-      
-      final response = await _client.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-        body: data != null ? jsonEncode(data) : null,
-      );
-      
-      print('📥 POST Response Status: ${response.statusCode}');
-      print('📥 POST Response Body: ${response.body}');
-      
-      return _handleResponse(response);
-    } catch (e) {
-      print('❌ POST Error: $e');
-      return ApiResponse.error(e.toString());
-    }
+  // ==================== PUBLIC HTTP METHODS ====================
+
+  Future<ApiResponse> get(
+    String endpoint, {
+    Map<String, String>? headers,
+    bool requireAuth = false,
+  }) {
+    return _request('GET', endpoint,
+        extraHeaders: headers, requireAuth: requireAuth);
   }
 
-  /// PUT request
-  Future<ApiResponse> put(String endpoint, {dynamic data, Map<String, String>? headers}) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final token = await getToken();
-      
-      print('🌐 PUT Request to: $url');
-      print('📤 PUT Data: $data');
-      
-      final response = await _client.put(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-        body: data != null ? jsonEncode(data) : null,
-      );
-      
-      print('📥 PUT Response Status: ${response.statusCode}');
-      print('📥 PUT Response Body: ${response.body}');
-      
-      return _handleResponse(response);
-    } catch (e) {
-      print('❌ PUT Error: $e');
-      return ApiResponse.error(e.toString());
-    }
+  Future<ApiResponse> post(
+    String endpoint, {
+    dynamic data,
+    Map<String, String>? headers,
+    bool requireAuth = false,
+  }) {
+    return _request('POST', endpoint,
+        data: data, extraHeaders: headers, requireAuth: requireAuth);
   }
 
-  /// DELETE request
-  Future<ApiResponse> delete(String endpoint, {Map<String, String>? headers}) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final token = await getToken();
-      
-      print('🌐 DELETE Request to: $url');
-      
-      final response = await _client.delete(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-      );
-      
-      print('📥 DELETE Response Status: ${response.statusCode}');
-      print('📥 DELETE Response Body: ${response.body}');
-      
-      return _handleResponse(response);
-    } catch (e) {
-      print('❌ DELETE Error: $e');
-      return ApiResponse.error(e.toString());
-    }
+  Future<ApiResponse> put(
+    String endpoint, {
+    dynamic data,
+    Map<String, String>? headers,
+    bool requireAuth = false,
+  }) {
+    return _request('PUT', endpoint,
+        data: data, extraHeaders: headers, requireAuth: requireAuth);
   }
 
-  /// PATCH request
-  Future<ApiResponse> patch(String endpoint, {dynamic data, Map<String, String>? headers}) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final token = await getToken();
-      
-      print('🌐 PATCH Request to: $url');
-      print('📤 PATCH Data: $data');
-      
-      final response = await _client.patch(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-        body: data != null ? jsonEncode(data) : null,
-      );
-      
-      print('📥 PATCH Response Status: ${response.statusCode}');
-      print('📥 PATCH Response Body: ${response.body}');
-      
-      return _handleResponse(response);
-    } catch (e) {
-      print('❌ PATCH Error: $e');
-      return ApiResponse.error(e.toString());
-    }
+  Future<ApiResponse> delete(
+    String endpoint, {
+    Map<String, String>? headers,
+    bool requireAuth = false,
+  }) {
+    return _request('DELETE', endpoint,
+        extraHeaders: headers, requireAuth: requireAuth);
+  }
+
+  Future<ApiResponse> patch(
+    String endpoint, {
+    dynamic data,
+    Map<String, String>? headers,
+    bool requireAuth = false,
+  }) {
+    return _request('PATCH', endpoint,
+        data: data, extraHeaders: headers, requireAuth: requireAuth);
   }
 
   // ==================== RESPONSE HANDLING ====================
 
-  /// Handle HTTP response with proper error handling
   ApiResponse _handleResponse(http.Response response) {
     try {
-      print('🔍 Parsing response...');
-      
       if (response.body.isEmpty) {
         if (response.statusCode >= 200 && response.statusCode < 300) {
           return ApiResponse.success(null, message: 'Success');
-        } else {
-          return ApiResponse.error('Empty response with status: ${response.statusCode}');
         }
+        return ApiResponse.error(
+            'Empty response with status: ${response.statusCode}');
       }
-      
+
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      print('📊 Parsed JSON: $jsonResponse');
-      
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        // Check if the response has a 'data' field
         if (jsonResponse.containsKey('data')) {
           return ApiResponse.success(
             jsonResponse['data'],
             message: jsonResponse['message'] ?? 'Success',
           );
-        } else {
-          // If no 'data' field, return the entire response
-          return ApiResponse.success(
-            jsonResponse,
-            message: jsonResponse['message'] ?? 'Success',
-          );
         }
-      } else {
-        // Error response
-        final errorMsg = jsonResponse['message'] ?? 
-                        jsonResponse['error'] ?? 
-                        'Request failed with status: ${response.statusCode}';
-        return ApiResponse.error(errorMsg);
-      }
-    } catch (e) {
-      print('❌ Parse error: $e');
-      // If response body is not JSON
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return ApiResponse.success(null, message: 'Success');
-      } else {
-        return ApiResponse.error(
-          'Request failed with status: ${response.statusCode}',
+        return ApiResponse.success(
+          jsonResponse,
+          message: jsonResponse['message'] ?? 'Success',
         );
       }
+
+      final errorMsg = jsonResponse['message'] ??
+          jsonResponse['error'] ??
+          'Request failed with status: ${response.statusCode}';
+      return ApiResponse.error(errorMsg);
+    } catch (e) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return ApiResponse.success(null, message: 'Success');
+      }
+      return ApiResponse.error(
+          'Request failed with status: ${response.statusCode}');
     }
   }
 
-  /// Dispose client
   void dispose() {
     _client.close();
   }

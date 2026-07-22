@@ -1,5 +1,6 @@
 // backend/src/services/section.service.ts
 import { prisma } from '../lib/prisma';
+import { createStorageService } from './storageService';
 
 interface CreateSectionData {
   title: string;
@@ -128,7 +129,9 @@ export class SectionService {
       where: { id },
       include: { 
         course: true,
-        lessons: true,
+        lessons: {
+          include: { progress: true },
+        },
       },
     });
 
@@ -141,7 +144,28 @@ export class SectionService {
       throw new Error('Not authorized to delete this section');
     }
 
-    // Delete section (cascade will delete lessons)
+    // Delete lesson videos from Cloudinary and clean up progress records
+    for (const lesson of section.lessons) {
+      if (lesson.videoPublicId) {
+        try {
+          const storageService = createStorageService();
+          await storageService.deleteFile(lesson.videoPublicId);
+        } catch (error) {
+          console.error('Error deleting video from Cloudinary:', error);
+        }
+      }
+      if (lesson.progress.length > 0) {
+        await prisma.lessonProgress.deleteMany({
+          where: { lessonId: lesson.id },
+        });
+      }
+    }
+
+    // Delete lessons first, then section
+    await prisma.lesson.deleteMany({
+      where: { sectionId: id },
+    });
+
     await prisma.section.delete({
       where: { id },
     });

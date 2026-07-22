@@ -1,9 +1,12 @@
 // lib/screens/instructor/instructor_course_detail_screen.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
+import 'course_edit_screen.dart';
 
 enum CourseTab {
   overview,
@@ -44,6 +47,13 @@ class _InstructorCourseDetailScreenState
   Map<String, dynamic> _analytics = {};
   List<Map<String, dynamic>> _sections = [];
   List<Map<String, dynamic>> _activities = [];
+
+  // Section/Lesson processing state
+  bool _isProcessingSection = false;
+  bool _isProcessingLesson = false;
+  bool _isUploadingVideo = false;
+  String? _processingSectionId;
+  String? _processingLessonId;
 
   @override
   void initState() {
@@ -395,25 +405,25 @@ class _InstructorCourseDetailScreenState
   // COURSE MANAGEMENT METHODS
   // ============================================
 
-  Future<void> _publishCourse() async {
+  Future<void> _submitForReview() async {
     setState(() => _isSubmitting = true);
     try {
       final response = await _apiService.updateCourseStatus(
         widget.courseId,
-        'PUBLISHED',
+        'UNDER_REVIEW',
       );
       if (response.success) {
         setState(() {
-          _courseData['status'] = 'PUBLISHED';
+          _courseData['status'] = 'UNDER_REVIEW';
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Course published successfully!'),
-            backgroundColor: Colors.green,
+            content: Text('Course submitted for admin review!'),
+            backgroundColor: Colors.blue,
           ),
         );
       } else {
-        throw Exception(response.error ?? 'Failed to publish course');
+        throw Exception(response.error ?? 'Failed to submit course for review');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -456,6 +466,26 @@ class _InstructorCourseDetailScreenState
       );
     } finally {
       setState(() => _isSubmitting = false);
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'PUBLISHED': return 'Published';
+      case 'PENDING_APPROVAL': return 'Pending Approval';
+      case 'DRAFT': return 'Draft';
+      case 'UNDER_REVIEW': return 'Under Review';
+      default: return status;
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'PUBLISHED': return Colors.green;
+      case 'PENDING_APPROVAL': return Colors.purple;
+      case 'DRAFT': return Colors.orange;
+      case 'UNDER_REVIEW': return Colors.blue;
+      default: return Colors.grey;
     }
   }
 
@@ -535,6 +565,568 @@ class _InstructorCourseDetailScreenState
       );
     } finally {
       setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _navigateToEditCourse() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CourseEditScreen(
+          courseId: widget.courseId,
+          courseData: _courseData,
+        ),
+      ),
+    ).then((edited) {
+      if (edited == true) _loadCourseData();
+    });
+  }
+
+  // ============================================
+  // SECTION CRUD
+  // ============================================
+
+  Future<void> _showAddSectionDialog() async {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Section'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Section Title',
+                  hintText: 'e.g. Introduction',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() => _isProcessingSection = true);
+      try {
+        final response = await _apiService.createSection(widget.courseId, {
+          'title': titleController.text.trim(),
+          if (descController.text.trim().isNotEmpty) 'description': descController.text.trim(),
+        });
+        if (response.success && response.data != null) {
+          final newSection = response.data!;
+          setState(() {
+            _sections.add({
+              'id': newSection['id']?.toString() ?? '',
+              'title': newSection['title'] ?? 'Untitled Section',
+              'order': newSection['order'] ?? _sections.length,
+              'lessons': <Map<String, dynamic>>[],
+            });
+          });
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Section created'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to create section');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isProcessingSection = false);
+      }
+    }
+    titleController.dispose();
+    descController.dispose();
+  }
+
+  Future<void> _showEditSectionDialog(Map<String, dynamic> section) async {
+    final titleController = TextEditingController(text: section['title'] ?? '');
+    final descController = TextEditingController(text: section['description'] ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Section'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Section Title', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() => _isProcessingSection = true);
+      try {
+        final response = await _apiService.updateSection(section['id'], {
+          'title': titleController.text.trim(),
+          if (descController.text.trim().isNotEmpty) 'description': descController.text.trim(),
+        });
+        if (response.success) {
+          setState(() {
+            final idx = _sections.indexWhere((s) => s['id'] == section['id']);
+            if (idx != -1) {
+              _sections[idx]['title'] = titleController.text.trim();
+              if (descController.text.trim().isNotEmpty) _sections[idx]['description'] = descController.text.trim();
+            }
+          });
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Section updated'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to update section');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isProcessingSection = false);
+      }
+    }
+    titleController.dispose();
+    descController.dispose();
+  }
+
+  Future<void> _deleteSectionConfirm(Map<String, dynamic> section) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Section'),
+        content: Text('Delete "${section['title']}" and all its lessons?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isProcessingSection = true);
+      try {
+        final response = await _apiService.deleteSection(section['id']);
+        if (response.success) {
+          setState(() {
+            _sections.removeWhere((s) => s['id'] == section['id']);
+          });
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Section deleted'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to delete section');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isProcessingSection = false);
+      }
+    }
+  }
+
+  // ============================================
+  // LESSON CRUD
+  // ============================================
+
+  Future<void> _showAddLessonDialog(String sectionId) async {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+    final durationController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Lesson'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Lesson Title', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: durationController,
+                decoration: const InputDecoration(
+                  labelText: 'Duration (optional)',
+                  hintText: 'e.g. 10:30',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() {
+        _isProcessingLesson = true;
+        _processingSectionId = sectionId;
+      });
+      try {
+        final response = await _apiService.createLesson(sectionId, {
+          'title': titleController.text.trim(),
+          if (descController.text.trim().isNotEmpty) 'description': descController.text.trim(),
+          if (durationController.text.trim().isNotEmpty) 'duration': durationController.text.trim(),
+        });
+        if (response.success && response.data != null) {
+          final newLesson = response.data!;
+          setState(() {
+            final sectionIndex = _sections.indexWhere((s) => s['id'] == sectionId);
+            if (sectionIndex != -1) {
+              final lessons = _sections[sectionIndex]['lessons'] as List<Map<String, dynamic>>;
+              lessons.add({
+                'id': newLesson['id']?.toString() ?? '',
+                'title': newLesson['title'] ?? 'Untitled Lesson',
+                'type': newLesson['type'] ?? 'video',
+                'duration': newLesson['duration'] ?? '0:00',
+                'isPreview': newLesson['isPreview'] ?? false,
+                'description': newLesson['description'] ?? '',
+                'videoUrl': newLesson['videoUrl'],
+              });
+            }
+          });
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lesson created'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to create lesson');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() {
+          _isProcessingLesson = false;
+          _processingSectionId = null;
+        });
+      }
+    }
+    titleController.dispose();
+    descController.dispose();
+    durationController.dispose();
+  }
+
+  Future<void> _showEditLessonDialog(Map<String, dynamic> lesson) async {
+    final titleController = TextEditingController(text: lesson['title'] ?? '');
+    final descController = TextEditingController(text: lesson['description'] ?? '');
+    final durationController = TextEditingController(text: lesson['duration'] ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Lesson'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Lesson Title', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: durationController,
+                decoration: const InputDecoration(labelText: 'Duration', hintText: 'e.g. 10:30', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() => _isProcessingLesson = true);
+      try {
+        final response = await _apiService.updateLesson(lesson['id'], {
+          'title': titleController.text.trim(),
+          if (descController.text.trim().isNotEmpty) 'description': descController.text.trim(),
+          if (durationController.text.trim().isNotEmpty) 'duration': durationController.text.trim(),
+        });
+        if (response.success) {
+          setState(() {
+            for (final section in _sections) {
+              final lessons = section['lessons'] as List<Map<String, dynamic>>?;
+              if (lessons != null) {
+                final idx = lessons.indexWhere((l) => l['id'] == lesson['id']);
+                if (idx != -1) {
+                  lessons[idx]['title'] = titleController.text.trim();
+                  if (descController.text.trim().isNotEmpty) lessons[idx]['description'] = descController.text.trim();
+                  if (durationController.text.trim().isNotEmpty) lessons[idx]['duration'] = durationController.text.trim();
+                }
+              }
+            }
+          });
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lesson updated'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to update lesson');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isProcessingLesson = false);
+      }
+    }
+    titleController.dispose();
+    descController.dispose();
+    durationController.dispose();
+  }
+
+  Future<void> _deleteLessonConfirm(Map<String, dynamic> lesson) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Lesson'),
+        content: Text('Delete "${lesson['title']}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isProcessingLesson = true);
+      try {
+        final response = await _apiService.deleteLesson(lesson['id']);
+        if (response.success) {
+          setState(() {
+            for (final section in _sections) {
+              final lessons = section['lessons'] as List<Map<String, dynamic>>?;
+              if (lessons != null) {
+                lessons.removeWhere((l) => l['id'] == lesson['id']);
+              }
+            }
+          });
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lesson deleted'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to delete lesson');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isProcessingLesson = false);
+      }
+    }
+  }
+
+  // ============================================
+  // VIDEO UPLOAD
+  // ============================================
+
+  Future<void> _showVideoUploadDialog(Map<String, dynamic> lesson) async {
+    try {
+      final picker = ImagePicker();
+      final video = await picker.pickVideo(source: ImageSource.gallery);
+      if (video == null) return;
+
+      setState(() => _isUploadingVideo = true);
+      try {
+        final response = await _apiService.uploadLessonVideo(lesson['id'], File(video.path));
+        if (response.success) {
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Video uploaded successfully'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to upload video');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploadingVideo = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking video: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteVideoConfirm(Map<String, dynamic> lesson) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Video'),
+        content: Text('Remove video from "${lesson['title']}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final response = await _apiService.deleteLessonVideo(lesson['id']);
+        if (response.success) {
+          await _loadCourseData();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Video deleted'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          throw Exception(response.error ?? 'Failed to delete video');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+          );
+        }
+      }
     }
   }
 
@@ -627,9 +1219,7 @@ class _InstructorCourseDetailScreenState
               ),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Edit course coming soon!')),
-                );
+                _navigateToEditCourse();
               },
             ),
             ListTile(
@@ -795,8 +1385,6 @@ class _InstructorCourseDetailScreenState
       );
     }
 
-    final isPublished = _courseData['status'] == 'PUBLISHED';
-
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -819,13 +1407,7 @@ class _InstructorCourseDetailScreenState
               Icons.edit_outlined,
               color: primaryColor,
             ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Edit course feature coming soon!'),
-                ),
-              );
-            },
+            onPressed: () => _navigateToEditCourse(),
           ),
           IconButton(
             icon: Icon(
@@ -858,7 +1440,6 @@ class _InstructorCourseDetailScreenState
           children: [
             _buildOverviewTab(
               brightness, textColor, textSecondaryColor, cardColor, primaryColor,
-              isPublished,
             ),
             _buildContentTab(
               brightness, textColor, textSecondaryColor, cardColor, primaryColor,
@@ -888,7 +1469,6 @@ class _InstructorCourseDetailScreenState
     Color textSecondaryColor,
     Color cardColor,
     Color primaryColor,
-    bool isPublished,
   ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -901,22 +1481,20 @@ class _InstructorCourseDetailScreenState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isPublished
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.orange.withValues(alpha: 0.1),
+                  color: _statusColor(_courseData['status'] ?? 'DRAFT').withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _courseData['status'] ?? 'DRAFT',
+                  _statusLabel(_courseData['status'] ?? 'DRAFT'),
                   style: GoogleFonts.inter(
-                    color: isPublished ? Colors.green : Colors.orange,
+                    color: _statusColor(_courseData['status'] ?? 'DRAFT'),
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
                 ),
               ),
               const Spacer(),
-              if (isPublished)
+              if (_courseData['status'] == 'PUBLISHED')
                 ElevatedButton.icon(
                   onPressed: _isSubmitting ? null : _unpublishCourse,
                   icon: const Icon(Icons.visibility_off, size: 18),
@@ -926,13 +1504,33 @@ class _InstructorCourseDetailScreenState
                     foregroundColor: Colors.white,
                   ),
                 )
+              else if (_courseData['status'] == 'DRAFT')
+                ElevatedButton.icon(
+                  onPressed: _isSubmitting ? null : _submitForReview,
+                  icon: const Icon(Icons.send_rounded, size: 18),
+                  label: const Text('Submit for Review'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                )
+              else if (_courseData['status'] == 'PENDING_APPROVAL')
+                ElevatedButton.icon(
+                  onPressed: null,
+                  icon: const Icon(Icons.hourglass_empty, size: 18),
+                  label: const Text('Pending Approval'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey,
+                    foregroundColor: Colors.white,
+                  ),
+                )
               else
                 ElevatedButton.icon(
-                  onPressed: _isSubmitting ? null : _publishCourse,
-                  icon: const Icon(Icons.publish_rounded, size: 18),
-                  label: const Text('Publish'),
+                  onPressed: null,
+                  icon: const Icon(Icons.visibility, size: 18),
+                  label: const Text('Under Review'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: Colors.blue.withValues(alpha: 0.5),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1157,6 +1755,9 @@ class _InstructorCourseDetailScreenState
     Color cardColor,
     Color primaryColor,
   ) {
+    final courseStatus = _courseData['status'] ?? 'DRAFT';
+    final canEditContent = courseStatus != 'PENDING_APPROVAL';
+
     if (_sections.isEmpty) {
       return Center(
         child: Column(
@@ -1169,7 +1770,7 @@ class _InstructorCourseDetailScreenState
             ),
             const SizedBox(height: 16),
             Text(
-              'No Content Yet',
+              courseStatus == 'PENDING_APPROVAL' ? 'Waiting for Approval' : 'No Content Yet',
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1178,25 +1779,28 @@ class _InstructorCourseDetailScreenState
             ),
             const SizedBox(height: 8),
             Text(
-              'Add sections and lessons to build your course.',
+              courseStatus == 'PENDING_APPROVAL'
+                  ? 'This course is pending admin approval. You will be able to add content once it is approved.'
+                  : 'Add sections and lessons to build your course.',
               style: GoogleFonts.inter(
                 color: textSecondaryColor,
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add section coming soon!')),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add Section'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
+            if (!canEditContent && courseStatus == 'PENDING_APPROVAL')
+              Icon(Icons.lock_outline, size: 32, color: textSecondaryColor.withValues(alpha: 0.5))
+            else if (_isProcessingSection)
+              const CircularProgressIndicator()
+            else
+              ElevatedButton.icon(
+                onPressed: _showAddSectionDialog,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Section'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                ),
               ),
-            ),
           ],
         ),
       );
@@ -1220,18 +1824,16 @@ class _InstructorCourseDetailScreenState
                     color: textColor,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Add section coming soon!')),
-                    );
-                  },
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Section'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: primaryColor,
-                  ),
-                ),
+                _isProcessingSection
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : canEditContent
+                        ? TextButton.icon(
+                            onPressed: _showAddSectionDialog,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add Section'),
+                            style: TextButton.styleFrom(foregroundColor: primaryColor),
+                          )
+                        : const SizedBox.shrink(),
               ],
             ),
           );
@@ -1250,49 +1852,62 @@ class _InstructorCourseDetailScreenState
             tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             title: Text(
               section['title'] ?? 'Untitled Section',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textColor),
             ),
             subtitle: Text(
               '${lessons.length} lessons',
-              style: GoogleFonts.inter(
-                color: textSecondaryColor,
-                fontSize: 12,
-              ),
+              style: GoogleFonts.inter(color: textSecondaryColor, fontSize: 12),
             ),
-            trailing: PopupMenuButton<String>(
-              color: cardColor,
-              onSelected: (value) {
-                if (value == 'edit') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Edit section coming soon!')),
-                  );
-                } else if (value == 'delete') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Delete section coming soon!')),
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Text('Edit Section'),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Delete Section', style: TextStyle(color: Colors.red)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isProcessingLesson && _processingSectionId == section['id'])
+                  const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                else if (canEditContent)
+                  IconButton(
+                    icon: Icon(Icons.add_circle_outline, color: primaryColor, size: 20),
+                    onPressed: () => _showAddLessonDialog(section['id']),
+                    tooltip: 'Add Lesson',
+                  )
+                else
+                  const SizedBox.shrink(),
+                PopupMenuButton<String>(
+                  color: cardColor,
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEditSectionDialog(section);
+                    } else if (value == 'delete') {
+                      _deleteSectionConfirm(section);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit Section')),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete Section', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                  child: Icon(Icons.more_vert, color: textSecondaryColor),
                 ),
               ],
-              child: Icon(
-                Icons.more_vert,
-                color: textSecondaryColor,
-              ),
             ),
-            children: lessons.map<Widget>((lesson) {
-              return _buildLessonTile(lesson, textColor, textSecondaryColor, cardColor, primaryColor);
-            }).toList(),
+            children: [
+              ...lessons.map<Widget>((lesson) {
+                return _buildLessonTile(lesson, textColor, textSecondaryColor, cardColor, primaryColor, section['id']);
+              }),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: _isProcessingLesson && _processingSectionId == section['id']
+                    ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+                    : canEditContent
+                        ? TextButton.icon(
+                            onPressed: () => _showAddLessonDialog(section['id']),
+                            icon: Icon(Icons.add, size: 16, color: primaryColor),
+                            label: Text('Add Lesson', style: GoogleFonts.inter(color: primaryColor, fontSize: 13)),
+                          )
+                        : const SizedBox.shrink(),
+              ),
+            ],
           ),
         );
       },
@@ -1305,68 +1920,93 @@ class _InstructorCourseDetailScreenState
     Color textSecondaryColor,
     Color cardColor,
     Color primaryColor,
+    String sectionId,
   ) {
-    final iconMap = {
-      'video': Icons.play_circle_outline,
-      'quiz': Icons.quiz_outlined,
-      'project': Icons.code_rounded,
-      'assignment': Icons.assignment_outlined,
-    };
+    final hasVideo = lesson['videoUrl'] != null && lesson['videoUrl'].toString().isNotEmpty;
 
-    final colorMap = {
-      'video': Colors.blue,
-      'quiz': Colors.orange,
-      'project': Colors.purple,
-      'assignment': Colors.green,
-    };
-
-    return ListTile(
-      leading: Icon(
-        iconMap[lesson['type']] ?? Icons.description_outlined,
-        color: colorMap[lesson['type']] ?? textSecondaryColor,
-      ),
-      title: Text(
-        lesson['title'] ?? 'Untitled Lesson',
-        style: GoogleFonts.inter(
-          color: textColor,
-          fontSize: 14,
-        ),
-      ),
-      subtitle: Text(
-        lesson['duration'] ?? '0:00',
-        style: GoogleFonts.inter(
-          color: textSecondaryColor,
-          fontSize: 12,
-        ),
-      ),
-      trailing: PopupMenuButton<String>(
-        color: cardColor,
-        onSelected: (value) {
-          if (value == 'edit') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Edit lesson coming soon!')),
-            );
-          } else if (value == 'delete') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Delete lesson coming soon!')),
-            );
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'edit',
-            child: Text('Edit Lesson'),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: Row(
+        children: [
+          Icon(
+            hasVideo ? Icons.play_circle_filled : Icons.description_outlined,
+            color: hasVideo ? Colors.blue : textSecondaryColor,
+            size: 20,
           ),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('Delete Lesson', style: TextStyle(color: Colors.red)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lesson['title'] ?? 'Untitled Lesson',
+                  style: GoogleFonts.inter(color: textColor, fontSize: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (lesson['duration'] != null && lesson['duration'].toString().isNotEmpty)
+                  Text(
+                    lesson['duration'],
+                    style: GoogleFonts.inter(color: textSecondaryColor, fontSize: 11),
+                  ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!hasVideo)
+                  IconButton(
+                    icon: Icon(Icons.cloud_upload_outlined, color: primaryColor, size: 18),
+                    onPressed: () => _showVideoUploadDialog(lesson),
+                    tooltip: 'Upload Video',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                if (hasVideo)
+                  IconButton(
+                    icon: Icon(Icons.video_library, color: Colors.green, size: 18),
+                    onPressed: () => _showVideoUploadDialog(lesson),
+                    tooltip: 'Change Video',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                PopupMenuButton<String>(
+            color: cardColor,
+            onSelected: (value) {
+              if (value == 'edit') {
+                _showEditLessonDialog(lesson);
+              } else if (value == 'delete') {
+                _deleteLessonConfirm(lesson);
+              } else if (value == 'upload_video') {
+                _showVideoUploadDialog(lesson);
+              } else if (value == 'delete_video') {
+                _deleteVideoConfirm(lesson);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit Lesson')),
+              if (!hasVideo)
+                const PopupMenuItem(value: 'upload_video', child: Text('Upload Video'))
+              else ...[
+                const PopupMenuItem(value: 'upload_video', child: Text('Change Video')),
+                const PopupMenuItem(
+                  value: 'delete_video',
+                  child: Text('Remove Video', style: TextStyle(color: Colors.orange)),
+                ),
+              ],
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete Lesson', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+            child: Icon(Icons.more_vert, color: textSecondaryColor, size: 18),
+          ),
+              ],
+            ),
           ),
         ],
-        child: Icon(
-          Icons.more_vert,
-          color: textSecondaryColor,
-          size: 18,
-        ),
       ),
     );
   }

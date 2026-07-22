@@ -1,6 +1,6 @@
 // backend/src/routes/course.routes.ts
 import express from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, optionalAuthenticate } from '../middleware/auth.middleware';
 import { roleMiddleware } from '../middleware/role.middleware';
 import { Role } from '@prisma/client';
 import { checkCourseOwnership } from '../middleware/ownership.middleware';
@@ -20,10 +20,10 @@ router.get(
   courseController.getPublicCourses
 );
 
-// GET /api/courses/:id - Get course by ID (Public for published courses)
-// Removed validate middleware - we'll validate in controller
+// GET /api/courses/:id - Get course by ID (Public for published, authenticated for draft)
 router.get(
   '/:id',
+  optionalAuthenticate,
   courseController.getCourseById
 );
 
@@ -62,7 +62,7 @@ router.get(
 router.patch(
   '/:id',
   instructorOrAdmin,
-  validate(schemas.courseId),
+  validate(schemas.courseId, 'params'),
   checkCourseOwnership,
   validate(schemas.updateCourse),
   courseController.updateCourse
@@ -72,7 +72,7 @@ router.patch(
 router.delete(
   '/:id',
   instructorOrAdmin,
-  validate(schemas.courseId),
+  validate(schemas.courseId, 'params'),
   checkCourseOwnership,
   courseController.deleteCourse
 );
@@ -81,7 +81,7 @@ router.delete(
 router.patch(
   '/:id/status',
   instructorOrAdmin,
-  validate(schemas.courseId),
+  validate(schemas.courseId, 'params'),
   checkCourseOwnership,
   validate(schemas.updateCourseStatus),
   courseController.updateCourseStatus
@@ -91,7 +91,7 @@ router.patch(
 router.post(
   '/:id/duplicate',
   instructorOrAdmin,
-  validate(schemas.courseId),
+  validate(schemas.courseId, 'params'),
   checkCourseOwnership,
   courseController.duplicateCourse
 );
