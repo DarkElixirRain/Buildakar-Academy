@@ -154,236 +154,208 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: AppColors.getBackgroundColor(brightness),
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                vertical: isSmallDevice ? 16 : 32,
-                horizontal: 16,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            vertical: isSmallDevice ? 16 : 32,
+            horizontal: 16,
+          ),
+          child: Column(
+            children: [
+              const SplashLogo(),
+              const SizedBox(height: 32),
+              Text(
+                'Welcome Back!',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.getTextColor(brightness),
+                  fontSize: isSmallDevice ? 28 : 34,
+                  letterSpacing: 0.5,
+                ),
               ),
-              child: Column(
-                children: [
-                  const SplashLogo(),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Welcome Back!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.getTextColor(brightness),
-                      fontSize: isSmallDevice ? 28 : 34,
-                      letterSpacing: 0.5,
-                    ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Continue your high-performance learning journey with Buildakar.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.getTextSecondaryColor(brightness),
+                    fontSize: isSmallDevice ? 14 : 16,
+                    height: 1.5,
                   ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Continue your high-performance learning journey with Buildakar.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.getTextSecondaryColor(brightness),
-                        fontSize: isSmallDevice ? 14 : 16,
-                        height: 1.5,
-                      ),
-                    ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 480),
+                padding: EdgeInsets.all(cardPadding),
+                decoration: BoxDecoration(
+                  color: isDark 
+                      ? AppColors.darkBackgroundElement.withValues(alpha: 0.8)
+                      : AppColors.lightBackgroundElement.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: isDark 
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.05),
+                    width: 1,
                   ),
-                  const SizedBox(height: 32),
-                  Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    padding: EdgeInsets.all(cardPadding),
-                    decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
                       color: isDark 
-                          ? AppColors.darkBackgroundElement.withValues(alpha: 0.8)
-                          : AppColors.lightBackgroundElement.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: isDark 
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.black.withValues(alpha: 0.05),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark 
-                              ? Colors.black.withValues(alpha: 0.4)
-                              : Colors.grey.withValues(alpha: 0.1),
-                          offset: const Offset(0, 8),
-                          blurRadius: 30,
-                          spreadRadius: 2,
-                        ),
-                      ],
+                          ? Colors.black.withValues(alpha: 0.4)
+                          : Colors.grey.withValues(alpha: 0.1),
+                      offset: const Offset(0, 8),
+                      blurRadius: 30,
+                      spreadRadius: 2,
                     ),
-                    child: Column(
-                      children: [
-                        if (authProvider.error != null)
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            margin: const EdgeInsets.only(bottom: 20),
-                            decoration: BoxDecoration(
-                              color: isDark 
-                                  ? Colors.red.withValues(alpha: 0.12)
-                                  : const Color(0xFFFEF2F2),
-                              border: Border.all(
-                                color: isDark 
-                                    ? Colors.red.withValues(alpha: 0.25)
-                                    : const Color(0xFFFECACA),
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.error_outline,
-                                  color: Color(0xFFEF4444),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    authProvider.error!,
-                                    style: const TextStyle(
-                                      color: Color(0xFFEF4444),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    if (authProvider.error != null)
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: isDark 
+                              ? Colors.red.withValues(alpha: 0.12)
+                              : const Color(0xFFFEF2F2),
+                          border: Border.all(
+                            color: isDark 
+                                ? Colors.red.withValues(alpha: 0.25)
+                                : const Color(0xFFFECACA),
+                            width: 1,
                           ),
-                        _buildEmailField(isDark),
-                        _buildPasswordField(isDark),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4, bottom: 20),
-                            child: TextButton(
-                              onPressed: _handleForgotPassword,
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                'Forgot Password?',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.getPrimaryColor(brightness),
-                                  fontSize: isSmallDevice ? 13 : 14,
-                                ),
-                              ),
-                            ),
-                          ),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: _buildSignInButton(isDark, authProvider.isLoading),
-                        ),
-                        Row(
+                        child: Row(
                           children: [
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: AppColors.getBackgroundSelectedColor(brightness),
-                              ),
+                            const Icon(
+                              Icons.error_outline,
+                              color: Color(0xFFEF4444),
+                              size: 20,
                             ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                            const SizedBox(width: 10),
+                            Expanded(
                               child: Text(
-                                'or continue with',
-                                style: TextStyle(
+                                authProvider.error!,
+                                style: const TextStyle(
+                                  color: Color(0xFFEF4444),
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.getTextSecondaryColor(brightness),
-                                  letterSpacing: 0.5,
-                                  fontSize: isSmallDevice ? 10 : 12,
                                 ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: AppColors.getBackgroundSelectedColor(brightness),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                        GoogleSignInButton(
-                          onSuccess: _handleGoogleSignInSuccess,
-                          onError: _handleGoogleSignInError,
-                          isDark: isDark,
-                          isSmallDevice: isSmallDevice,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildAppleButton(isDark, isSmallDevice),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 28),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account?",
-                          style: TextStyle(
-                            color: AppColors.getTextSecondaryColor(brightness),
-                            fontSize: isSmallDevice ? 14 : 15,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushReplacementNamed(context, '/signup');
-                          },
+                      ),
+                    _buildEmailField(isDark),
+                    _buildPasswordField(isDark),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 20),
+                        child: TextButton(
+                          onPressed: _handleForgotPassword,
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           child: Text(
-                            'Create Account',
+                            'Forgot Password?',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.getPrimaryColor(brightness),
-                              fontSize: isSmallDevice ? 14 : 15,
+                              fontSize: isSmallDevice ? 13 : 14,
                             ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: _buildSignInButton(isDark, authProvider.isLoading),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: AppColors.getBackgroundSelectedColor(brightness),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'or continue with',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.getTextSecondaryColor(brightness),
+                              letterSpacing: 0.5,
+                              fontSize: isSmallDevice ? 10 : 12,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: AppColors.getBackgroundSelectedColor(brightness),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-            if (authProvider.isLoading)
-              Container(
-                color: Colors.black.withValues(alpha: 0.4),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 3,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Signing in...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                    const SizedBox(height: 20),
+                    GoogleSignInButton(
+                      onSuccess: _handleGoogleSignInSuccess,
+                      onError: _handleGoogleSignInError,
+                      isDark: isDark,
+                      isSmallDevice: isSmallDevice,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildAppleButton(isDark, isSmallDevice),
+                  ],
                 ),
               ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account?",
+                      style: TextStyle(
+                        color: AppColors.getTextSecondaryColor(brightness),
+                        fontSize: isSmallDevice ? 14 : 15,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/signup');
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.getPrimaryColor(brightness),
+                          fontSize: isSmallDevice ? 14 : 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

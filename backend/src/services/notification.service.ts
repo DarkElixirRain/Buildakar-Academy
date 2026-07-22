@@ -373,7 +373,7 @@ export async function notifyLiveClassScheduled(
     userIds: string[],
     title: string,
     liveClassId: string,
-    courseId: string,
+    courseId: string | undefined | null,
     scheduledAt: Date | null
 ) {
     return createAndSendBulk(
@@ -389,7 +389,7 @@ export async function notifyLiveClassScheduled(
             data: {
                 type: "LIVE_CLASS_SCHEDULED",
                 liveClassId,
-                courseId,
+                courseId: courseId ?? '',
             },
         }
     );
@@ -399,7 +399,7 @@ export async function notifyLiveClassStarted(
     userIds: string[],
     title: string,
     liveClassId: string,
-    courseId: string
+    courseId: string | undefined | null
 ) {
     return createAndSendBulk(
         userIds,
@@ -410,7 +410,7 @@ export async function notifyLiveClassStarted(
             data: {
                 type: "LIVE_CLASS_STARTED",
                 liveClassId,
-                courseId,
+                courseId: courseId ?? '',
             },
         }
     );
@@ -420,7 +420,7 @@ export async function notifyLiveClassUpdated(
     userIds: string[],
     title: string,
     liveClassId: string,
-    courseId: string
+    courseId: string | undefined | null
 ) {
     return createAndSendBulk(
         userIds,
@@ -431,7 +431,7 @@ export async function notifyLiveClassUpdated(
             data: {
                 type: "LIVE_CLASS_UPDATED",
                 liveClassId,
-                courseId,
+                courseId: courseId ?? '',
             },
         }
     );
@@ -441,7 +441,7 @@ export async function notifyLiveClassCancelled(
     userIds: string[],
     title: string,
     liveClassId: string,
-    courseId: string
+    courseId: string | undefined | null
 ) {
     return createAndSendBulk(
         userIds,
@@ -452,7 +452,7 @@ export async function notifyLiveClassCancelled(
             data: {
                 type: "LIVE_CLASS_CANCELLED",
                 liveClassId,
-                courseId,
+                courseId: courseId ?? '',
             },
         }
     );

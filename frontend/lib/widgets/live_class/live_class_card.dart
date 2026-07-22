@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../models/live_class_model.dart';
 import '../../constants/colors.dart';
 import '../../providers/theme_provider.dart';
 
@@ -12,14 +11,20 @@ class LiveClassCard extends StatelessWidget {
   final Map<String, dynamic> liveClass;
   final VoidCallback onJoin;
   final VoidCallback onRemindMe;
+  final VoidCallback? onStart;
   final bool isFollowing;
+  final bool isOwnClass;
+  final bool isInstructor;
 
   const LiveClassCard({
     Key? key,
     required this.liveClass,
     required this.onJoin,
     required this.onRemindMe,
+    this.onStart,
     this.isFollowing = false,
+    this.isOwnClass = false,
+    this.isInstructor = false,
   }) : super(key: key);
 
   @override
@@ -27,23 +32,29 @@ class LiveClassCard extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    
+
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
-    final backgroundColor = AppColors.getBackgroundColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
-    
-    // Extract data from map
-    final title = liveClass['title'] ?? 'Untitled Class';
-    final instructor = liveClass['instructor'] ?? 'Unknown Instructor';
-    final thumbnail = liveClass['thumbnail'] ?? '';
-    final status = liveClass['status'] ?? 'upcoming';
+    final backgroundColor = AppColors.getBackgroundColor(brightness);
+    final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
+    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
+
+    // Extract data from map with safe defaults
+    final title = liveClass['title']?.toString() ?? 'Untitled Class';
+    final rawInstructor = liveClass['instructor'];
+    final instructor = (rawInstructor != null && rawInstructor.toString().isNotEmpty)
+        ? rawInstructor.toString()
+        : 'Unknown Instructor';
+    final thumbnail = liveClass['thumbnail']?.toString() ?? '';
+    final status = liveClass['status']?.toString()?.toLowerCase() ?? 'upcoming';
     final participants = liveClass['participantsCount'] ?? 0;
     final maxParticipants = liveClass['maxParticipants'] ?? 0;
-    final description = liveClass['description'] ?? '';
+    final description = liveClass['description']?.toString() ?? '';
     final scheduledTime = liveClass['scheduledTime'];
-    final category = liveClass['category'] ?? 'General';
-    
+    final category = liveClass['category']?.toString() ?? 'General';
+    final isLive = status == 'live' || status == 'started' || status == 'active';
+
     // Format time
     String timeString = 'Time TBD';
     if (scheduledTime != null) {
@@ -61,11 +72,11 @@ class LiveClassCard extends StatelessWidget {
         timeString = 'Time TBD';
       }
     }
-    
+
     // Determine status color and text
     Color statusColor;
     String statusText;
-    switch (status.toLowerCase()) {
+    switch (status) {
       case 'live':
       case 'started':
       case 'active':
@@ -90,24 +101,19 @@ class LiveClassCard extends StatelessWidget {
         statusColor = Colors.grey;
         statusText = '● ${status.toUpperCase()}';
     }
-    
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 600;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
+    return Card(
+      color: backgroundColor,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: textSecondaryColor.withAlpha(20),
+        side: BorderSide(
+          color: textSecondaryColor.withOpacity(0.2),
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,12 +135,26 @@ class LiveClassCard extends StatelessWidget {
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             height: isSmallScreen ? 160 : 180,
-                            color: primaryColor.withAlpha(50),
+                            color: primaryColor.withOpacity(0.1),
                             child: Center(
                               child: Icon(
                                 Icons.videocam_rounded,
                                 size: 48,
-                                color: primaryColor.withAlpha(100),
+                                color: primaryColor.withOpacity(0.5),
+                              ),
+                            ),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: isSmallScreen ? 160 : 180,
+                            color: backgroundSelectedColor,
+                            child: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             ),
                           );
@@ -142,12 +162,12 @@ class LiveClassCard extends StatelessWidget {
                       )
                     : Container(
                         height: isSmallScreen ? 160 : 180,
-                        color: primaryColor.withAlpha(50),
+                        color: primaryColor.withOpacity(0.1),
                         child: Center(
                           child: Icon(
                             Icons.videocam_rounded,
                             size: 48,
-                            color: primaryColor.withAlpha(100),
+                            color: primaryColor.withOpacity(0.5),
                           ),
                         ),
                       ),
@@ -159,7 +179,7 @@ class LiveClassCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(180),
+                    color: Colors.black.withOpacity(0.8),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -172,6 +192,38 @@ class LiveClassCard extends StatelessWidget {
                   ),
                 ),
               ),
+              // "Your Class" badge (for instructor's own classes)
+              if (isOwnClass)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.school_rounded,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Your Class',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               // Participants count
               Positioned(
                 bottom: 12,
@@ -179,7 +231,7 @@ class LiveClassCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(180),
+                    color: Colors.black.withOpacity(0.8),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -188,7 +240,7 @@ class LiveClassCard extends StatelessWidget {
                       Icon(
                         Icons.people_rounded,
                         size: 14,
-                        color: Colors.white.withAlpha(200),
+                        color: Colors.white.withOpacity(0.9),
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -196,7 +248,7 @@ class LiveClassCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white.withAlpha(200),
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     ],
@@ -210,7 +262,7 @@ class LiveClassCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: primaryColor.withAlpha(200),
+                    color: primaryColor.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -227,7 +279,7 @@ class LiveClassCard extends StatelessWidget {
               ),
             ],
           ),
-          
+
           // Content
           Padding(
             padding: const EdgeInsets.all(14),
@@ -245,16 +297,16 @@ class LiveClassCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                
+
                 const SizedBox(height: 6),
-                
+
                 // Instructor
                 Row(
                   children: [
                     Icon(
                       Icons.person_outline_rounded,
                       size: 14,
-                      color: textSecondaryColor.withAlpha(150),
+                      color: textSecondaryColor.withOpacity(0.7),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -270,16 +322,16 @@ class LiveClassCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 4),
-                
+
                 // Time
                 Row(
                   children: [
                     Icon(
                       Icons.calendar_today_rounded,
                       size: 14,
-                      color: textSecondaryColor.withAlpha(150),
+                      color: textSecondaryColor.withOpacity(0.7),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -291,88 +343,118 @@ class LiveClassCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
                     description,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: textSecondaryColor.withAlpha(180),
+                      color: textSecondaryColor.withOpacity(0.8),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Action buttons
                 Row(
                   children: [
                     // Remind/Follow button
                     Expanded(
                       flex: 1,
-                      child: OutlinedButton.icon(
-                        onPressed: onRemindMe,
-                        icon: Icon(
-                          isFollowing 
-                              ? Icons.notifications_active_rounded 
-                              : Icons.notifications_off_rounded,
-                          size: 18,
-                        ),
-                        label: Text(
-                          isFollowing ? 'Remind' : 'Remind Me',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      child: OutlinedButton(
+                        onPressed: isLive ? null : onRemindMe,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                           side: BorderSide(
-                            color: isFollowing 
-                                ? Colors.green.withAlpha(100) 
-                                : textSecondaryColor.withAlpha(50),
+                            color: isFollowing
+                                ? Colors.green.withOpacity(0.5)
+                                : textSecondaryColor.withOpacity(0.3),
                           ),
                           foregroundColor: isFollowing ? Colors.green : textSecondaryColor,
                         ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isFollowing
+                                  ? Icons.notifications_active_rounded
+                                  : Icons.notifications_off_rounded,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isFollowing ? 'Remind' : 'Remind Me',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    
+
                     const SizedBox(width: 8),
-                    
-                    // Join button
+
+                    // Primary action: Start (own scheduled) / Join Now (live) / disabled
                     Expanded(
                       flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: onJoin,
-                        icon: Icon(
-                          status.toLowerCase() == 'live' 
-                              ? Icons.play_arrow_rounded 
-                              : Icons.meeting_room_rounded,
-                          size: 18,
-                        ),
-                        label: Text(
-                          status.toLowerCase() == 'live' 
-                              ? 'Join Now' 
-                              : 'Join Class',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      child: ElevatedButton(
+                        onPressed: isOwnClass && isInstructor && !isLive && (status == 'scheduled' || status == 'upcoming')
+                            ? onStart
+                            : isLive
+                                ? onJoin
+                                : null,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          backgroundColor: status.toLowerCase() == 'live' 
-                              ? Colors.green 
-                              : primaryColor,
+                          backgroundColor: isOwnClass && isInstructor && !isLive && (status == 'scheduled' || status == 'upcoming')
+                              ? Colors.blue
+                              : isLive
+                                  ? Colors.green
+                                  : textSecondaryColor.withOpacity(0.3),
+                          foregroundColor: isOwnClass && isInstructor && !isLive && (status == 'scheduled' || status == 'upcoming')
+                              ? Colors.white
+                              : isLive
+                                  ? Colors.white
+                                  : textSecondaryColor,
+                          disabledBackgroundColor: textSecondaryColor.withOpacity(0.2),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isOwnClass && isInstructor && !isLive && (status == 'scheduled' || status == 'upcoming')
+                                  ? Icons.play_circle_fill_rounded
+                                  : isLive
+                                      ? Icons.play_arrow_rounded
+                                      : Icons.meeting_room_rounded,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isOwnClass && isInstructor && !isLive && (status == 'scheduled' || status == 'upcoming')
+                                  ? 'Start'
+                                  : isLive
+                                      ? 'Join Now'
+                                      : status == 'upcoming'
+                                          ? 'Upcoming'
+                                          : 'Ended',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

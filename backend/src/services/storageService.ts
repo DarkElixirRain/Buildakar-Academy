@@ -34,25 +34,14 @@ export interface StorageService {
 
 const MAX_VIDEO_SIZE_BYTES = 500 * 1024 * 1024;
 
-const ALLOWED_VIDEO_MIME_TYPES = [
-  'video/mp4',
-  'video/mpeg',
-  'video/quicktime',
-  'video/x-msvideo',
-  'video/webm',
-  'video/x-matroska',
-];
-
 export function validateVideoFile(
   mimeType: string,
   size: number
 ): { valid: boolean; error?: string } {
-  if (!ALLOWED_VIDEO_MIME_TYPES.includes(mimeType)) {
+  if (!mimeType.startsWith('video/') && mimeType !== 'application/octet-stream') {
     return {
       valid: false,
-      error: `Unsupported video format: ${mimeType}. Allowed formats: ${ALLOWED_VIDEO_MIME_TYPES.join(
-        ', '
-      )}`,
+      error: `Unsupported video format: ${mimeType}`,
     };
   }
 

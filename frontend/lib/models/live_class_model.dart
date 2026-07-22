@@ -6,6 +6,7 @@ class LiveClass {
   final String instructor;
   final String instructorId;
   final String instructorAvatar;
+  final String? courseId;
   final String thumbnail;
   final String category;
   final String categoryId;
@@ -29,6 +30,7 @@ class LiveClass {
     required this.instructor,
     this.instructorId = '',
     this.instructorAvatar = '',
+    this.courseId,
     required this.thumbnail,
     required this.category,
     this.categoryId = '',
@@ -56,9 +58,8 @@ class LiveClass {
     if (json['instructor'] != null) {
       if (json['instructor'] is Map<String, dynamic>) {
         final instructor = json['instructor'] as Map<String, dynamic>;
-        instructorName = instructor['name'] ?? 
-                        '${instructor['firstName'] ?? ''} ${instructor['lastName'] ?? ''}'.trim() ??
-                        'Unknown Instructor';
+        final nameParts = '${instructor['firstName'] ?? ''} ${instructor['lastName'] ?? ''}'.trim();
+        instructorName = instructor['name'] ?? (nameParts.isNotEmpty ? nameParts : 'Unknown Instructor');
         instructorId = instructor['id']?.toString() ?? '';
         instructorAvatar = instructor['photo'] ?? instructor['avatar'] ?? '';
       } else if (json['instructor'] is String) {
@@ -103,6 +104,7 @@ class LiveClass {
       instructor: instructorName,
       instructorId: instructorId,
       instructorAvatar: instructorAvatar,
+      courseId: json['courseId']?.toString(),
       thumbnail: _getThumbnail(json),
       category: categoryName,
       categoryId: categoryId,
@@ -173,6 +175,7 @@ class LiveClass {
       'instructor': instructor,
       'instructorId': instructorId,
       'instructorAvatar': instructorAvatar,
+      if (courseId != null) 'courseId': courseId,
       'thumbnail': thumbnail,
       'category': category,
       'categoryId': categoryId,
@@ -198,6 +201,7 @@ class LiveClass {
     String? instructor,
     String? instructorId,
     String? instructorAvatar,
+    String? courseId,
     String? thumbnail,
     String? category,
     String? categoryId,
@@ -221,6 +225,7 @@ class LiveClass {
       instructor: instructor ?? this.instructor,
       instructorId: instructorId ?? this.instructorId,
       instructorAvatar: instructorAvatar ?? this.instructorAvatar,
+      courseId: courseId ?? this.courseId,
       thumbnail: thumbnail ?? this.thumbnail,
       category: category ?? this.category,
       categoryId: categoryId ?? this.categoryId,

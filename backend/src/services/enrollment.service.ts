@@ -20,7 +20,7 @@ export class EnrollmentService {
       throw new Error("Course is not available for enrollment");
     }
 
-    if (course.instructorId === userId) {
+    if (course.instructorId === userId && userRole !== Role.ADMIN) {
       throw new Error("Instructors cannot enroll in their own course");
     }
 

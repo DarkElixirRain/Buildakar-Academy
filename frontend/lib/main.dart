@@ -13,7 +13,9 @@ import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/theme_provider.dart';
-import 'providers/live_class_provider.dart'; // Add this import
+import 'providers/live_class_provider.dart';
+import 'providers/instructor_dashboard_provider.dart';
+import 'providers/instructor_course_provider.dart';
 import 'routes/app_routes.dart';
 
 /// Background message handler
@@ -30,9 +32,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
     try {
       /// Initialize Firebase
       await Firebase.initializeApp(
@@ -124,6 +125,16 @@ class LearnHubApp extends StatelessWidget {
                 authProvider: authProvider,
               ),
         ),
+        ChangeNotifierProxyProvider<AuthProvider, InstructorDashboardProvider>(
+          create: (context) => InstructorDashboardProvider(),
+          update: (context, authProvider, previous) =>
+              previous ?? InstructorDashboardProvider(),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, InstructorCourseProvider>(
+          create: (context) => InstructorCourseProvider(),
+          update: (context, authProvider, previous) =>
+              previous ?? InstructorCourseProvider(),
+        ),
       ],
       child: const MyApp(),
     );
@@ -138,6 +149,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  bool _lastKnownAuthState = false;
+
   @override
   void initState() {
     super.initState();
@@ -177,6 +191,36 @@ class _MyAppState extends State<MyApp> {
         }
       });
     }
+
+    /// Listen to auth state changes and redirect to login when logged out
+    /// or session expires from any page.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.addListener(_onAuthChanged);
+    });
+  }
+
+  void _onAuthChanged() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isAuth = authProvider.isAuthenticated;
+
+    if (_lastKnownAuthState && !isAuth) {
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/login',
+        (route) => false,
+      );
+    }
+
+    _lastKnownAuthState = isAuth;
+  }
+
+  @override
+  void dispose() {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.removeListener(_onAuthChanged);
+    } catch (_) {}
+    super.dispose();
   }
 
   @override
@@ -190,6 +234,7 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           title: 'LearnHub',
           debugShowCheckedModeBanner: false,
+          navigatorKey: _navigatorKey,
 
           theme: ThemeData(
             brightness: brightness,

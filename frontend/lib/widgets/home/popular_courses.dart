@@ -31,6 +31,7 @@ class _PopularCoursesState extends State<PopularCourses> {
   int _page = 1;
   final int _limit = 10;
   final ApiService _apiService = ApiService();
+  String? _error;
 
   @override
   void initState() {
@@ -109,6 +110,16 @@ class _PopularCoursesState extends State<PopularCourses> {
     return instructorName;
   }
 
+  // Helper method to format currency with Nepali Rupees (रू)
+  String _formatCurrency(num amount) {
+    final double amountDouble = amount.toDouble();
+    if (amountDouble == amountDouble.roundToDouble()) {
+      return amountDouble.toStringAsFixed(0);
+    } else {
+      return amountDouble.toStringAsFixed(2);
+    }
+  }
+
   // Safe conversion helpers
   double _safeToDouble(dynamic value) {
     if (value == null) return 0.0;
@@ -150,6 +161,7 @@ class _PopularCoursesState extends State<PopularCourses> {
         _isLoadingMore = true;
       } else {
         _isLoading = true;
+        _error = null;
       }
     });
 
@@ -188,31 +200,25 @@ class _PopularCoursesState extends State<PopularCourses> {
           _isLoading = false;
           _isRefreshing = false;
           _isLoadingMore = false;
+          _error = null;
         });
       } else {
-        // If API fails, use fallback data
         setState(() {
-          if (isLoadMore) {
-            _hasMore = false;
-            _isLoadingMore = false;
-          } else {
-            _courses = _getFallbackCourses();
-            _isLoading = false;
-            _isRefreshing = false;
-          }
+          _error = response.error ?? 'Failed to load popular courses';
+          _isLoading = false;
+          _isRefreshing = false;
+          _isLoadingMore = false;
+          _hasMore = false;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        if (isLoadMore) {
-          _hasMore = false;
-          _isLoadingMore = false;
-        } else {
-          _courses = _getFallbackCourses();
-          _isLoading = false;
-          _isRefreshing = false;
-        }
+        _error = e.toString();
+        _isLoading = false;
+        _isRefreshing = false;
+        _isLoadingMore = false;
+        _hasMore = false;
       });
     }
   }
@@ -232,13 +238,18 @@ class _PopularCoursesState extends State<PopularCourses> {
       students = _safeToInt(course['students']);
     }
 
-    // Get price
+    // Get price with Nepali Rupees
     final price = _safeToDouble(course['price']);
+    final discountPrice = _safeToDouble(course['discountPrice']);
 
-    // Get discount price
-    double? discountPrice;
-    if (course['discountPrice'] != null) {
-      discountPrice = _safeToDouble(course['discountPrice']);
+    // Format price displays
+    String priceDisplay;
+    if (discountPrice > 0) {
+      priceDisplay = 'रू ${_formatCurrency(discountPrice)}';
+    } else if (price > 0) {
+      priceDisplay = 'रू ${_formatCurrency(price)}';
+    } else {
+      priceDisplay = 'Free';
     }
 
     // Get thumbnail
@@ -249,8 +260,28 @@ class _PopularCoursesState extends State<PopularCourses> {
       thumbnail = course['thumbnailUrl'].toString();
     }
 
-    // Determine if trending (based on students count or rating)
-    bool isTrending = students > 5000 || rating >= 4.8;
+    // If no thumbnail, use placeholder
+    if (thumbnail.isEmpty) {
+      thumbnail = 'https://picsum.photos/400/200?random=${course['id'] ?? '1'}';
+    }
+
+    // Determine badge based on course stats
+    String badge = '📚 Course';
+    if (students > 10000) {
+      badge = '🔥 Bestseller';
+    } else if (rating >= 4.8 && students > 1000) {
+      badge = '⭐ Top Rated';
+    } else if (students > 5000) {
+      badge = '📈 Popular';
+    } else if (course['isNew'] == true) {
+      badge = '✨ New';
+    }
+
+    // Get level
+    String level = 'Beginner';
+    if (course['level'] != null && course['level'].toString().isNotEmpty) {
+      level = course['level'].toString();
+    }
 
     // Get category
     String category = 'General';
@@ -266,78 +297,17 @@ class _PopularCoursesState extends State<PopularCourses> {
       'id': course['id'] ?? '',
       'title': course['title'] ?? 'Untitled Course',
       'instructor': instructorName,
-      'thumbnail': thumbnail.isNotEmpty ? thumbnail : 'https://picsum.photos/400/200?random=${course['id'] ?? '1'}',
+      'thumbnail': thumbnail,
       'rating': rating,
       'students': students,
-      'isTrending': isTrending,
       'price': price,
       'discountPrice': discountPrice,
-      'level': course['level'] ?? 'Beginner',
+      'priceDisplay': priceDisplay,
+      'badge': badge,
+      'level': level,
       'category': category,
-      'duration': course['duration']?.toString() ?? '2h 30m',
       'description': course['description'] ?? '',
     };
-  }
-
-  List<Map<String, dynamic>> _getFallbackCourses() {
-    return [
-      {
-        'id': '1',
-        'title': 'Python for Data Science and Machine Learning',
-        'instructor': 'Jose Portilla',
-        'thumbnail': 'https://picsum.photos/400/200?random=60',
-        'rating': 4.9,
-        'students': 15000,
-        'isTrending': true,
-        'price': 149.99,
-        'discountPrice': 99.99,
-        'level': 'Intermediate',
-        'category': 'Data Science',
-        'duration': '12h 30m',
-      },
-      {
-        'id': '2',
-        'title': 'JavaScript: The Advanced Concepts',
-        'instructor': 'Andrei Neagoie',
-        'thumbnail': 'https://picsum.photos/400/200?random=61',
-        'rating': 4.8,
-        'students': 12000,
-        'isTrending': false,
-        'price': 109.99,
-        'discountPrice': null,
-        'level': 'Advanced',
-        'category': 'Programming',
-        'duration': '8h 45m',
-      },
-      {
-        'id': '3',
-        'title': 'UI/UX Design with Figma',
-        'instructor': 'Daniel Scott',
-        'thumbnail': 'https://picsum.photos/400/200?random=62',
-        'rating': 4.7,
-        'students': 9800,
-        'isTrending': true,
-        'price': 89.99,
-        'discountPrice': 69.99,
-        'level': 'Beginner',
-        'category': 'Design',
-        'duration': '6h 20m',
-      },
-      {
-        'id': '4',
-        'title': 'The Complete SQL Bootcamp',
-        'instructor': 'Jose Portilla',
-        'thumbnail': 'https://picsum.photos/400/200?random=63',
-        'rating': 4.6,
-        'students': 8500,
-        'isTrending': false,
-        'price': 79.99,
-        'discountPrice': null,
-        'level': 'Beginner',
-        'category': 'Database',
-        'duration': '9h 15m',
-      },
-    ];
   }
 
   Future<void> _refreshData() async {
@@ -345,13 +315,13 @@ class _PopularCoursesState extends State<PopularCourses> {
       _isRefreshing = true;
       _page = 1;
       _hasMore = true;
-      _courses = [];
+      _error = null;
     });
     await _fetchPopularCourses();
   }
 
   void _loadMore() {
-    if (!_isLoadingMore && _hasMore && !_isLoading && !_isRefreshing) {
+    if (!_isLoadingMore && _hasMore && !_isLoading && !_isRefreshing && _error == null) {
       _fetchPopularCourses(isLoadMore: true);
     }
   }
@@ -393,69 +363,59 @@ class _PopularCoursesState extends State<PopularCourses> {
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
-    // Responsive sizing
+    // Responsive sizing - matching Featured Courses
     double cardWidth;
     double cardHeight;
     double imageHeight;
     double fontSizeTitle;
     double fontSizeSubtitle;
     double fontSizeBadge;
-    double fontSizePrice;
     double paddingSize;
-    double gap;
-
+    
     if (screenWidth < 380) {
-      cardWidth = screenWidth * 0.60;
-      cardHeight = screenHeight * 0.30;
-      imageHeight = cardHeight * 0.50;
+      cardWidth = screenWidth * 0.75;
+      cardHeight = screenHeight * 0.32;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 13;
       fontSizeSubtitle = 11;
       fontSizeBadge = 9;
-      fontSizePrice = 13;
       paddingSize = 8;
-      gap = 10;
     } else if (screenWidth < 600) {
-      cardWidth = screenWidth * 0.50;
-      cardHeight = screenHeight * 0.32;
-      imageHeight = cardHeight * 0.50;
+      cardWidth = screenWidth * 0.65;
+      cardHeight = screenHeight * 0.34;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 14;
       fontSizeSubtitle = 12;
       fontSizeBadge = 10;
-      fontSizePrice = 14;
       paddingSize = 10;
-      gap = 12;
     } else if (screenWidth < 900) {
-      cardWidth = screenWidth * 0.32;
-      cardHeight = screenHeight * 0.34;
-      imageHeight = cardHeight * 0.50;
+      cardWidth = screenWidth * 0.40;
+      cardHeight = screenHeight * 0.36;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 15;
       fontSizeSubtitle = 13;
       fontSizeBadge = 11;
-      fontSizePrice = 15;
       paddingSize = 12;
-      gap = 16;
     } else {
-      cardWidth = screenWidth * 0.22;
-      cardHeight = screenHeight * 0.36;
-      imageHeight = cardHeight * 0.50;
+      cardWidth = screenWidth * 0.28;
+      cardHeight = screenHeight * 0.38;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 16;
       fontSizeSubtitle = 14;
       fontSizeBadge = 12;
-      fontSizePrice = 16;
       paddingSize = 14;
-      gap = 18;
     }
 
-    cardWidth = cardWidth.clamp(140.0, 320.0);
-    cardHeight = cardHeight.clamp(180.0, 360.0);
-    imageHeight = imageHeight.clamp(80.0, 180.0);
+    cardWidth = cardWidth.clamp(180.0, 400.0);
+    cardHeight = cardHeight.clamp(220.0, 380.0);
+    imageHeight = imageHeight.clamp(100.0, 190.0);
 
     if (_isLoading) {
       return _buildSkeletonLoading(isDark, cardWidth, cardHeight, brightness);
     }
 
-    if (_courses.isEmpty) {
-      return _buildEmptyState(isDark, brightness);
+    if (_error != null || _courses.isEmpty) {
+      return _buildErrorState(isDark, brightness);
     }
 
     return Column(
@@ -507,7 +467,7 @@ class _PopularCoursesState extends State<PopularCourses> {
 
         // Horizontal Scroll
         SizedBox(
-          height: cardHeight + 20,
+          height: cardHeight + 10,
           child: RefreshIndicator(
             onRefresh: _refreshData,
             color: primaryColor,
@@ -541,9 +501,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                     fontSizeTitle,
                     fontSizeSubtitle,
                     fontSizeBadge,
-                    fontSizePrice,
                     paddingSize,
-                    gap,
                     isDark,
                     brightness,
                     screenWidth,
@@ -567,9 +525,7 @@ class _PopularCoursesState extends State<PopularCourses> {
     double fontSizeTitle,
     double fontSizeSubtitle,
     double fontSizeBadge,
-    double fontSizePrice,
     double paddingSize,
-    double gap,
     bool isDark,
     Brightness brightness,
     double screenWidth,
@@ -582,13 +538,17 @@ class _PopularCoursesState extends State<PopularCourses> {
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
     final isLast = index == _courses.length - 1;
-    final isTrending = course['isTrending'] ?? false;
     final rating = _safeToDouble(course['rating']);
     final students = _safeToInt(course['students']);
     final hasDiscount = course['discountPrice'] != null && _safeToDouble(course['discountPrice']) > 0;
     final price = _safeToDouble(course['price']);
     final discountPrice = _safeToDouble(course['discountPrice']);
     final instructor = course['instructor']?.toString() ?? 'Unknown Instructor';
+    final badge = course['badge'] ?? '📚 Course';
+    final level = course['level'] ?? 'Beginner';
+    
+    // Get price display
+    String priceDisplay = course['priceDisplay'] ?? 'Free';
 
     return GestureDetector(
       onTap: () => _handleCoursePress(course),
@@ -596,11 +556,11 @@ class _PopularCoursesState extends State<PopularCourses> {
         width: cardWidth,
         height: cardHeight,
         margin: EdgeInsets.only(
-          right: isLast ? 0 : gap,
+          right: isLast ? 0 : 12,
         ),
         decoration: BoxDecoration(
           color: backgroundElementColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: backgroundSelectedColor,
             width: 1,
@@ -624,8 +584,8 @@ class _PopularCoursesState extends State<PopularCourses> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
                   ),
                   child: course['thumbnail'] != null && course['thumbnail'].toString().isNotEmpty
                       ? Image.network(
@@ -645,6 +605,21 @@ class _PopularCoursesState extends State<PopularCourses> {
                               ),
                             );
                           },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: imageHeight,
+                              width: double.infinity,
+                              color: backgroundSelectedColor,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          },
                         )
                       : Container(
                           height: imageHeight,
@@ -657,51 +632,39 @@ class _PopularCoursesState extends State<PopularCourses> {
                           ),
                         ),
                 ),
-                // Trending Badge
-                if (isTrending)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.red.shade700,
-                            Colors.orange.shade700,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.local_fire_department,
-                            color: Colors.white,
-                            size: fontSizeBadge + 2,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Trending',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: fontSizeBadge,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                // Badge
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.red.shade700,
+                          Colors.orange.shade700,
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSizeBadge,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                // Price Badge
+                ),
+                // Price Badge - Bottom Right with रू symbol
                 Positioned(
                   bottom: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(12),
@@ -711,21 +674,19 @@ class _PopularCoursesState extends State<PopularCourses> {
                       children: [
                         if (hasDiscount)
                           Text(
-                            '\$${price.toStringAsFixed(2)}',
+                            'रू ${_formatCurrency(price)}',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: fontSizeSubtitle,
+                              fontSize: fontSizeBadge,
                               decoration: TextDecoration.lineThrough,
                             ),
                           ),
-                        if (hasDiscount) const SizedBox(width: 6),
+                        if (hasDiscount) const SizedBox(width: 4),
                         Text(
-                          hasDiscount
-                              ? '\$${discountPrice.toStringAsFixed(2)}'
-                              : '\$${price.toStringAsFixed(2)}',
+                          priceDisplay,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: fontSizePrice,
+                            fontSize: fontSizeBadge + 1,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -744,7 +705,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      course['level'] ?? 'Beginner',
+                      level,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: fontSizeBadge,
@@ -776,7 +737,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    // Instructor - Now properly displayed with icon
+                    // Instructor
                     Row(
                       children: [
                         Icon(
@@ -791,8 +752,9 @@ class _PopularCoursesState extends State<PopularCourses> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: fontSizeSubtitle,
+                              fontSize: fontSizeSubtitle - 1,
                               color: textSecondaryColor,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -807,19 +769,19 @@ class _PopularCoursesState extends State<PopularCourses> {
                           color: Colors.amber,
                           size: fontSizeSubtitle + 2,
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 4),
                         Text(
                           rating.toStringAsFixed(1),
                           style: TextStyle(
                             fontSize: fontSizeSubtitle,
-                            fontWeight: FontWeight.w600,
                             color: textColor,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '(${students.toString()})',
+                            '${students.toString()} students',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -847,11 +809,11 @@ class _PopularCoursesState extends State<PopularCourses> {
 
     return Container(
       width: cardWidth,
-      height: 180,
+      height: 200,
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
         color: backgroundElementColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: backgroundSelectedColor,
           width: 1,
@@ -927,7 +889,7 @@ class _PopularCoursesState extends State<PopularCourses> {
           ),
         ),
         SizedBox(
-          height: cardHeight + 20,
+          height: cardHeight + 10,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 3,
@@ -939,7 +901,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
                   color: backgroundElementColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: backgroundSelectedColor,
                     width: 1,
@@ -950,12 +912,12 @@ class _PopularCoursesState extends State<PopularCourses> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      height: cardHeight * 0.50,
+                      height: cardHeight * 0.5,
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
+                          topLeft: Radius.circular(14),
+                          topRight: Radius.circular(14),
                         ),
                       ),
                     ),
@@ -974,7 +936,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Container(
                               height: 10,
                               width: 80,
@@ -983,21 +945,21 @@ class _PopularCoursesState extends State<PopularCourses> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const Spacer(),
                             Row(
                               children: [
                                 Container(
-                                  height: 10,
+                                  height: 12,
                                   width: 40,
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 8),
                                 Container(
                                   height: 10,
-                                  width: 50,
+                                  width: 60,
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
                                     borderRadius: BorderRadius.circular(4),
@@ -1019,9 +981,11 @@ class _PopularCoursesState extends State<PopularCourses> {
     );
   }
 
-  Widget _buildEmptyState(bool isDark, Brightness brightness) {
+  Widget _buildErrorState(bool isDark, Brightness brightness) {
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
+    final primaryColor = AppColors.getPrimaryColor(brightness);
+    final errorColor = AppColors.getErrorColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
@@ -1052,7 +1016,7 @@ class _PopularCoursesState extends State<PopularCourses> {
           ),
         ),
         Container(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: backgroundElementColor,
             borderRadius: BorderRadius.circular(16),
@@ -1065,16 +1029,45 @@ class _PopularCoursesState extends State<PopularCourses> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.local_fire_department_outlined,
-                size: 48,
-                color: textSecondaryColor,
+                Icons.error_outline,
+                size: 40,
+                color: errorColor,
               ),
               const SizedBox(height: 8),
               Text(
-                'No popular courses available',
+                'Unable to Load Popular Courses',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _error ?? 'Something went wrong. Please try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
                   color: textSecondaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _refreshData,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  'Try Again',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],

@@ -1,6 +1,6 @@
 // lib/utils/date_utils.dart
 import 'package:intl/intl.dart';
-import 'package:learnhub/models/course_model.dart';
+import 'package:buildacad/models/course_model.dart';
 
 /// Format relative date (e.g., "Today", "Yesterday", "2 days ago")
 String formatRelativeDate(DateTime date) {

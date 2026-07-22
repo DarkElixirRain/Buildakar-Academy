@@ -1,7 +1,7 @@
 // lib/widgets/main_layout.dart
 
 import 'package:flutter/material.dart';
-import 'package:learnhub/widgets/home/home_header.dart';
+import 'package:buildacad/widgets/home/home_header.dart';
 import '../constants/colors.dart';
 import '../screens/notifications/notification_screen.dart';
 import '../widgets/bottom_navigation/bottom_nav_bar.dart';
@@ -12,6 +12,7 @@ class MainLayout extends StatefulWidget {
   final Function(int) onTabChanged;
   final VoidCallback? onNotificationPress;
   final Function(String)? onSearchSubmitted;
+  final List<NavItem>? navItems;
 
   const MainLayout({
     Key? key,
@@ -20,6 +21,7 @@ class MainLayout extends StatefulWidget {
     required this.onTabChanged,
     this.onNotificationPress,
     this.onSearchSubmitted,
+    this.navItems,
   }) : super(key: key);
 
   @override
@@ -56,8 +58,6 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(brightness),
       body: SafeArea(
@@ -83,6 +83,7 @@ class _MainLayoutState extends State<MainLayout> {
       bottomNavigationBar: BottomNavBar(
         currentIndex: widget.currentIndex,
         onTap: widget.onTabChanged,
+        items: widget.navItems,
       ),
     );
   }

@@ -2,10 +2,10 @@
 
 import 'package:flutter/material.dart' hide SearchBar;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:learnhub/screens/course/course_detail/course_detail_screen.dart';
-import 'package:learnhub/screens/instructor/instructor_screen.dart';
+import 'package:buildacad/screens/course/course_detail/course_detail_screen.dart';
+import 'package:buildacad/screens/instructor/instructor_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:learnhub/screens/live/live_screen.dart';
+import 'package:buildacad/screens/live/live_screen.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/search_provider.dart';
@@ -28,6 +28,8 @@ import '../../constants/dummy_data.dart';
 import '../settings/settings_screen.dart';
 // Import the Instructor Dashboard
 import '../instructor-dashboard/instructor_dashboard_screens.dart';
+// Import NavItem
+import '../../widgets/bottom_navigation/bottom_nav_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -39,41 +41,50 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentTabIndex = 0;
   late List<Widget> _screens;
+  late List<NavItem> _navItems;
   bool _isInstructor = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize after first build to get auth provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeScreens();
     });
   }
 
   void _initializeScreens() {
-    // Check if user is instructor
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    _isInstructor = user?.role?.toLowerCase() == 'instructor';
+    final role = user?.role.toLowerCase();
+    _isInstructor = role == 'instructor' || role == 'admin';
 
-    // Build screens based on user role
     if (_isInstructor) {
-      // If instructor, show Instructor Dashboard instead of profile
       _screens = [
         const HomeContent(),
         const ExploreScreen(),
         const LiveScreen(),
-        const InstructorDashboardScreen(), // Instructor Dashboard
+        const InstructorDashboardScreen(),
         const SettingsScreen(),
       ];
+      _navItems = [
+        NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home', isActive: _currentTabIndex == 0),
+        NavItem(icon: Icons.explore_outlined, activeIcon: Icons.explore_rounded, label: 'Explore', isActive: _currentTabIndex == 1),
+        NavItem(icon: Icons.ondemand_video_outlined, activeIcon: Icons.ondemand_video_rounded, label: 'Live', isActive: _currentTabIndex == 2, showLiveIndicator: true),
+        NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, label: 'Dashboard', isActive: _currentTabIndex == 3),
+        NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings', isActive: _currentTabIndex == 4),
+      ];
     } else {
-      // If student or not authenticated, show regular profile (Coming Soon)
       _screens = [
         const HomeContent(),
         const ExploreScreen(),
         const LiveScreen(),
-        const ProfileContent(), // Student Profile (Coming Soon)
         const SettingsScreen(),
+      ];
+      _navItems = [
+        NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home', isActive: _currentTabIndex == 0),
+        NavItem(icon: Icons.explore_outlined, activeIcon: Icons.explore_rounded, label: 'Explore', isActive: _currentTabIndex == 1),
+        NavItem(icon: Icons.ondemand_video_outlined, activeIcon: Icons.ondemand_video_rounded, label: 'Live', isActive: _currentTabIndex == 2, showLiveIndicator: true),
+        NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings', isActive: _currentTabIndex == 3),
       ];
     }
   }
@@ -112,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _currentTabIndex,
         onTabChanged: _onTabTapped,
         onSearchSubmitted: _handleSearch,
+        navItems: _navItems,
         child: _screens[_currentTabIndex],
       ),
     );
@@ -159,7 +171,7 @@ class _HomeContentState extends State<HomeContent> {
     super.didChangeDependencies();
     final authProvider = Provider.of<AuthProvider>(context);
     if (authProvider.user != null) {
-      _isStudent = authProvider.user?.role?.toLowerCase() == 'student';
+      _isStudent = authProvider.user?.role.toLowerCase() == 'student';
     }
   }
 

@@ -110,6 +110,16 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
     return instructorName;
   }
 
+  // Helper method to format currency with Nepali Rupees (रू)
+  String _formatCurrency(num amount) {
+    final double amountDouble = amount.toDouble();
+    if (amountDouble == amountDouble.roundToDouble()) {
+      return amountDouble.toStringAsFixed(0);
+    } else {
+      return amountDouble.toStringAsFixed(2);
+    }
+  }
+
   // Helper method to transform course data
   Map<String, dynamic> _transformCourseData(Map<String, dynamic> course) {
     final transformed = Map<String, dynamic>.from(course);
@@ -122,6 +132,42 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
     transformed['discountPrice'] = _safeToDouble(course['discountPrice']);
     transformed['rating'] = _safeToDouble(course['rating']);
     transformed['students'] = _safeToInt(course['students']);
+    
+    // Format price with रू symbol for display
+    final priceValue = transformed['price'];
+    final discountValue = transformed['discountPrice'];
+    
+    if (priceValue > 0) {
+      transformed['priceDisplay'] = 'रू ${_formatCurrency(priceValue)}';
+    } else {
+      transformed['priceDisplay'] = 'Free';
+    }
+    
+    if (discountValue > 0) {
+      transformed['discountDisplay'] = 'रू ${_formatCurrency(discountValue)}';
+    }
+    
+    // Determine badge
+    final students = _safeToInt(course['students']);
+    final rating = _safeToDouble(course['rating']);
+    String badge = '📚 Course';
+    if (students > 10000) {
+      badge = '🔥 Bestseller';
+    } else if (rating >= 4.8 && students > 1000) {
+      badge = '⭐ Top Rated';
+    } else if (students > 5000) {
+      badge = '📈 Popular';
+    } else if (course['isNew'] == true) {
+      badge = '✨ New';
+    }
+    transformed['badge'] = badge;
+    
+    // Get level
+    String level = 'Beginner';
+    if (course['level'] != null && course['level'].toString().isNotEmpty) {
+      level = course['level'].toString();
+    }
+    transformed['level'] = level;
     
     return transformed;
   }
@@ -289,63 +335,52 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
-    // Responsive sizing
+    // Responsive sizing - matching Featured Courses
     double cardWidth;
     double cardHeight;
     double imageHeight;
     double fontSizeTitle;
     double fontSizeSubtitle;
     double fontSizeBadge;
-    double fontSizePrice;
     double paddingSize;
-    double gap;
-
+    
     if (screenWidth < 380) {
-      cardWidth = screenWidth * 0.70;
-      cardHeight = screenHeight * 0.35;
-      imageHeight = cardHeight * 0.45;
+      cardWidth = screenWidth * 0.75;
+      cardHeight = screenHeight * 0.32;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 13;
       fontSizeSubtitle = 11;
       fontSizeBadge = 9;
-      fontSizePrice = 14;
       paddingSize = 8;
-      gap = 10;
     } else if (screenWidth < 600) {
-      cardWidth = screenWidth * 0.55;
-      cardHeight = screenHeight * 0.37;
-      imageHeight = cardHeight * 0.45;
+      cardWidth = screenWidth * 0.65;
+      cardHeight = screenHeight * 0.34;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 14;
       fontSizeSubtitle = 12;
       fontSizeBadge = 10;
-      fontSizePrice = 15;
       paddingSize = 10;
-      gap = 12;
     } else if (screenWidth < 900) {
-      cardWidth = screenWidth * 0.35;
-      cardHeight = screenHeight * 0.38;
-      imageHeight = cardHeight * 0.45;
+      cardWidth = screenWidth * 0.40;
+      cardHeight = screenHeight * 0.36;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 15;
       fontSizeSubtitle = 13;
       fontSizeBadge = 11;
-      fontSizePrice = 16;
       paddingSize = 12;
-      gap = 16;
     } else {
-      cardWidth = screenWidth * 0.25;
-      cardHeight = screenHeight * 0.40;
-      imageHeight = cardHeight * 0.45;
+      cardWidth = screenWidth * 0.28;
+      cardHeight = screenHeight * 0.38;
+      imageHeight = cardHeight * 0.5;
       fontSizeTitle = 16;
       fontSizeSubtitle = 14;
       fontSizeBadge = 12;
-      fontSizePrice = 17;
       paddingSize = 14;
-      gap = 18;
     }
 
-    // Clamp values
-    cardWidth = cardWidth.clamp(160.0, 350.0);
-    cardHeight = cardHeight.clamp(200.0, 380.0);
-    imageHeight = imageHeight.clamp(80.0, 170.0);
+    cardWidth = cardWidth.clamp(180.0, 400.0);
+    cardHeight = cardHeight.clamp(220.0, 380.0);
+    imageHeight = imageHeight.clamp(100.0, 190.0);
 
     if (_isLoading) {
       return _buildSkeletonLoading(isDark, cardWidth, cardHeight, brightness);
@@ -397,7 +432,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
 
         // Horizontal Scroll
         SizedBox(
-          height: cardHeight + 20,
+          height: cardHeight + 10,
           child: RefreshIndicator(
             onRefresh: _refreshData,
             color: primaryColor,
@@ -433,9 +468,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                     fontSizeTitle,
                     fontSizeSubtitle,
                     fontSizeBadge,
-                    fontSizePrice,
                     paddingSize,
-                    gap,
                     isDark,
                     brightness,
                     screenWidth,
@@ -460,9 +493,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
     double fontSizeTitle,
     double fontSizeSubtitle,
     double fontSizeBadge,
-    double fontSizePrice,
     double paddingSize,
-    double gap,
     bool isDark,
     Brightness brightness,
     double screenWidth,
@@ -478,15 +509,25 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
     
     // Safely extract data with null handling
     final hasDiscount = course['discountPrice'] != null && course['discountPrice'] > 0;
-    final isBestseller = course['isBestseller'] ?? false;
     final price = _safeToDouble(course['price']);
     final discountPrice = _safeToDouble(course['discountPrice']);
     final rating = _safeToDouble(course['rating']);
     final students = _safeToInt(course['students']);
-    final duration = course['duration']?.toString() ?? '2h 30m';
     final title = course['title']?.toString() ?? 'Untitled Course';
     final instructor = course['instructor']?.toString() ?? 'Unknown Instructor';
     final thumbnail = course['thumbnail']?.toString() ?? '';
+    final badge = course['badge'] ?? '📚 Course';
+    final level = course['level'] ?? 'Beginner';
+    
+    // Get price display
+    String priceDisplay;
+    if (hasDiscount && discountPrice > 0) {
+      priceDisplay = 'रू ${_formatCurrency(discountPrice)}';
+    } else if (price > 0) {
+      priceDisplay = 'रू ${_formatCurrency(price)}';
+    } else {
+      priceDisplay = 'Free';
+    }
 
     return GestureDetector(
       onTap: () => _handleCoursePress(course),
@@ -494,11 +535,11 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
         width: cardWidth,
         height: cardHeight,
         margin: EdgeInsets.only(
-          right: isLast ? 0 : gap,
+          right: isLast ? 0 : 12,
         ),
         decoration: BoxDecoration(
           color: backgroundElementColor,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: backgroundSelectedColor,
             width: 1,
@@ -517,13 +558,13 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Image Section with Badges
+            // Image Section with Badge
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
                   ),
                   child: thumbnail.isNotEmpty
                       ? Image.network(
@@ -543,6 +584,21 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                               ),
                             );
                           },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: imageHeight,
+                              width: double.infinity,
+                              color: backgroundSelectedColor,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          },
                         )
                       : Container(
                           height: imageHeight,
@@ -555,54 +611,39 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                           ),
                         ),
                 ),
-                // Bestseller Badge
-                if (isBestseller)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Bestseller',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: fontSizeBadge,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                // Save Button
+                // Badge
                 Positioned(
                   top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => _toggleSave(course['id']),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.9),
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.red.shade700,
+                          Colors.orange.shade700,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: Icon(
-                        isSaved ? Icons.bookmark : Icons.bookmark_outline,
-                        size: 18,
-                        color: isSaved ? primaryColor : textSecondaryColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSizeBadge,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
-                // Price Badge
+                // Price Badge - Bottom Right with रू symbol
                 Positioned(
                   bottom: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(12),
@@ -612,21 +653,19 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                       children: [
                         if (hasDiscount)
                           Text(
-                            '\$${price.toStringAsFixed(2)}',
+                            'रू ${_formatCurrency(price)}',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: fontSizeSubtitle,
+                              fontSize: fontSizeBadge,
                               decoration: TextDecoration.lineThrough,
                             ),
                           ),
-                        if (hasDiscount) const SizedBox(width: 6),
+                        if (hasDiscount) const SizedBox(width: 4),
                         Text(
-                          hasDiscount
-                              ? '\$${discountPrice.toStringAsFixed(2)}'
-                              : '\$${price.toStringAsFixed(2)}',
+                          priceDisplay,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: fontSizePrice,
+                            fontSize: fontSizeBadge + 1,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -634,8 +673,29 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                     ),
                   ),
                 ),
+                // Level Badge - Bottom Left
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      level,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSizeBadge,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
+            
             // Content Section
             Expanded(
               child: Padding(
@@ -657,7 +717,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    // Instructor - Now properly displayed
+                    // Instructor
                     Row(
                       children: [
                         Icon(
@@ -672,15 +732,16 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: fontSizeSubtitle,
+                              fontSize: fontSizeSubtitle - 1,
                               color: textSecondaryColor,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    // Rating and Duration
                     const SizedBox(height: 4),
+                    // Rating and Students
                     Row(
                       children: [
                         Icon(
@@ -688,35 +749,25 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                           color: Colors.amber,
                           size: fontSizeSubtitle + 2,
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 4),
                         Text(
                           rating.toStringAsFixed(1),
                           style: TextStyle(
                             fontSize: fontSizeSubtitle,
-                            fontWeight: FontWeight.w600,
                             color: textColor,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '(${students.toString()})',
-                          style: TextStyle(
-                            fontSize: fontSizeSubtitle - 2,
-                            color: textSecondaryColor,
-                          ),
-                        ),
-                        const Spacer(),
-                        Icon(
-                          Icons.access_time,
-                          size: fontSizeSubtitle,
-                          color: textSecondaryColor,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          duration,
-                          style: TextStyle(
-                            fontSize: fontSizeSubtitle - 2,
-                            color: textSecondaryColor,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${students.toString()} students',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: fontSizeSubtitle - 2,
+                              color: textSecondaryColor,
+                            ),
                           ),
                         ),
                       ],
@@ -742,7 +793,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
         color: backgroundElementColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: backgroundSelectedColor,
           width: 1,
@@ -804,7 +855,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
           ),
         ),
         SizedBox(
-          height: cardHeight + 20,
+          height: cardHeight + 10,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 3,
@@ -816,7 +867,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
                   color: backgroundElementColor,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: backgroundSelectedColor,
                     width: 1,
@@ -828,12 +879,12 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                   children: [
                     // Image Skeleton
                     Container(
-                      height: cardHeight * 0.45,
+                      height: cardHeight * 0.5,
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
+                          topLeft: Radius.circular(14),
+                          topRight: Radius.circular(14),
                         ),
                       ),
                     ),
@@ -853,7 +904,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Container(
                               height: 10,
                               width: 80,
@@ -862,21 +913,21 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const Spacer(),
                             Row(
                               children: [
                                 Container(
-                                  height: 10,
+                                  height: 12,
                                   width: 40,
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 8),
                                 Container(
                                   height: 10,
-                                  width: 50,
+                                  width: 60,
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
                                     borderRadius: BorderRadius.circular(4),

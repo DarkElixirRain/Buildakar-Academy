@@ -119,7 +119,7 @@ export const updateRoleSchema = z.object({
 
 // ============= COURSE MANAGEMENT SCHEMAS =============
 
-export const courseStatusSchema = z.enum(['DRAFT', 'UNDER_REVIEW', 'PUBLISHED'], {
+export const courseStatusSchema = z.enum(['PENDING_APPROVAL', 'DRAFT', 'UNDER_REVIEW', 'PUBLISHED'], {
   errorMap: () => ({ message: 'Invalid course status' }),
 });
 

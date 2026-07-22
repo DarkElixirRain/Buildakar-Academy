@@ -358,25 +358,31 @@ export const instructorService = {
 
   // Get instructor statistics for dashboard
   async getInstructorStats(instructorId: string) {
-    const [overall, topCourses] = await Promise.all([
-      // Overall stats
+    const [
+      courseCounts,
+      overall,
+      topCourses,
+      totalReviews,
+      totalEnrollments,
+    ] = await Promise.all([
+      // Count courses by status
+      prisma.course.groupBy({
+        by: ['status'],
+        where: { instructorId },
+        _count: true,
+      }),
+      // User-level stats
       prisma.user.findUnique({
         where: { id: instructorId },
         select: {
-          totalStudents: true,
-          totalCourses: true,
           totalRevenue: true,
           averageRating: true,
-          totalReviews: true,
         },
       }),
-      
       // Top courses
       prisma.course.findMany({
         where: {
           instructorId: instructorId,
-          status: 'PUBLISHED',
-          isPublished: true,
         },
         select: {
           id: true,
@@ -389,15 +395,26 @@ export const instructorService = {
         },
         take: 5,
       }),
+      // Total reviews
+      prisma.review.count({
+        where: { course: { instructorId } },
+      }),
+      // Total students (enrollments)
+      prisma.enrollment.count({
+        where: { course: { instructorId } },
+      }),
     ]);
 
+    const totalCourses = courseCounts.reduce((sum, g) => sum + g._count, 0);
+
     return {
-      totalStudents: overall?.totalStudents || 0,
-      totalCourses: overall?.totalCourses || 0,
+      totalStudents: totalEnrollments,
+      totalCourses,
       totalRevenue: overall?.totalRevenue || 0,
       totalEarnings: overall?.totalRevenue || 0,
       averageRating: overall?.averageRating || 0,
-      totalReviews: overall?.totalReviews || 0,
+      totalReviews,
+      courseCounts: courseCounts.reduce((acc, g) => ({ ...acc, [g.status]: g._count }), {} as Record<string, number>),
       topCourses: topCourses.map(course => ({
         id: course.id,
         title: course.title,
@@ -657,6 +674,216 @@ const follower = await prisma.user.findUnique({
         ? (completedEnrollments / totalEnrollments) * 100 
         : 0,
       averageProgress: avgProgress._avg.progress || 0,
+    };
+  },
+
+  // ==================== NEW: Get Instructor's Courses ====================
+  async getInstructorCourses(instructorId: string, filters: {
+    status?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+    sortBy?: 'newest' | 'oldest' | 'title' | 'rating' | 'students';
+  }) {
+    const {
+      status,
+      search,
+      limit = 50,
+      offset = 0,
+      sortBy = 'newest',
+    } = filters;
+
+    const where: Prisma.CourseWhereInput = {
+      instructorId,
+      ...(status && { status: status as any }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    let orderBy: Prisma.CourseOrderByWithRelationInput = {};
+    switch (sortBy) {
+      case 'newest':
+        orderBy = { createdAt: 'desc' };
+        break;
+      case 'oldest':
+        orderBy = { createdAt: 'asc' };
+        break;
+      case 'title':
+        orderBy = { title: 'asc' };
+        break;
+      case 'rating':
+        orderBy = { rating: 'desc' };
+        break;
+      case 'students':
+        orderBy = { studentsCount: 'desc' };
+        break;
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
+    const [courses, totalCount] = await Promise.all([
+      prisma.course.findMany({
+        where,
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              icon: true,
+              color: true,
+            },
+          },
+          instructor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              photo: true,
+            },
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              reviews: true,
+              lessons: true,
+            },
+          },
+        },
+        orderBy,
+        skip: offset,
+        take: limit,
+      }),
+      prisma.course.count({ where }),
+    ]);
+
+    // Format the response
+    const formattedCourses = courses.map(course => ({
+      ...course,
+      studentsCount: course._count?.enrollments || 0,
+      reviewsCount: course._count?.reviews || 0,
+      lessonsCount: course._count?.lessons || 0,
+    }));
+
+    return {
+      data: formattedCourses,
+      pagination: {
+        total: totalCount,
+        limit,
+        offset,
+        hasMore: offset + limit < totalCount,
+      },
+    };
+  },
+
+  // ==================== Get Enrolled Students ====================
+  async getEnrolledStudents(instructorId: string, filters: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: 'newest' | 'oldest' | 'alphabetical';
+  }) {
+    const { search, page = 1, limit = 20, sortBy = 'newest' } = filters;
+
+    const where: any = {
+      course: { instructorId },
+      ...(search && {
+        user: {
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+          ],
+        },
+      }),
+    };
+
+    let orderBy: any;
+    switch (sortBy) {
+      case 'oldest':
+        orderBy = { enrolledAt: 'asc' };
+        break;
+      case 'alphabetical':
+        orderBy = { user: { firstName: 'asc' } };
+        break;
+      default:
+        orderBy = { enrolledAt: 'desc' };
+    }
+
+    const [enrollments, total] = await Promise.all([
+      prisma.enrollment.findMany({
+        where,
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true, photo: true } },
+          course: { select: { id: true, title: true } },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.enrollment.count({ where }),
+    ]);
+
+    return {
+      data: enrollments,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  },
+
+  // ==================== Get Earnings ====================
+  async getEarnings(instructorId: string, timeRange: string = 'all') {
+    const where: any = { status: 'SUCCEEDED' as const, course: { instructorId } };
+
+    if (timeRange !== 'all') {
+      const now = new Date();
+      let startDate: Date = new Date();
+      if (timeRange === 'week') startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      else if (timeRange === 'month') startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      else if (timeRange === 'year') startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      where.createdAt = { gte: startDate };
+    }
+
+    const payments = await prisma.payment.findMany({
+      where,
+      select: { amount: true, createdAt: true, course: { select: { title: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const totalEarnings = payments.reduce((sum, p) => sum + p.amount, 0);
+
+    const totalPayouts = await prisma.payout.aggregate({
+      where: { instructorId, status: 'PAID' as const },
+      _sum: { amount: true },
+    });
+
+    const payoutSum = totalPayouts._sum.amount || 0;
+
+    // Group by month for chart
+    const monthlyMap: Record<string, number> = {};
+    payments.forEach((p) => {
+      const key = p.createdAt.toISOString().slice(0, 7); // YYYY-MM
+      monthlyMap[key] = (monthlyMap[key] || 0) + p.amount;
+    });
+
+    const monthlyEarnings = Object.entries(monthlyMap)
+      .map(([month, amount]) => ({ month, amount }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return {
+      totalEarnings,
+      totalPayouts: payoutSum,
+      balance: totalEarnings - payoutSum,
+      recentTransactions: payments.slice(0, 20),
+      monthlyEarnings,
     };
   },
 };

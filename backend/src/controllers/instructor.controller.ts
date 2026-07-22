@@ -238,4 +238,77 @@ export const instructorController = {
       next(error);
     }
   },
+
+  // ==================== NEW: Get Instructor's Courses ====================
+  async getInstructorCourses(req: Request, res: Response, next: NextFunction) {
+    try {
+      const instructorId = req.user!.id;
+      const {
+        status,
+        search,
+        limit = 50,
+        offset = 0,
+        sortBy = 'newest',
+      } = req.query;
+
+      const result = await instructorService.getInstructorCourses(instructorId, {
+        status: status as string,
+        search: search as string,
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+        sortBy: sortBy as any,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Instructor courses retrieved successfully',
+        data: result.data,
+        pagination: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== Get Students ====================
+  async getStudents(req: Request, res: Response, next: NextFunction) {
+    try {
+      const instructorId = req.user!.id;
+      const { search, page = '1', limit = '20', sortBy = 'newest' } = req.query;
+
+      const result = await instructorService.getEnrolledStudents(instructorId, {
+        search: search as string,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        sortBy: sortBy as any,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Students retrieved successfully',
+        data: result.data,
+        pagination: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ==================== Get Earnings ====================
+  async getEarnings(req: Request, res: Response, next: NextFunction) {
+    try {
+      const instructorId = req.user!.id;
+      const timeRange = (req.query.timeRange as string) || 'all';
+
+      const result = await instructorService.getEarnings(instructorId, timeRange);
+
+      res.status(200).json({
+        success: true,
+        message: 'Earnings retrieved successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

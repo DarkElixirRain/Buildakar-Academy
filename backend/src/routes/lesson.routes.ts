@@ -18,16 +18,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 * 1024, // 5GB
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = [
-      'video/mp4',
-      'video/mpeg',
-      'video/quicktime',
-      'video/x-msvideo',
-      'video/webm',
-      'video/x-matroska',
-    ];
-
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    if (file.mimetype.startsWith('video/') || file.mimetype === 'application/octet-stream') {
       cb(null, true);
     } else {
       cb(new Error(`Unsupported video format: ${file.mimetype}`));

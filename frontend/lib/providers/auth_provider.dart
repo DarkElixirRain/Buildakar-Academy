@@ -36,7 +36,7 @@ class AuthProvider extends ChangeNotifier {
       if (user != null) {
         _currentUser = user;
         _error = null;
-        print('✅ AuthProvider: User loaded: ${user.name}');
+        print('✅ AuthProvider: User loaded: ${user.displayName}');
         notifyListeners();
         return true;
       }
@@ -69,7 +69,7 @@ class AuthProvider extends ChangeNotifier {
       if (success) {
         _currentUser = _authService.currentUser;
         _error = null;
-        print('✅ AuthProvider: Login successful for: ${_currentUser?.name}');
+        print('✅ AuthProvider: Login successful for: ${_currentUser?.displayName}');
         notifyListeners();
         return true;
       } else {
@@ -219,6 +219,17 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       print('🔄 AuthProvider: Refresh user attempt');
+      
+      // Check if we have a token first
+      final token = await _authService.getToken();
+      if (token == null || token.isEmpty) {
+        print('❌ AuthProvider: No token to refresh');
+        _isLoading = false;
+        _error = 'No session found';
+        notifyListeners();
+        return false;
+      }
+      
       final success = await _authService.refreshUser();
       
       if (success) {
@@ -228,14 +239,19 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _error = 'Failed to refresh user';
-        print('❌ AuthProvider: Refresh user failed');
+        // If refresh failed, clear everything
+        await _authService.clearSession();
+        _currentUser = null;
+        _error = 'Session expired. Please login again.';
+        print('❌ AuthProvider: Refresh user failed - session cleared');
         notifyListeners();
         return false;
       }
     } catch (e) {
       _error = _getErrorMessage(e);
+      _currentUser = null;
       print('❌ AuthProvider: Refresh user error: $e');
+      await _authService.clearSession();
       notifyListeners();
       return false;
     } finally {
@@ -251,20 +267,10 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Get user's display name (with fallback)
-  String get displayName => _currentUser?.name ?? 'Student';
+  String get displayName => _currentUser?.displayName ?? 'Student';
 
   /// Get user's initials (with fallback)
-  String get initials {
-    final name = _currentUser?.name ?? 'Student';
-    if (name.isEmpty) return 'S';
-    
-    final parts = name.trim().split(' ');
-    if (parts.length == 1) {
-      return parts[0][0].toUpperCase();
-    }
-    
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
+  String get initials => _currentUser?.initials ?? 'S';
 
   /// Get user's profile image URL
   String? get profileImage => _currentUser?.profileImage;

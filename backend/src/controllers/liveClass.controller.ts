@@ -1,5 +1,20 @@
 import { Request, Response, NextFunction } from "express";
-import { createLiveClass, deleteLiveClass, endLiveClass, getCourseLiveClasses, getInstructorLiveClasses, getLiveClassById, joinLiveClass, startLiveClass, updateLiveClass } from "../services/live.service";
+import { 
+  createLiveClass, 
+  deleteLiveClass, 
+  endLiveClass, 
+  getCourseLiveClasses, 
+  getInstructorLiveClasses, 
+  getLiveClassById, 
+  joinLiveClass, 
+  startLiveClass, 
+  updateLiveClass,
+  getStudentLiveClasses,
+  getUpcomingStudentLiveClasses,
+  getCurrentStudentLiveClasses,
+  getStudentLiveClassesWithStats,
+  getAllStudentLiveClasses
+} from "../services/live.service";
 
 export async function createliveClass(
   req: Request,
@@ -56,6 +71,82 @@ export async function getcourseLiveClasses(
       success: true,
       message: "Course live classes fetched successfully.",
       data: liveClasses,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// NEW: Get all live classes for a student
+export async function getstudentLiveClasses(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const liveClasses = await getStudentLiveClasses(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Student live classes fetched successfully.",
+      data: liveClasses,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// NEW: Get upcoming live classes for a student
+export async function getUpcomingStudentLiveClassesController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const liveClasses = await getUpcomingStudentLiveClasses(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Upcoming live classes fetched successfully.",
+      data: liveClasses,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// NEW: Get currently live classes for a student
+export async function getCurrentStudentLiveClassesController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const liveClasses = await getCurrentStudentLiveClasses(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Currently live classes fetched successfully.",
+      data: liveClasses,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// NEW: Get student live classes with statistics
+export async function getStudentLiveClassesWithStatsController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const stats = await getStudentLiveClassesWithStats(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Student live classes statistics fetched successfully.",
+      data: stats,
     });
   } catch (error) {
     next(error);
@@ -174,6 +265,25 @@ export async function endliveClass(
       success: true,
       message: "Live class ended successfully.",
       data: liveClass,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Get ALL live classes for a student (all statuses)
+export async function getAllStudentLiveClassesController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const liveClassesData = await getAllStudentLiveClasses(req.user!.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "All student live classes fetched successfully.",
+      data: liveClassesData,
     });
   } catch (error) {
     next(error);

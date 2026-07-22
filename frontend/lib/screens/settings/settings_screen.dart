@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:learnhub/models/auth_model.dart';
+import 'package:buildacad/models/auth_model.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -186,63 +186,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       
       if (confirm != true) return;
       
-      try {
-        setState(() => _isLoggingOut = true);
-        await authProvider.logout();
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/login');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout Error: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoggingOut = false);
-        }
-      }
+      setState(() => _isLoggingOut = true);
+      await authProvider.logout();
+      setState(() => _isLoggingOut = false);
       return;
     }
 
     // Native platforms
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              try {
-                setState(() => _isLoggingOut = true);
-                await authProvider.logout();
-                if (mounted) {
-                  Navigator.pushReplacementNamed(context, '/login');
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Logout Error: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() => _isLoggingOut = false);
-                }
-              }
+              Navigator.pop(dialogContext);
+              setState(() => _isLoggingOut = true);
+              await authProvider.logout();
+              setState(() => _isLoggingOut = false);
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -368,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('📧 Email: support@learnhub.com'),
+            Text('📧 Email: support@buildacad.com'),
             SizedBox(height: 8),
             Text('📱 Phone: +1 (555) 123-4567'),
             SizedBox(height: 8),
@@ -1027,7 +993,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: textSecondaryColor,
                               ),
                             ),
-                            if (user?.role != null && user!.role!.isNotEmpty)
+                            if (user?.role != null && user!.role.isNotEmpty)
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

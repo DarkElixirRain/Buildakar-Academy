@@ -1,7 +1,7 @@
 // lib/routes/app_routes.dart
 
 import 'package:flutter/material.dart';
-import 'package:learnhub/models/course_model.dart';
+import 'package:buildacad/models/course_model.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';

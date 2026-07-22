@@ -25,7 +25,7 @@ export const schemas = {
       .max(500)
       .optional(),
 
-    courseId: z.string().cuid(),
+    courseId: z.string().min(1, "Course is required").optional(),
   }),
 
   updateLiveClass: z.object({
@@ -50,10 +50,10 @@ export const schemas = {
   }),
 
   liveClassId: z.object({
-    id: z.string().cuid(),
+    id: z.string().min(1, "ID is required"),
   }),
 
   courseId: z.object({
-    courseId: z.string().cuid(),
+    courseId: z.string().min(1, "Course ID is required"),
   }),
 };

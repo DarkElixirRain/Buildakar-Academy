@@ -1,11 +1,11 @@
 // lib/screens/course/course_detail_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:learnhub/screens/course/course_learning/course_learning.dart';
-import 'package:learnhub/widgets/course/course_curriculum.dart';
-import 'package:learnhub/widgets/course/course_reviews.dart';
-import 'package:learnhub/services/api_service.dart';
-import 'package:learnhub/utils/date_utils.dart';
+import 'package:buildacad/screens/course/course_learning/course_learning.dart';
+import 'package:buildacad/widgets/course/course_curriculum.dart';
+import 'package:buildacad/widgets/course/course_reviews.dart';
+import 'package:buildacad/services/api_service.dart';
+import 'package:buildacad/utils/date_utils.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -40,6 +40,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
   bool _enrolled = false;
   bool _enrollmentLoading = false;
   bool _isCheckingEnrollment = true;
+  bool _isOwner = false;
   EnrollmentStatus? _enrollmentStatus;
 
   String? _error;
@@ -192,6 +193,11 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
           _isLoading = false;
           _refreshing = false;
         });
+
+        // Check if current user owns this course
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        _isOwner = authProvider.isAuthenticated && authProvider.user != null &&
+            authProvider.user!.id == course.instructorId;
 
         // Check enrollment status if authenticated
         if (_isActuallyAuthenticated) {
@@ -449,7 +455,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
   }
 
   void _handlePrimaryAction() {
-    if (_enrolled) {
+    if (_isOwner || _enrolled) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -1271,13 +1277,14 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
   // Sticky Bottom Bar - Fixed at Bottom
   // ------------------------------------------------------------------
   String get _buttonText {
+    if (_isOwner) return 'View Course';
     if (_enrollmentLoading) return 'Enrolling...';
     if (_enrolled) return 'Continue Learning';
     if (_isCheckingEnrollment) return 'Checking...';
     return 'Enroll Now';
   }
 
-  bool get _isButtonDisabled => _enrollmentLoading || _isCheckingEnrollment;
+  bool get _isButtonDisabled => !_isOwner && (_enrollmentLoading || _isCheckingEnrollment);
 
   Widget _buildStickyBar(
       Course course, double insetsBottom, bool isLargeScreen) {

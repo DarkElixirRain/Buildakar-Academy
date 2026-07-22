@@ -1,9 +1,9 @@
 // lib/screens/course/course_learning/course_learning.dart
 import 'package:flutter/material.dart';
-import 'package:learnhub/widgets/course/course_reviews.dart' hide formatRelativeDate;
-import 'package:learnhub/widgets/course/custom_video_player.dart';
-import 'package:learnhub/utils/date_utils.dart';
-import 'package:learnhub/services/api_service.dart';
+import 'package:buildacad/widgets/course/course_reviews.dart' hide formatRelativeDate;
+import 'package:buildacad/widgets/course/custom_video_player.dart';
+import 'package:buildacad/utils/date_utils.dart';
+import 'package:buildacad/services/api_service.dart';
 
 import '../../../models/course_model.dart';
 import '../../../constants/colors.dart';

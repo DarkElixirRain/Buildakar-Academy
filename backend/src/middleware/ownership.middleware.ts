@@ -96,6 +96,13 @@ export const checkCourseOwnershipForSection = async (
       });
     }
 
+    if (course.status === 'PENDING_APPROVAL') {
+      return res.status(403).json({
+        success: false,
+        message: 'Course is pending admin approval. You can add sections and lessons only after the course is approved.',
+      });
+    }
+
     next();
   } catch (error) {
     console.error('Ownership check error:', error);
@@ -126,7 +133,7 @@ export const checkSectionOwnership = async (
 
     const section = await prisma.section.findUnique({
       where: { id: sectionId },
-      include: { course: { select: { instructorId: true } } },
+      include: { course: { select: { instructorId: true, status: true } } },
     });
 
     if (!section) {
@@ -144,6 +151,13 @@ export const checkSectionOwnership = async (
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this section',
+      });
+    }
+
+    if (section.course.status === 'PENDING_APPROVAL') {
+      return res.status(403).json({
+        success: false,
+        message: 'Course is pending admin approval. You can modify sections only after the course is approved.',
       });
     }
 
@@ -177,7 +191,7 @@ export const checkCourseOwnershipForLesson = async (
 
     const section = await prisma.section.findUnique({
       where: { id: sectionId },
-      include: { course: { select: { instructorId: true } } },
+      include: { course: { select: { instructorId: true, status: true } } },
     });
 
     if (!section) {
@@ -195,6 +209,13 @@ export const checkCourseOwnershipForLesson = async (
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access lessons in this section',
+      });
+    }
+
+    if (section.course.status === 'PENDING_APPROVAL') {
+      return res.status(403).json({
+        success: false,
+        message: 'Course is pending admin approval. You can add lessons only after the course is approved.',
       });
     }
 
@@ -230,7 +251,7 @@ export const checkLessonOwnership = async (
       where: { id: lessonId },
       include: {
         section: {
-          include: { course: { select: { instructorId: true } } },
+          include: { course: { select: { instructorId: true, status: true } } },
         },
       },
     });
@@ -257,6 +278,13 @@ export const checkLessonOwnership = async (
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this lesson',
+      });
+    }
+
+    if (lesson.section.course.status === 'PENDING_APPROVAL') {
+      return res.status(403).json({
+        success: false,
+        message: 'Course is pending admin approval. You can modify lessons only after the course is approved.',
       });
     }
 

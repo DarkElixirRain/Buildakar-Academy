@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
@@ -130,55 +129,40 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     setState(() => _isUploading = true);
 
     try {
-      // Get token from secure storage using ApiService
-      final String? token = await _apiService.getToken();
-      
-      if (token == null || token.isEmpty) {
-        throw Exception('Not authenticated. Please login again.');
+      String? thumbnailUrl;
+
+      // Step 1: Upload thumbnail to Cloudinary
+      final uploadResponse = await _apiService.uploadThumbnail(_thumbnailFile!);
+      if (!uploadResponse.success || uploadResponse.data == null) {
+        throw Exception(uploadResponse.error ?? 'Failed to upload thumbnail');
+      }
+      thumbnailUrl = uploadResponse.data!['url'] as String?;
+
+      // Step 2: Create course with thumbnail URL
+      final courseData = <String, dynamic>{
+        'title': _titleController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'categoryId': _selectedCategory,
+        'level': _selectedLevel,
+        'language': _selectedLanguage,
+        'price': double.tryParse(_priceController.text.trim()) ?? 0,
+        'thumbnail': thumbnailUrl ?? '',
+      };
+
+      if (_discountPriceController.text.trim().isNotEmpty) {
+        final discountPrice = double.tryParse(_discountPriceController.text.trim());
+        if (discountPrice != null) {
+          courseData['originalPrice'] = discountPrice;
+        }
       }
 
-      // Use AppConfig for base URL
-      final String baseUrl = AppConfig.apiBaseUrl;
-
-      // Prepare form data
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$baseUrl/courses'),
+      final response = await _apiService.post(
+        '/courses',
+        data: courseData,
+        requireAuth: true,
       );
 
-      // Add headers
-      request.headers['Authorization'] = 'Bearer $token';
-
-      // Add fields
-      request.fields['title'] = _titleController.text.trim();
-      request.fields['subtitle'] = _subtitleController.text.trim();
-      request.fields['description'] = _descriptionController.text.trim();
-      request.fields['categoryId'] = _selectedCategory;
-      request.fields['level'] = _selectedLevel;
-      request.fields['language'] = _selectedLanguage;
-      request.fields['price'] = _priceController.text.trim();
-      
-      if (_discountPriceController.text.trim().isNotEmpty) {
-        request.fields['discountPrice'] = _discountPriceController.text.trim();
-      }
-
-      // Add thumbnail file
-      if (_thumbnailFile != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'thumbnail',
-            _thumbnailFile!.path,
-          ),
-        );
-      }
-
-      // Send request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
-        
+      if (response.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -189,8 +173,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           Navigator.pop(context, true);
         }
       } else {
-        final error = json.decode(response.body);
-        throw Exception(error['message'] ?? 'Failed to create course');
+        throw Exception(response.error ?? 'Failed to create course');
       }
     } catch (e) {
       if (mounted) {

@@ -344,6 +344,7 @@ enum Level {
 }
 
 enum CourseStatus {
+  PENDING_APPROVAL
   DRAFT
   UNDER_REVIEW
   PUBLISHED
@@ -417,7 +418,7 @@ enum NotificationType {
 //  Live class
 model LiveClass {
   id          String          @id @default(cuid())
-  courseId    String
+  courseId    String?
   instructorId String
   title       String
   description String?
@@ -431,7 +432,7 @@ model LiveClass {
   updatedAt   DateTime        @updatedAt
   participants LiveClassParticipant[]
 
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course     Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
   instructor User     @relation("InstructorLiveClasses", fields: [instructorId], references: [id])
 
   @@index([courseId])

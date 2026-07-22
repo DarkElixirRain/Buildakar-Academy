@@ -28,6 +28,8 @@ export class AuthController {
           user: result.user,
           accessToken: result.accessToken,
           accessTokenExpiresAt: result.accessTokenExpiresAt,
+          refreshToken: result.refreshToken,
+          refreshTokenExpiresAt: result.refreshTokenExpiresAt,
         },
       });
     } catch (error) {
@@ -58,6 +60,8 @@ export class AuthController {
           user: result.user,
           accessToken: result.accessToken,
           accessTokenExpiresAt: result.accessTokenExpiresAt,
+          refreshToken: result.refreshToken,
+          refreshTokenExpiresAt: result.refreshTokenExpiresAt,
         },
       });
     } catch (error) {
@@ -67,7 +71,7 @@ export class AuthController {
 
   async refresh(req: Request, res: Response, next: NextFunction) {
     try {
-      const refreshToken = req.cookies?.refreshToken;
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
       if (!refreshToken) {
         return res.status(401).json({
@@ -91,6 +95,8 @@ export class AuthController {
         data: {
           accessToken: result.accessToken,
           accessTokenExpiresAt: result.accessTokenExpiresAt,
+          refreshToken: result.refreshToken,
+          refreshTokenExpiresAt: result.refreshTokenExpiresAt,
         },
       });
     } catch (error) {
@@ -100,7 +106,7 @@ export class AuthController {
 
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      const refreshToken = req.cookies?.refreshToken;
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
       if (refreshToken) {
         await authService.logout(refreshToken);

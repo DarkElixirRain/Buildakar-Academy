@@ -66,6 +66,9 @@ export const errorHandler = (
   if (message.includes('invalid credentials') || message.includes('unauthorized')) {
     statusCode = 401;
     errorMessage = 'Invalid credentials';
+  } else if (message.includes('not enrolled')) {
+    statusCode = 403;
+    errorMessage = err.message;
   } else if (message.includes('not found')) {
     statusCode = 404;
     errorMessage = err.message;
@@ -78,7 +81,7 @@ export const errorHandler = (
   } else if (message.includes('deactivated') || message.includes('inactive')) {
     statusCode = 403;
     errorMessage = 'Account is deactivated';
-  } else if (message.includes('validation') || message.includes('invalid')) {
+  } else if (message.includes('validation') || message.includes('invalid') || message.includes('unsupported')) {
     statusCode = 400;
     errorMessage = err.message;
   }

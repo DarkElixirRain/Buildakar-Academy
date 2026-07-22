@@ -10,11 +10,13 @@ import '../../providers/theme_provider.dart';
 class BottomNavBar extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
+  final List<NavItem>? items;
 
   const BottomNavBar({
     Key? key,
     required this.currentIndex,
     required this.onTap,
+    this.items,
   }) : super(key: key);
 
   @override
@@ -59,8 +61,8 @@ class _BottomNavBarState extends State<BottomNavBar>
         : 8;
     final double navHeight = isSmallScreen ? 50 : (isTablet ? 60 : 54);
 
-    // Navigation items
-    final List<NavItem> navItems = [
+    // Navigation items (use provided or defaults)
+    final List<NavItem> navItems = widget.items ?? [
       NavItem(
         icon: Icons.home_outlined,
         activeIcon: Icons.home_rounded,

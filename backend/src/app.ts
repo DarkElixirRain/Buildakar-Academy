@@ -18,6 +18,7 @@ import reviewRoutes from './routes/review.routes';
 import notificationRoutes from './routes/notification.routes'
 import liveClassRoutes from './routes/liveClass.routes'
 import adminRoutes from './routes/admin.routes'
+import uploadRoutes from './routes/upload.routes'
 import cookieParser from 'cookie-parser';
 
 
@@ -169,6 +170,9 @@ app.use('/api/live-classes', liveClassRoutes)
 
 //admin Routes
 app.use('/api/admin', adminRoutes)
+
+// Upload Routes
+app.use('/api/upload', uploadRoutes)
 
 
 

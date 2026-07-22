@@ -13,8 +13,10 @@ class LiveClassProvider extends ChangeNotifier {
   List<LiveClass> _liveClasses = [];
   List<LiveClass> _upcomingClasses = [];
   List<LiveClass> _endedClasses = [];
+  List<LiveClass> _cancelledClasses = [];
   List<LiveClass> _allClasses = [];
-  Map<String, bool> _followedClasses = {};
+  Map<String, int> _classSummary = {};
+  final Map<String, bool> _followedClasses = {};
 
   bool _isLoading = false;
   bool _isFirstLoad = true;
@@ -28,7 +30,9 @@ class LiveClassProvider extends ChangeNotifier {
   List<LiveClass> get liveClasses => _liveClasses;
   List<LiveClass> get upcomingClasses => _upcomingClasses;
   List<LiveClass> get endedClasses => _endedClasses;
+  List<LiveClass> get cancelledClasses => _cancelledClasses;
   List<LiveClass> get allClasses => _allClasses;
+  Map<String, int> get classSummary => _classSummary;
   bool get isLoading => _isLoading;
   bool get isFirstLoad => _isFirstLoad;
   bool get hasError => _hasError;
@@ -46,7 +50,93 @@ class LiveClassProvider extends ChangeNotifier {
     return _authProvider.role;
   }
   
-  // Load all classes based on user role
+  // ==================== NEW: Load ALL student classes (categorized) ====================
+  // This uses the new /student/all endpoint
+  Future<void> loadAllStudentClasses() async {
+    _isLoading = true;
+    _hasError = false;
+    _errorMessage = '';
+    notifyListeners();
+
+    try {
+      // Get current user role
+      final userRole = await getUserRole();
+
+      if (userRole == null) {
+        _hasError = true;
+        _errorMessage = 'Unable to determine user role';
+        _isFirstLoad = false;
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+
+      if (userRole == 'INSTRUCTOR' || userRole == 'ADMIN') {
+        // For instructors and admins, get their own classes
+        final result = await _apiService.getInstructorLiveClasses();
+
+        if (result.success && result.data != null) {
+          _allClasses = result.data!;
+          _categorizeClasses(result.data!);
+          _updateSummary();
+          _isFirstLoad = false;
+          _hasError = false;
+          _errorMessage = '';
+        } else {
+          _hasError = true;
+          _errorMessage = result.error ?? 'Failed to load instructor live classes';
+          _isFirstLoad = false;
+        }
+      } else {
+        // For students, use the new /student/all endpoint
+        final result = await _apiService.getAllStudentLiveClasses();
+
+        if (result.success && result.data != null) {
+          final data = result.data!;
+          
+          // Update categorized lists from the response
+          _liveClasses = data['live'] as List<LiveClass>? ?? [];
+          _upcomingClasses = data['upcoming'] as List<LiveClass>? ?? [];
+          _endedClasses = data['ended'] as List<LiveClass>? ?? [];
+          _cancelledClasses = data['cancelled'] as List<LiveClass>? ?? [];
+          _allClasses = data['all'] as List<LiveClass>? ?? [];
+          _classSummary = data['summary'] as Map<String, int>? ?? {};
+          
+          // Restore following status for all classes
+          for (var classItem in _allClasses) {
+            final classId = classItem.id;
+            if (_followedClasses.containsKey(classId)) {
+              _updateClassFollowingStatus(classId, _followedClasses[classId]!);
+            }
+          }
+          
+          _isFirstLoad = false;
+          _hasError = false;
+          _errorMessage = '';
+        } else {
+          _hasError = true;
+          _errorMessage = result.error ?? 'Failed to load student live classes';
+          _isFirstLoad = false;
+          // Clear data on error
+          _liveClasses = [];
+          _upcomingClasses = [];
+          _endedClasses = [];
+          _cancelledClasses = [];
+          _allClasses = [];
+          _classSummary = {};
+        }
+      }
+    } catch (e) {
+      _hasError = true;
+      _errorMessage = e.toString();
+      _isFirstLoad = false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ==================== Load all classes based on user role (legacy) ====================
   Future<void> loadAllClasses() async {
     _isLoading = true;
     _hasError = false;
@@ -72,6 +162,7 @@ class LiveClassProvider extends ChangeNotifier {
         if (result.success && result.data != null) {
           _allClasses = result.data!;
           _categorizeClasses(result.data!);
+          _updateSummary();
           _isFirstLoad = false;
           _hasError = false;
           _errorMessage = '';
@@ -122,6 +213,8 @@ class LiveClassProvider extends ChangeNotifier {
         _liveClasses = [];
         _upcomingClasses = [];
         _endedClasses = [];
+        _cancelledClasses = [];
+        _classSummary = {};
         _isFirstLoad = false;
         _hasError = false;
         _errorMessage = '';
@@ -142,6 +235,8 @@ class LiveClassProvider extends ChangeNotifier {
         _liveClasses = [];
         _upcomingClasses = [];
         _endedClasses = [];
+        _cancelledClasses = [];
+        _classSummary = {};
         _isFirstLoad = false;
         _hasError = false;
         _errorMessage = '';
@@ -180,6 +275,7 @@ class LiveClassProvider extends ChangeNotifier {
       if (!hasError) {
         _allClasses = allClasses;
         _categorizeClasses(allClasses);
+        _updateSummary();
         _isFirstLoad = false;
         _hasError = false;
         _errorMessage = '';
@@ -189,6 +285,7 @@ class LiveClassProvider extends ChangeNotifier {
         if (allClasses.isNotEmpty) {
           _allClasses = allClasses;
           _categorizeClasses(allClasses);
+          _updateSummary();
           _isFirstLoad = false;
           _hasError = true; // Keep error state to show message
           notifyListeners();
@@ -219,6 +316,7 @@ class LiveClassProvider extends ChangeNotifier {
       if (result.success && result.data != null) {
         _allClasses = result.data!;
         _categorizeClasses(result.data!);
+        _updateSummary();
         _isFirstLoad = false;
         _hasError = false;
         _errorMessage = '';
@@ -259,6 +357,7 @@ class LiveClassProvider extends ChangeNotifier {
       if (result.success && result.data != null) {
         _allClasses = result.data!;
         _categorizeClasses(result.data!);
+        _updateSummary();
         _isFirstLoad = false;
         _hasError = false;
         _errorMessage = '';
@@ -300,6 +399,7 @@ class LiveClassProvider extends ChangeNotifier {
         // Add to all classes
         _allClasses.insert(0, result.data!);
         _categorizeClasses(_allClasses);
+        _updateSummary();
         notifyListeners();
         return true;
       } else {
@@ -338,6 +438,7 @@ class LiveClassProvider extends ChangeNotifier {
 
       if (result.success && result.data != null) {
         _updateClassInLists(result.data!);
+        _updateSummary();
         notifyListeners();
         return true;
       } else {
@@ -376,6 +477,7 @@ class LiveClassProvider extends ChangeNotifier {
 
       if (result.success && result.data != null) {
         _removeClassFromLists(id);
+        _updateSummary();
         notifyListeners();
         return true;
       } else {
@@ -414,6 +516,7 @@ class LiveClassProvider extends ChangeNotifier {
 
       if (result.success && result.data != null) {
         _updateClassInLists(result.data!);
+        _updateSummary();
         notifyListeners();
         return true;
       } else {
@@ -452,6 +555,7 @@ class LiveClassProvider extends ChangeNotifier {
 
       if (result.success && result.data != null) {
         _updateClassInLists(result.data!);
+        _updateSummary();
         notifyListeners();
         return true;
       } else {
@@ -480,6 +584,8 @@ class LiveClassProvider extends ChangeNotifier {
       final result = await _apiService.joinLiveClass(id);
       
       if (result.success && result.data != null) {
+        // Refresh the list to update counts after joining
+        await loadAllStudentClasses();
         return result.data;
       } else {
         _errorMessage = result.error ?? 'Failed to join live class';
@@ -520,67 +626,43 @@ class LiveClassProvider extends ChangeNotifier {
     }
   }
   
+  // Update summary statistics
+  void _updateSummary() {
+    _classSummary = {
+      'total': _allClasses.length,
+      'live': _liveClasses.length,
+      'upcoming': _upcomingClasses.length,
+      'ended': _endedClasses.length,
+      'cancelled': _cancelledClasses.length,
+    };
+  }
+  
   // Categorize classes by status
   void _categorizeClasses(List<LiveClass> classes) {
     final now = DateTime.now();
     
-    // Check if class is currently live
-    _liveClasses = classes.where((c) {
-      // Check by status
-      if (c.status == 'live' || c.status == 'started' || c.status == 'active') {
-        return true;
-      }
-      // Also check if scheduled time has passed but status not updated
-      if (c.status == 'scheduled' || c.status == 'upcoming') {
-        final scheduled = c.scheduledTime;
-        return scheduled.isBefore(now) && now.difference(scheduled).inMinutes < 60;
-      }
-      return false;
-    }).toList();
+    // Live classes
+    _liveClasses = classes.where((c) => 
+      c.status == 'LIVE' || c.status == 'live' || c.status == 'started'
+    ).toList();
     
     // Upcoming classes
-    _upcomingClasses = classes.where((c) {
-      if (c.status == 'scheduled' || c.status == 'upcoming') {
-        return true;
-      }
-      // Also check if scheduled time is in the future
-      if (c.status != 'live' && c.status != 'started' && c.status != 'ended' && c.status != 'completed') {
-        final scheduled = c.scheduledTime;
-        return scheduled.isAfter(now);
-      }
-      return false;
-    }).toList();
+    _upcomingClasses = classes.where((c) => 
+      c.status == 'SCHEDULED' || c.status == 'scheduled' || c.status == 'upcoming'
+    ).toList();
     
     // Ended classes
-    _endedClasses = classes.where((c) {
-      if (c.status == 'ended' || c.status == 'completed' || c.status == 'cancelled') {
-        return true;
-      }
-      // Also check if scheduled time has passed significantly
-      if (c.status != 'live' && c.status != 'started') {
-        final scheduled = c.scheduledTime;
-        return scheduled.isBefore(now) && now.difference(scheduled).inMinutes > 60;
-      }
-      return false;
-    }).toList();
+    _endedClasses = classes.where((c) => 
+      c.status == 'ENDED' || c.status == 'ended' || c.status == 'completed'
+    ).toList();
     
-    // Remove duplicates: a class should only be in one category
-    // If a class is live, it shouldn't be in upcoming or ended
-    final liveIds = _liveClasses.map((c) => c.id).toSet();
-    _upcomingClasses.removeWhere((c) => liveIds.contains(c.id));
-    _endedClasses.removeWhere((c) => liveIds.contains(c.id));
+    // Cancelled classes
+    _cancelledClasses = classes.where((c) => 
+      c.status == 'CANCELLED' || c.status == 'cancelled'
+    ).toList();
     
-    // If a class is upcoming, it shouldn't be in ended
-    final upcomingIds = _upcomingClasses.map((c) => c.id).toSet();
-    _endedClasses.removeWhere((c) => upcomingIds.contains(c.id));
-    
-    // Restore following status for all classes
-    for (var classItem in classes) {
-      final classId = classItem.id;
-      if (_followedClasses.containsKey(classId)) {
-        _updateClassFollowingStatus(classId, _followedClasses[classId]!);
-      }
-    }
+    // Update summary
+    _updateSummary();
   }
   
   // Update class in all lists
@@ -589,6 +671,7 @@ class LiveClassProvider extends ChangeNotifier {
     _updateList(_liveClasses, updatedClass);
     _updateList(_upcomingClasses, updatedClass);
     _updateList(_endedClasses, updatedClass);
+    _updateList(_cancelledClasses, updatedClass);
   }
   
   void _updateList(List<LiveClass> list, LiveClass updatedClass) {
@@ -604,6 +687,7 @@ class LiveClassProvider extends ChangeNotifier {
     _liveClasses.removeWhere((c) => c.id == id);
     _upcomingClasses.removeWhere((c) => c.id == id);
     _endedClasses.removeWhere((c) => c.id == id);
+    _cancelledClasses.removeWhere((c) => c.id == id);
     _followedClasses.remove(id);
   }
   
@@ -614,6 +698,7 @@ class LiveClassProvider extends ChangeNotifier {
     _updateListFollowingStatus(_liveClasses, classId, isFollowing);
     _updateListFollowingStatus(_upcomingClasses, classId, isFollowing);
     _updateListFollowingStatus(_endedClasses, classId, isFollowing);
+    _updateListFollowingStatus(_cancelledClasses, classId, isFollowing);
   }
   
   void _updateListFollowingStatus(List<LiveClass> list, String classId, bool isFollowing) {
@@ -637,6 +722,7 @@ class LiveClassProvider extends ChangeNotifier {
   int get liveCount => _liveClasses.length;
   int get upcomingCount => _upcomingClasses.length;
   int get endedCount => _endedClasses.length;
+  int get cancelledCount => _cancelledClasses.length;
   
   // Refresh only live classes
   Future<void> refreshLiveClasses() async {
@@ -645,6 +731,7 @@ class LiveClassProvider extends ChangeNotifier {
       if (result.success && result.data != null) {
         _allClasses = result.data!;
         _categorizeClasses(result.data!);
+        _updateSummary();
         notifyListeners();
       }
     } catch (e) {
@@ -654,7 +741,7 @@ class LiveClassProvider extends ChangeNotifier {
   
   // Refresh all classes
   Future<void> refresh() async {
-    await loadAllClasses();
+    await loadAllStudentClasses();
   }
   
   // Clear error
@@ -667,13 +754,15 @@ class LiveClassProvider extends ChangeNotifier {
   // Get classes by status (convenience method for compatibility)
   @Deprecated('Use specific getters instead')
   Future<List<LiveClass>?> getClassesByStatus(String status) async {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'live':
         return _liveClasses;
       case 'upcoming':
         return _upcomingClasses;
       case 'ended':
         return _endedClasses;
+      case 'cancelled':
+        return _cancelledClasses;
       default:
         return [];
     }

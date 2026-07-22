@@ -15,8 +15,10 @@ class AuthApiService extends BaseApiService {
       final response = await post(
         '/auth/login',
         data: request.toJson(),
+        requireAuth: false,
       );
       print('📦 AuthApiService: Login response received');
+      print('📊 AuthApiService: Response success: ${response.success}');
       print('📊 AuthApiService: Response data: ${response.data}');
       
       if (response.data == null) {
@@ -24,7 +26,23 @@ class AuthApiService extends BaseApiService {
         throw Exception('No data received from server');
       }
       
-      return AuthResponse.fromJson(response.data);
+      final rawData = response.data as Map<String, dynamic>;
+      
+      if (rawData.containsKey('user') && rawData.containsKey('accessToken')) {
+        final transformedData = {
+          'success': true,
+          'message': response.message ?? 'Login successful',
+          'data': {
+            'user': rawData['user'],
+            'token': rawData['accessToken'],
+            'refreshToken': rawData['refreshToken'],
+            'expiresAt': rawData['accessTokenExpiresAt'],
+          }
+        };
+        return AuthResponse.fromJson(transformedData);
+      } else {
+        return AuthResponse.fromJson(rawData);
+      }
     } catch (e) {
       print('❌ AuthApiService: Login error: $e');
       rethrow;
@@ -37,9 +55,29 @@ class AuthApiService extends BaseApiService {
       final response = await post(
         '/auth/register',
         data: request.toJson(),
+        requireAuth: false,
       );
-      return AuthResponse.fromJson(response.data);
+      
+      if (response.data == null) {
+        throw Exception('No data received from server');
+      }
+      
+      final rawData = response.data as Map<String, dynamic>;
+      
+      final transformedData = {
+        'success': true,
+        'message': response.message ?? 'Registration successful',
+        'data': {
+          'user': rawData['user'],
+          'token': rawData['accessToken'],
+          'refreshToken': rawData['refreshToken'],
+          'expiresAt': rawData['accessTokenExpiresAt'],
+        }
+      };
+      
+      return AuthResponse.fromJson(transformedData);
     } catch (e) {
+      print('❌ AuthApiService: Register error: $e');
       rethrow;
     }
   }
@@ -47,9 +85,28 @@ class AuthApiService extends BaseApiService {
   // Sign in with Google
   Future<AuthResponse> signInWithGoogle() async {
     try {
-      final response = await post('/auth/google');
-      return AuthResponse.fromJson(response.data);
+      final response = await post('/auth/google', requireAuth: false);
+      
+      if (response.data == null) {
+        throw Exception('No data received from server');
+      }
+      
+      final rawData = response.data as Map<String, dynamic>;
+      
+      final transformedData = {
+        'success': true,
+        'message': response.message ?? 'Google sign in successful',
+        'data': {
+          'user': rawData['user'],
+          'token': rawData['accessToken'],
+          'refreshToken': rawData['refreshToken'],
+          'expiresAt': rawData['accessTokenExpiresAt'],
+        }
+      };
+      
+      return AuthResponse.fromJson(transformedData);
     } catch (e) {
+      print('❌ AuthApiService: Google sign in error: $e');
       rethrow;
     }
   }
@@ -57,19 +114,51 @@ class AuthApiService extends BaseApiService {
   // Logout
   Future<void> logout() async {
     try {
-      await post('/auth/logout');
+      await post('/auth/logout', requireAuth: true);
     } catch (e) {
       // Ignore logout errors
+      print('⚠️ AuthApiService: Logout error: $e');
     }
   }
 
-  // Get current user
+  // Get current user - FIXED
   Future<User> getMe() async {
     try {
-      final response = await get('/auth/me');
-      print('📊 getMe response: ${response.data}');
-      return User.fromJson(response.data['data']);
+      print('📡 AuthApiService: Getting current user');
+      final response = await get('/auth/me', requireAuth: true);
+      print('📊 AuthApiService: getMe response status: ${response.success}');
+      print('📊 AuthApiService: getMe response data: ${response.data}');
+      
+      if (!response.success) {
+        print('❌ AuthApiService: getMe failed: ${response.error}');
+        throw Exception(response.error ?? 'Failed to get user');
+      }
+      
+      if (response.data == null) {
+        print('❌ AuthApiService: getMe response data is null');
+        throw Exception('No user data received');
+      }
+      
+      // The backend returns user data directly in the 'data' field
+      // response.data is already the user object
+      if (response.data is Map) {
+        final userData = response.data as Map<String, dynamic>;
+        
+        // If it has an 'id' field, it's the user object
+        if (userData.containsKey('id')) {
+          print('✅ AuthApiService: User found with id: ${userData['id']}');
+          return User.fromJson(userData);
+        } 
+        // If it has a 'data' field (nested), use that
+        else if (userData.containsKey('data') && userData['data'] is Map) {
+          print('✅ AuthApiService: User found in nested data');
+          return User.fromJson(userData['data']);
+        }
+      }
+      
+      throw Exception('Invalid user data format: ${response.data}');
     } catch (e) {
+      print('❌ AuthApiService: getMe error: $e');
       rethrow;
     }
   }
@@ -80,9 +169,23 @@ class AuthApiService extends BaseApiService {
       final response = await put(
         '/auth/role',
         data: {'role': role},
+        requireAuth: true,
       );
-      return User.fromJson(response.data['data']);
+      
+      if (!response.success || response.data == null) {
+        throw Exception(response.error ?? 'Failed to update role');
+      }
+      
+      final rawData = response.data as Map<String, dynamic>;
+      
+      // Check if user is in 'data' field or directly
+      if (rawData.containsKey('data') && rawData['data'] is Map) {
+        return User.fromJson(rawData['data']);
+      } else {
+        return User.fromJson(rawData);
+      }
     } catch (e) {
+      print('❌ AuthApiService: Update role error: $e');
       rethrow;
     }
   }
@@ -105,6 +208,8 @@ class AuthService {
   
   static const String _keyUser = 'user';
   static const String _keyToken = 'token';
+  static const String _keyRefreshToken = 'refreshToken';
+  static const String _keyTokenExpiry = 'tokenExpiresAt';
   
   User? _currentUser;
   
@@ -147,6 +252,24 @@ class AuthService {
     }
   }
   
+  /// Save refresh token to secure storage
+  Future<void> saveRefreshToken(String token) async {
+    try {
+      await _storage.write(key: _keyRefreshToken, value: token);
+    } catch (e) {
+      print('❌ AuthService: Error saving refresh token: $e');
+    }
+  }
+  
+  /// Save token expiry to secure storage
+  Future<void> saveTokenExpiry(String expiry) async {
+    try {
+      await _storage.write(key: _keyTokenExpiry, value: expiry);
+    } catch (e) {
+      print('❌ AuthService: Error saving token expiry: $e');
+    }
+  }
+  
   /// Get stored token
   Future<String?> getToken() async {
     try {
@@ -169,17 +292,24 @@ class AuthService {
       print('📦 AuthService: Login response received');
       print('📊 AuthService: Response success: ${response.success}');
       print('📊 AuthService: Response message: ${response.message}');
-      print('📊 AuthService: Response data: ${response.data}');
       
       if (response.success && response.data != null) {
         print('👤 AuthService: User data: ${response.data!.user.toJson()}');
         await saveUser(response.data!.user.toJson());
         
-        if (response.data!.token != null) {
-          print('🔑 AuthService: Token: ${response.data!.token}');
+        if (response.data!.token != null && response.data!.token!.isNotEmpty) {
+          print('🔑 AuthService: Token received');
           await saveToken(response.data!.token!);
+          if (response.data!.refreshToken != null) {
+            await saveRefreshToken(response.data!.refreshToken!);
+          }
+          if (response.data!.expiresAt != null) {
+            await saveTokenExpiry(response.data!.expiresAt!);
+          }
+          print('✅ AuthService: Token saved successfully');
         } else {
           print('⚠️ AuthService: No token received');
+          return false;
         }
         
         print('✅ AuthService: Login successful for: ${response.data!.user.name}');
@@ -206,8 +336,14 @@ class AuthService {
       
       if (response.success && response.data != null) {
         await saveUser(response.data!.user.toJson());
-        if (response.data!.token != null) {
+        if (response.data!.token != null && response.data!.token!.isNotEmpty) {
           await saveToken(response.data!.token!);
+          if (response.data!.refreshToken != null) {
+            await saveRefreshToken(response.data!.refreshToken!);
+          }
+          if (response.data!.expiresAt != null) {
+            await saveTokenExpiry(response.data!.expiresAt!);
+          }
         }
         print('✅ AuthService: Register successful for: ${response.data!.user.name}');
         return true;
@@ -232,8 +368,14 @@ class AuthService {
       
       if (response.success && response.data != null) {
         await saveUser(response.data!.user.toJson());
-        if (response.data!.token != null) {
+        if (response.data!.token != null && response.data!.token!.isNotEmpty) {
           await saveToken(response.data!.token!);
+          if (response.data!.refreshToken != null) {
+            await saveRefreshToken(response.data!.refreshToken!);
+          }
+          if (response.data!.expiresAt != null) {
+            await saveTokenExpiry(response.data!.expiresAt!);
+          }
         }
         print('✅ AuthService: Google sign in successful for: ${response.data!.user.name}');
         return true;
@@ -252,13 +394,9 @@ class AuthService {
       print('🔄 AuthService: Update role attempt: $role');
       
       final user = await _authApiService.updateRole(role);
-      if (user != null) {
-        await saveUser(user.toJson());
-        print('✅ AuthService: Role updated successfully');
-        return true;
-      }
-      print('❌ AuthService: Update role failed');
-      return false;
+      await saveUser(user.toJson());
+      print('✅ AuthService: Role updated successfully');
+      return true;
     } catch (e) {
       print('❌ AuthService: Update role error: $e');
       return false;
@@ -270,14 +408,17 @@ class AuthService {
     try {
       print('🔄 AuthService: Refresh user attempt');
       
-      final user = await _authApiService.getMe();
-      if (user != null) {
-        await saveUser(user.toJson());
-        print('✅ AuthService: User refreshed successfully');
-        return true;
+      // Check if token exists first
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        print('❌ AuthService: No token found to refresh');
+        return false;
       }
-      print('❌ AuthService: Refresh user failed');
-      return false;
+      
+      final user = await _authApiService.getMe();
+      await saveUser(user.toJson());
+      print('✅ AuthService: User refreshed successfully');
+      return true;
     } catch (e) {
       print('❌ AuthService: Refresh user error: $e');
       return false;
@@ -294,6 +435,8 @@ class AuthService {
     } finally {
       await _storage.delete(key: _keyUser);
       await _storage.delete(key: _keyToken);
+      await _storage.delete(key: _keyRefreshToken);
+      await _storage.delete(key: _keyTokenExpiry);
       _currentUser = null;
       print('✅ AuthService: Logout completed');
     }
@@ -326,6 +469,18 @@ class AuthService {
     } catch (e) {
       print('❌ AuthService: Error getting user: $e');
       return null;
+    }
+  }
+  
+  /// Debug method to check token
+  Future<void> debugToken() async {
+    final token = await getToken();
+    print('🔍 DEBUG - Token exists: ${token != null}');
+    if (token != null) {
+      print('🔍 DEBUG - Token preview: ${token.substring(0, token.length > 10 ? 10 : token.length)}...');
+      print('🔍 DEBUG - Token length: ${token.length}');
+    } else {
+      print('🔍 DEBUG - No token found');
     }
   }
 }

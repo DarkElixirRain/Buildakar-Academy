@@ -61,7 +61,8 @@ interface PaginatedResult<T> {
 
 export class CourseService {
   private static readonly validTransitions: Record<CourseStatus, CourseStatus[]> = {
-    DRAFT: ["UNDER_REVIEW"],
+    PENDING_APPROVAL: ["DRAFT"],
+    DRAFT: ["UNDER_REVIEW", "PUBLISHED"],
     UNDER_REVIEW: ["PUBLISHED", "DRAFT"],
     PUBLISHED: ["DRAFT"],
   };
@@ -86,7 +87,7 @@ export class CourseService {
         totalHours: data.totalHours,
         categoryId: data.categoryId,
         instructorId: data.instructorId,
-        status: CourseStatus.DRAFT,
+        status: CourseStatus.PENDING_APPROVAL,
         isPublished: false,
       },
       include: {
@@ -390,6 +391,22 @@ export class CourseService {
     });
 
     // ── NOTIFICATIONS ─────────────────────────────────────────────
+
+    // PENDING_APPROVAL → DRAFT: admin approved course for content creation
+    if (
+      currentStatus === CourseStatus.PENDING_APPROVAL &&
+      newStatus === CourseStatus.DRAFT
+    ) {
+      createAndSend({
+        userId: course.instructorId,
+        type: 'COURSE_APPROVED' as any,
+        title: '✅ Course Approved',
+        body: `Your course "${course.title}" has been approved. You can now add sections and lessons.`,
+        data: { courseId: course.id, type: 'COURSE_APPROVED' },
+      }).catch((err) =>
+        console.error("⚠️ [Notification] Course approval error:", err)
+      );
+    }
 
     // UNDER_REVIEW → PUBLISHED: admin approved
     if (

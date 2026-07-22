@@ -68,8 +68,6 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
         setState(() {
           _error = response.error ?? 'Failed to load featured courses';
           _isLoading = false;
-          // Use fallback data
-          _courses = _getFallbackCourses();
         });
       }
     } catch (e) {
@@ -77,8 +75,6 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
       setState(() {
         _error = e.toString();
         _isLoading = false;
-        // Use fallback data
-        _courses = _getFallbackCourses();
       });
       print('❌ Error loading featured courses: $e');
     }
@@ -177,13 +173,14 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
       }
     }
 
-    // --- Get price ---
+    // --- Get price with Nepali Rupees (रू) ---
     String price = 'Free';
     if (course['price'] != null) {
       if (course['price'] is num) {
         final priceNum = course['price'] as num;
         if (priceNum > 0) {
-          price = '₹${priceNum.toStringAsFixed(0)}';
+          // Format as NPR with रू symbol
+          price = 'रू ${_formatCurrency(priceNum)}';
         }
       } else if (course['price'] is String) {
         final priceStr = course['price'] as String;
@@ -191,7 +188,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
           try {
             final priceNum = double.parse(priceStr);
             if (priceNum > 0) {
-              price = '₹${priceNum.toStringAsFixed(0)}';
+              price = 'रू ${_formatCurrency(priceNum)}';
             }
           } catch (_) {
             price = priceStr;
@@ -261,48 +258,19 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
     };
   }
 
-  List<Map<String, dynamic>> _getFallbackCourses() {
-    return [
-      {
-        'id': '1',
-        'title': 'Flutter & Dart - The Complete Guide',
-        'image': 'https://picsum.photos/400/200?random=40',
-        'rating': 4.8,
-        'students': 12000,
-        'price': '₹999',
-        'badge': '🔥 Bestseller',
-        'instructor': 'Maximilian Schwarzmüller',
-        'instructorId': 'inst_1',
-        'level': 'Intermediate',
-        'category': 'Programming',
-      },
-      {
-        'id': '2',
-        'title': 'React Native - Build Native Mobile Apps',
-        'image': 'https://picsum.photos/400/200?random=41',
-        'rating': 4.9,
-        'students': 8000,
-        'price': '₹899',
-        'badge': '⭐ Top Rated',
-        'instructor': 'Stephen Grider',
-        'instructorId': 'inst_2',
-        'level': 'Beginner',
-        'category': 'Mobile Development',
-      },
-      {
-        'id': '3',
-        'title': 'Machine Learning A-Z™: Hands-On Python',
-        'image': 'https://picsum.photos/400/200?random=42',
-        'rating': 4.7,
-        'students': 15000,
-        'price': '₹1299',
-        'badge': '🎯 Bestseller',
-        'instructor': 'Kirill Eremenko',
-        'instructorId': 'inst_3',
-        'level': 'Advanced',
-        'category': 'Data Science',
-      },
-    ];
+  // Helper method to format currency with proper spacing
+  String _formatCurrency(num amount) {
+    // Convert to double for formatting
+    final double amountDouble = amount.toDouble();
+    
+    // Format with 2 decimal places if needed
+    if (amountDouble == amountDouble.roundToDouble()) {
+      // Whole number - no decimals
+      return amountDouble.toStringAsFixed(0);
+    } else {
+      // Has decimals - show 2 decimal places
+      return amountDouble.toStringAsFixed(2);
+    }
   }
 
   Future<void> _refreshData() async {
@@ -342,7 +310,6 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
     final errorColor = AppColors.getErrorColor(brightness);
-    final backgroundColor = AppColors.getBackgroundColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
@@ -405,8 +372,8 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
       );
     }
 
-    // Show error state but still display fallback data
-    if (_error != null && _courses.isEmpty) {
+    // Show error state
+    if (_error != null || _courses.isEmpty) {
       return _buildErrorState(isDark, brightness);
     }
 
@@ -615,7 +582,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                     ),
                   ),
                 ),
-                // Price Badge - Bottom Right
+                // Price Badge - Bottom Right with रू symbol
                 Positioned(
                   bottom: 8,
                   right: 8,

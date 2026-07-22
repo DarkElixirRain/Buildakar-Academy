@@ -1,4 +1,4 @@
-package com.example.learnhub
+package com.example.buildacad
 
 import io.flutter.embedding.android.FlutterActivity
 

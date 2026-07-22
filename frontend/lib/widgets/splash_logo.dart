@@ -12,7 +12,6 @@ class _SplashLogoState extends State<SplashLogo>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
@@ -26,13 +25,6 @@ class _SplashLogoState extends State<SplashLogo>
       CurvedAnimation(
         parent: _controller,
         curve: Curves.easeOutBack,
-      ),
-    );
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
       ),
     );
   }
@@ -56,68 +48,44 @@ class _SplashLogoState extends State<SplashLogo>
     // Determine which icon to use based on theme
     final isDarkMode = brightness == Brightness.dark;
     
-    // Use correct asset paths without duplication
+    // Use correct asset paths - white for dark theme, colored for light theme
     final iconAsset = isDarkMode 
         ? 'assets/white_favicon.png' 
         : 'assets/favicon.png';
-
-    // Debug output
-    print('🌓 Theme: ${isDarkMode ? "Dark" : "Light"}');
-    print('📁 Loading asset: $iconAsset');
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Container(
+          child: Image.asset(
+            iconAsset,
             width: actualSize,
             height: actualSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: primaryColor.withValues(alpha: 0.1),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 40,
-                  spreadRadius: 15,
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                iconAsset,
-                fit: BoxFit.cover,
-                // Use a proper error widget instead of just a fallback
-                errorBuilder: (context, error, stackTrace) {
-                  print('❌ Error loading $iconAsset: $error');
-                  // Show fallback with proper styling
-                  return Container(
-                    color: primaryColor.withValues(alpha: 0.2),
-                    child: Icon(
-                      Icons.school,
-                      size: actualSize * 0.5,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback icon if image fails to load
+              return Icon(
+                Icons.school,
+                size: actualSize * 0.8,
+                color: primaryColor,
+              );
+            },
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (frame == null) {
+                return Container(
+                  width: actualSize,
+                  height: actualSize,
+                  child: Center(
+                    child: CircularProgressIndicator(
                       color: primaryColor,
+                      strokeWidth: 2,
                     ),
-                  );
-                },
-                // Add a loading indicator
-                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                  if (frame == null) {
-                    return Container(
-                      color: primaryColor.withValues(alpha: 0.1),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: primaryColor,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    );
-                  }
-                  return child;
-                },
-              ),
-            ),
+                  ),
+                );
+              }
+              return child;
+            },
           ),
         );
       },

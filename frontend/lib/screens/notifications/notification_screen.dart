@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:learnhub/providers/theme_provider.dart';
-import 'package:learnhub/services/api_service.dart';
+import 'package:buildacad/providers/theme_provider.dart';
+import 'package:buildacad/services/api_service.dart';
 import '../../constants/colors.dart';
 
 class NotificationScreen extends StatefulWidget {
