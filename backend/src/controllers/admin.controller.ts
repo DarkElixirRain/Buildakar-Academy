@@ -12,6 +12,7 @@ import {
   getAllLiveClasses,
   getCourseAnalytics,
   cleanupOldNotifications,
+  getInstructorDetail,
 } from '../services/admin.service';
 
 export async function getstats(req: Request, res: Response, next: NextFunction) {
@@ -213,6 +214,16 @@ export async function cleanupNotifications(req: Request, res: Response, next: Ne
       message: `Deleted ${result.deletedCount} read notifications older than ${days} days`,
       data: result,
     });
+  } catch (error) { next(error); }
+}
+
+export async function getInstructorDetailData(req: Request, res: Response, next: NextFunction) {
+  try {
+    const instructor = await getInstructorDetail(req.params.id);
+    if (!instructor) {
+      return res.status(404).json({ success: false, message: 'Instructor not found' });
+    }
+    return res.status(200).json({ success: true, data: instructor });
   } catch (error) { next(error); }
 }
 

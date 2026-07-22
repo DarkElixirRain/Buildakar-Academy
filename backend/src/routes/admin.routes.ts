@@ -7,7 +7,7 @@ import {
   getChartdata, getstats, getusers, updateuser,
   getCoursesList, updateCourse,
   getReviewsList, removeReview,
-  getInstructorsList, updateInstructorVerification,
+  getInstructorsList, updateInstructorVerification, getInstructorDetailData,
   getPaymentsList,
   getRecentActivitiesList,
   getDashboard,
@@ -60,6 +60,7 @@ router.delete('/reviews/:id', removeReview);
 
 // Instructors
 router.get('/instructors', getInstructorsList);
+router.get('/instructors/:id', getInstructorDetailData);
 router.patch('/instructors/:id/verify', validate(verifyInstructorSchema, 'body'), updateInstructorVerification);
 
 // Payments

@@ -241,7 +241,9 @@ export const getCourses = async (params: {
   const { page = 1, limit = 20, status, search, categoryId } = params;
   const where: any = {};
 
-  if (status) where.status = status;
+  if (status && Object.values(CourseStatus).includes(status as CourseStatus)) {
+    where.status = status;
+  }
   if (categoryId) where.categoryId = categoryId;
   if (search) {
     where.OR = [
@@ -793,12 +795,12 @@ export const getAllLiveClasses = async (params: {
   instructorId?: string;
   courseId?: string;
 }) => {
-  const { page = 1, limit = 20, status, instructorId, courseId } = params;
-  const where: any = {};
+  const { page = 1, limit = 20 } = params;
+  const where: Record<string, unknown> = {};
 
-  if (status) where.status = status;
-  if (instructorId) where.instructorId = instructorId;
-  if (courseId) where.courseId = courseId;
+  if (params.status) where.status = params.status;
+  if (params.instructorId) where.instructorId = params.instructorId;
+  if (params.courseId) where.courseId = params.courseId;
 
   const [data, total] = await Promise.all([
     prisma.liveClass.findMany({
@@ -832,6 +834,55 @@ export const getAllLiveClasses = async (params: {
     limit,
     totalPages: Math.ceil(total / limit),
   };
+};
+
+export const getInstructorDetail = async (instructorId: string) => {
+  const instructor = await prisma.user.findUnique({
+    where: { id: instructorId, role: 'INSTRUCTOR' },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      photo: true,
+      bio: true,
+      expertise: true,
+      title: true,
+      isVerifiedInstructor: true,
+      isActive: true,
+      totalCourses: true,
+      totalStudents: true,
+      totalRevenue: true,
+      averageRating: true,
+      createdAt: true,
+      _count: { select: { courses: true, reviews: true, followers: true } },
+    },
+  });
+
+  if (!instructor) return null;
+
+  const courses = await prisma.course.findMany({
+    where: { instructorId },
+    select: {
+      id: true,
+      title: true,
+      price: true,
+      status: true,
+      isPublished: true,
+      isBestseller: true,
+      isTrending: true,
+      studentsCount: true,
+      rating: true,
+      level: true,
+      thumbnail: true,
+      createdAt: true,
+      category: { select: { id: true, name: true } },
+      _count: { select: { enrollments: true, lessons: true, reviews: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return { ...instructor, courses };
 };
 
 export const getCourseAnalytics = async (courseId: string) => {
