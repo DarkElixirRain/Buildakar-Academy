@@ -107,14 +107,16 @@ export class PaymentController {
   async getOrders(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = req.user!.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
 
-      const payments = await paymentService.getStudentPayments(userId);
+      const result = await paymentService.getStudentPayments(userId, page, limit);
 
       return res.status(200).json({
         success: true,
         message: 'Payment history retrieved successfully',
-        data: payments,
-        total: payments.length,
+        data: result.data,
+        pagination: result.pagination,
       });
     } catch (error) {
       next(error);

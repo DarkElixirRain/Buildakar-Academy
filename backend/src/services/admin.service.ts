@@ -99,23 +99,29 @@ export const getChartData = async (
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const payments = await prisma.payment.findMany({
-      where: {
-        status: PaymentStatus.SUCCEEDED,
-        paidAt: { gte: startDate },
-      },
-      select: { amount: true, paidAt: true },
-    });
-
-    const users = await prisma.user.findMany({
-      where: { createdAt: { gte: startDate } },
-      select: { createdAt: true },
-    });
-
-    const enrollments = await prisma.enrollment.findMany({
-      where: { enrolledAt: { gte: startDate } },
-      select: { enrolledAt: true },
-    });
+    const [revenueByDay, signupsByDay, enrollmentsByDay] = await Promise.all([
+      prisma.$queryRaw<Array<{ date: string; revenue: number }>>`
+        SELECT DATE(paid_at) as date, COALESCE(SUM(amount), 0) as revenue
+        FROM payments
+        WHERE status = 'SUCCEEDED' AND paid_at >= ${startDate}
+        GROUP BY DATE(paid_at)
+        ORDER BY date ASC
+      `,
+      prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+        SELECT DATE(created_at) as date, COUNT(*) as count
+        FROM users
+        WHERE created_at >= ${startDate}
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `,
+      prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+        SELECT DATE(enrolled_at) as date, COUNT(*) as count
+        FROM enrollments
+        WHERE enrolled_at >= ${startDate}
+        GROUP BY DATE(enrolled_at)
+        ORDER BY date ASC
+      `,
+    ]);
 
     const dayMap: Record<string, {
       date: string;
@@ -131,21 +137,15 @@ export const getChartData = async (
       dayMap[key] = { date: key, revenue: 0, signups: 0, enrollments: 0 };
     }
 
-    payments.forEach((p) => {
-      if (!p.paidAt) return;
-      const key = p.paidAt.toISOString().split('T')[0];
-      if (dayMap[key]) dayMap[key].revenue += p.amount;
-    });
-
-    users.forEach((u) => {
-      const key = u.createdAt.toISOString().split('T')[0];
-      if (dayMap[key]) dayMap[key].signups += 1;
-    });
-
-    enrollments.forEach((e) => {
-      const key = e.enrolledAt.toISOString().split('T')[0];
-      if (dayMap[key]) dayMap[key].enrollments += 1;
-    });
+    for (const row of revenueByDay) {
+      if (dayMap[row.date]) dayMap[row.date].revenue = Number(row.revenue);
+    }
+    for (const row of signupsByDay) {
+      if (dayMap[row.date]) dayMap[row.date].signups = Number(row.count);
+    }
+    for (const row of enrollmentsByDay) {
+      if (dayMap[row.date]) dayMap[row.date].enrollments = Number(row.count);
+    }
 
     return Object.values(dayMap);
 };
@@ -679,34 +679,50 @@ export const sendBroadcastNotification = async (data: {
   role?: string;
   userIds?: string[];
 }) => {
-  let targetUserIds: string[] = [];
+  let sentCount = 0;
+  const BATCH_SIZE = 1000;
 
   if (data.userIds && data.userIds.length > 0) {
-    targetUserIds = data.userIds;
-  } else if (data.role) {
-    const users = await prisma.user.findMany({
-      where: { role: data.role as any, isActive: true },
-      select: { id: true },
-    });
-    targetUserIds = users.map((u) => u.id);
+    const ids = data.userIds;
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batch = ids.slice(i, i + BATCH_SIZE).map(userId => ({
+        userId,
+        type: data.type,
+        title: data.title,
+        body: data.body,
+      }));
+      await prisma.notification.createMany({ data: batch });
+      sentCount += batch.length;
+    }
   } else {
-    const users = await prisma.user.findMany({
-      where: { isActive: true },
-      select: { id: true },
-    });
-    targetUserIds = users.map((u) => u.id);
+    const where = data.role ? { role: data.role as any, isActive: true } : { isActive: true };
+    let skip = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const users = await prisma.user.findMany({
+        where,
+        select: { id: true },
+        take: BATCH_SIZE,
+        skip,
+      });
+
+      if (users.length === 0) break;
+
+      const batch = users.map(u => ({
+        userId: u.id,
+        type: data.type,
+        title: data.title,
+        body: data.body,
+      }));
+      await prisma.notification.createMany({ data: batch });
+      sentCount += batch.length;
+      skip += BATCH_SIZE;
+      hasMore = users.length === BATCH_SIZE;
+    }
   }
 
-  const notifications = targetUserIds.map((userId) => ({
-    userId,
-    type: data.type,
-    title: data.title,
-    body: data.body,
-  }));
-
-  await prisma.notification.createMany({ data: notifications });
-
-  return { sentCount: targetUserIds.length };
+  return { sentCount };
 };
 
 export const getPayouts = async (params: {
@@ -908,7 +924,7 @@ export const getCourseAnalytics = async (courseId: string) => {
 
   if (!course) return null;
 
-  const [enrollmentsOverTime, revenueData, ratingDistribution] = await Promise.all([
+  const [enrollmentsOverTime, revenueData, ratingDistribution, completedEnrollments] = await Promise.all([
     prisma.enrollment.findMany({
       where: { courseId },
       select: { enrolledAt: true },
@@ -924,6 +940,9 @@ export const getCourseAnalytics = async (courseId: string) => {
       where: { courseId },
       _count: true,
     }),
+    course._count.enrollments > 0
+      ? prisma.enrollment.count({ where: { courseId, isCompleted: true } })
+      : Promise.resolve(0),
   ]);
 
   const monthlyEnrollments: Record<string, number> = {};
@@ -944,7 +963,7 @@ export const getCourseAnalytics = async (courseId: string) => {
     monthlyEnrollments: Object.entries(monthlyEnrollments).map(([month, count]) => ({ month, count })),
     ratingDistribution: ratings,
     completionRate: course._count.enrollments > 0
-      ? await prisma.enrollment.count({ where: { courseId, isCompleted: true } }) / course._count.enrollments * 100
+      ? (completedEnrollments as number) / course._count.enrollments * 100
       : 0,
   };
 };

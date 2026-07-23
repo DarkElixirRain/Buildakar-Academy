@@ -309,18 +309,9 @@ export const instructorService = {
     }
 
     // Check if current user is following this instructor
-    let isFollowing = false;
-    if (currentUserId) {
-      const follow = await prisma.instructorFollow.findUnique({
-        where: {
-          followerId_instructorId: {
-            followerId: currentUserId,
-            instructorId: instructorId,
-          },
-        },
-      });
-      isFollowing = !!follow;
-    }
+    const isFollowing = currentUserId
+      ? instructor.followers.some(f => f.followerId === currentUserId)
+      : false;
 
     // Calculate category stats
     const courseCategories = await prisma.course.groupBy({

@@ -112,71 +112,101 @@ export async function createLiveClass(data: CreateLiveClassData) {
   return liveClass;
 }
 
-export async function getInstructorLiveClasses(instructorId: string) {
+export async function getInstructorLiveClasses(instructorId: string, page = 1, limit = 20) {
   if (!instructorId)
     throw new Error("Unauthorized");
 
-  const data = await prisma.liveClass.findMany({
-    where: {
-      instructorId,
-    },
-    include: {
-      instructor: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          photo: true,
-          email: true,
+  const [data, total] = await Promise.all([
+    prisma.liveClass.findMany({
+      where: {
+        instructorId,
+      },
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            photo: true,
+            email: true,
+          },
+        },
+        course: {
+          select: {
+            id: true,
+            title: true,
+            thumbnail: true,
+          },
         },
       },
-      course: {
-        select: {
-          id: true,
-          title: true,
-          thumbnail: true,
-        },
-      },
-    },
-  });
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.liveClass.count({ where: { instructorId } }),
+  ]);
 
   if (data.length === 0) {
-    return [];
+    return { data: [], pagination: { page, limit, total: 0, totalPages: 0, hasMore: false } };
   }
-  return data;
+  return {
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
+    },
+  };
 }
 
-export async function getCourseLiveClasses(courseId: string) {
+export async function getCourseLiveClasses(courseId: string, page = 1, limit = 20) {
   if (!courseId) {
     throw new Error("Course not found or Not Valid");
   }
-  const data = await prisma.liveClass.findMany({
-    where: {
-      courseId,
-      status: {
-        not: LiveClassStatus.CANCELLED,
-      },
-    },
-    include: {
-      instructor: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          photo: true,
+  const [data, total] = await Promise.all([
+    prisma.liveClass.findMany({
+      where: {
+        courseId,
+        status: {
+          not: LiveClassStatus.CANCELLED,
         },
       },
-    },
-    orderBy: {
-      scheduledAt: "asc",
-    },
-  });
+      include: {
+        instructor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            photo: true,
+          },
+        },
+      },
+      orderBy: {
+        scheduledAt: "asc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.liveClass.count({
+      where: {
+        courseId,
+        status: { not: LiveClassStatus.CANCELLED },
+      },
+    }),
+  ]);
 
-  if (!data) {
-    throw new Error("No Live classes");
-  }
-
-  return data;
+  return {
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: page * limit < total,
+    },
+  };
 }
 
 // NEW: Get all live classes for a student

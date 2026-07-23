@@ -7,6 +7,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") 
 }
 
 model User {
@@ -61,6 +62,7 @@ model User {
   // Refresh token
   refreshTokens RefreshToken[]  
 
+  @@index([role])
   @@map("users")
 }
 
@@ -110,6 +112,10 @@ model Course {
   sections      Section[]
   payments      Payment[]
   liveClasses LiveClass[]
+
+  @@index([instructorId])
+  @@index([categoryId])
+  @@index([status])
 }
 
 model Section {
@@ -144,6 +150,9 @@ model Lesson {
   course        Course           @relation(fields: [courseId], references: [id])
   section       Section?         @relation(fields: [sectionId], references: [id])
   progress      LessonProgress[]
+
+  @@index([courseId])
+  @@index([sectionId])
 }
 
 model Enrollment {
@@ -161,6 +170,7 @@ model Enrollment {
   payment        Payment?
 
   @@unique([userId, courseId])
+  @@index([courseId])
 }
 
 model RecentSearch {
@@ -202,6 +212,8 @@ model Review {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([userId])
 }
 
 model InstructorFollow {

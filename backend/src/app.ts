@@ -20,6 +20,8 @@ import liveClassRoutes from './routes/liveClass.routes'
 import adminRoutes from './routes/admin.routes'
 import uploadRoutes from './routes/upload.routes'
 import cookieParser from 'cookie-parser';
+import compression from 'compression'; //API responses are sending raw JSON without gzip.
+import { prisma } from './lib/prisma';
 
 
 const app = express();
@@ -29,6 +31,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   res.locals.nonce = crypto.randomBytes(16).toString('hex');
   next();
 });
+
+app.use(compression());
 
 // Security middleware
 app.use(helmet({
@@ -159,6 +163,16 @@ app.use('/api/admin', adminRoutes)
 
 // Upload Routes
 app.use('/api/upload', uploadRoutes)
+
+app.get("/db-test", async (_, res) => {
+  console.time("db");
+
+  await prisma.$queryRaw`SELECT 1`;
+
+  console.timeEnd("db");
+
+  res.send("ok");
+});
 
 
 

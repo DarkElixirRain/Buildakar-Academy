@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 import { instructorService } from '../services/instructor.service';
 import { schemas } from '../utils/validation';
 import { AppError } from '../utils/AppError';
+import { prisma } from '../lib/prisma';
 
 export const instructorController = {
   // Get top instructors for homepage
@@ -15,23 +16,16 @@ export const instructorController = {
       // If user is authenticated, add follow status
       if (req.user?.id) {
         const userId = req.user.id;
-        const instructorsWithFollow = await Promise.all(
-          instructors.map(async (instructor) => {
-            try {
-              const isFollowing = await instructorService.checkFollowStatus(
-                instructor.id,
-                userId
-              );
-              return { ...instructor, isFollowing };
-            } catch (error) {
-              console.error(
-                `Error checking follow status for instructor ${instructor.id}:`,
-                error
-              );
-              return { ...instructor, isFollowing: false };
-            }
-          })
-        );
+        const instructorIds = instructors.map(i => i.id);
+        const follows = await prisma.instructorFollow.findMany({
+          where: { followerId: userId, instructorId: { in: instructorIds } },
+          select: { instructorId: true },
+        });
+        const followedSet = new Set(follows.map(f => f.instructorId));
+        const instructorsWithFollow = instructors.map(instructor => ({
+          ...instructor,
+          isFollowing: followedSet.has(instructor.id),
+        }));
         return res.status(200).json({
           success: true,
           message: 'Top instructors retrieved successfully',
@@ -59,23 +53,16 @@ export const instructorController = {
       // If user is authenticated, add follow status
       if (req.user?.id) {
         const userId = req.user.id;
-        const dataWithFollow = await Promise.all(
-          result.data.map(async (instructor: any) => {
-            try {
-              const isFollowing = await instructorService.checkFollowStatus(
-                instructor.id,
-                userId
-              );
-              return { ...instructor, isFollowing };
-            } catch (error) {
-              console.error(
-                `Error checking follow status for instructor ${instructor.id}:`,
-                error
-              );
-              return { ...instructor, isFollowing: false };
-            }
-          })
-        );
+        const instructorIds = result.data.map((i: any) => i.id);
+        const follows = await prisma.instructorFollow.findMany({
+          where: { followerId: userId, instructorId: { in: instructorIds } },
+          select: { instructorId: true },
+        });
+        const followedSet = new Set(follows.map(f => f.instructorId));
+        const dataWithFollow = result.data.map((instructor: any) => ({
+          ...instructor,
+          isFollowing: followedSet.has(instructor.id),
+        }));
         return res.status(200).json({
           success: true,
           message: 'Instructors retrieved successfully',

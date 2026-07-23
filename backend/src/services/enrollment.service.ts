@@ -158,31 +158,70 @@ export class EnrollmentService {
       },
     });
 
-    const results = await Promise.all(
-      enrollments.map(async (enrollment) => {
-        // Most recently watched lesson for this enrollment
-        const lastWatched = await prisma.lessonProgress.findFirst({
-          where: { enrollmentId: enrollment.id },
-          orderBy: { watchedAt: "desc" },
-          include: {
-            lesson: { select: { id: true, title: true, sectionId: true, order: true } },
-          },
-        });
+    const enrollmentIds = enrollments.map(e => e.id);
+    const courseIds = enrollments.map(e => e.courseId);
 
-        const resumeLesson = lastWatched
-          ? lastWatched.lesson
-          : await this.getFirstLesson(enrollment.courseId);
-
-        return {
-          enrollmentId: enrollment.id,
-          course: enrollment.course,
-          progress: enrollment.progress,
-          resumeLesson, // null only if course genuinely has no lessons yet
-        };
+    const [allProgress, firstLessons] = await Promise.all([
+      prisma.lessonProgress.findMany({
+        where: { enrollmentId: { in: enrollmentIds } },
+        orderBy: { watchedAt: "desc" },
+        include: {
+          lesson: { select: { id: true, title: true, sectionId: true, order: true } },
+        },
       }),
-    );
+      this.getFirstLessons(courseIds),
+    ]);
+
+    const progressByEnrollment = new Map<string, typeof allProgress>();
+    for (const lp of allProgress) {
+      const arr = progressByEnrollment.get(lp.enrollmentId);
+      if (arr) {
+        arr.push(lp);
+      } else {
+        progressByEnrollment.set(lp.enrollmentId, [lp]);
+      }
+    }
+
+    const firstLessonByCourse = new Map(firstLessons.map(fl => [fl.courseId, fl.firstLesson]));
+
+    const results = enrollments.map((enrollment) => {
+      const progressRecords = progressByEnrollment.get(enrollment.id);
+      const lastWatched = progressRecords?.[0] ?? null;
+      const resumeLesson = lastWatched
+        ? lastWatched.lesson
+        : (firstLessonByCourse.get(enrollment.courseId) ?? null);
+
+      return {
+        enrollmentId: enrollment.id,
+        course: enrollment.course,
+        progress: enrollment.progress,
+        resumeLesson,
+      };
+    });
 
     return results;
+  }
+
+  private async getFirstLessons(courseIds: string[]) {
+    const sections = await prisma.section.findMany({
+      where: { courseId: { in: courseIds } },
+      orderBy: { courseId: "asc", order: "asc" },
+      include: {
+        lessons: { orderBy: { order: "asc" }, take: 1 },
+      },
+    });
+
+    const firstLessonByCourse = new Map<string, typeof sections[0]['lessons'][0]>();
+    for (const section of sections) {
+      if (!firstLessonByCourse.has(section.courseId) && section.lessons.length > 0) {
+        firstLessonByCourse.set(section.courseId, section.lessons[0]);
+      }
+    }
+
+    return courseIds.map(courseId => ({
+      courseId,
+      firstLesson: firstLessonByCourse.get(courseId) ?? null,
+    }));
   }
 
   private async getFirstLesson(courseId: string) {

@@ -459,27 +459,42 @@ export class PaymentService {
   /**
    * Student's full payment history with course + enrollment info.
    */
-  async getStudentPayments(userId: string) {
-    return prisma.payment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            thumbnail: true,
-            price: true,
-            instructor: {
-              select: { firstName: true, lastName: true },
+  async getStudentPayments(userId: string, page = 1, limit = 20) {
+    const [data, total] = await Promise.all([
+      prisma.payment.findMany({
+        where: { userId },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              thumbnail: true,
+              price: true,
+              instructor: {
+                select: { firstName: true, lastName: true },
+              },
             },
           },
+          enrollment: {
+            select: { id: true, progress: true, isCompleted: true },
+          },
         },
-        enrollment: {
-          select: { id: true, progress: true, isCompleted: true },
-        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.payment.count({ where: { userId } }),
+    ]);
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page * limit < total,
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 
   /**

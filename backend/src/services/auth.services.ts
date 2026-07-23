@@ -75,9 +75,11 @@ export class AuthService {
   async login(data: LoginData) {
     const { email, password } = data;
 
+    console.time('[Auth] User lookup');
     const user = await prisma.user.findUnique({
       where: { email },
     });
+    console.timeEnd('[Auth] User lookup');
 
     if (!user) {
       throw new Error('Invalid credentials');
@@ -87,10 +89,13 @@ export class AuthService {
       throw new Error('Account is deactivated');
     }
 
-    const isPasswordValid = await comparePassword(
-      password,
-      user.password,
-    );
+    if (!user.isVerified) {
+      throw new Error('Please verify your email before logging in.');
+    }
+
+    console.time('[Auth] Password comparison');
+    const isPasswordValid = await comparePassword(password, user.password);
+    console.timeEnd('[Auth] Password comparison');
 
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
@@ -102,23 +107,30 @@ export class AuthService {
       role: user.role,
     };
 
+    console.time('[Auth] JWT generation');
     const tokens = generateTokenPair(payload);
+    console.timeEnd('[Auth] JWT generation');
 
-    await prisma.refreshToken.deleteMany({
-      where: {
-        userId: user.id,
-      },
-    });
+    const tokenHash = hashRefreshToken(tokens.refreshToken);
 
-    await prisma.refreshToken.create({
-      data: {
-        tokenHash: hashRefreshToken(tokens.refreshToken),
-        userId: user.id,
-        expiresAt: tokens.refreshTokenExpiresAt,
-      },
-    });
+    console.time('[Auth] Refresh token DB ops');
+    await prisma.$transaction([
+      prisma.refreshToken.deleteMany({
+        where: { userId: user.id },
+      }),
+      prisma.refreshToken.create({
+        data: {
+          tokenHash,
+          userId: user.id,
+          expiresAt: tokens.refreshTokenExpiresAt,
+        },
+      }),
+    ]);
+    console.timeEnd('[Auth] Refresh token DB ops');
 
+    console.time('[Auth] Response serialization');
     const { password: _, ...userWithoutPassword } = user;
+    console.timeEnd('[Auth] Response serialization');
 
     return {
       user: userWithoutPassword,

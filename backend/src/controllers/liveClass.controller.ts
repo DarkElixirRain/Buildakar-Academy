@@ -43,13 +43,16 @@ export async function getinstructorLiveClasses(
   next: NextFunction
 ) {
   try {
-    const liveClasses =
-      await getInstructorLiveClasses(req.user!.id);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result =
+      await getInstructorLiveClasses(req.user!.id, page, limit);
 
     return res.status(200).json({
       success: true,
       message: "Instructor live classes fetched successfully.",
-      data: liveClasses,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);
@@ -63,14 +66,17 @@ export async function getcourseLiveClasses(
 ) {
   try {
     const { courseId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
 
-    const liveClasses =
-      await getCourseLiveClasses(courseId);
+    const result =
+      await getCourseLiveClasses(courseId, page, limit);
 
     return res.status(200).json({
       success: true,
       message: "Course live classes fetched successfully.",
-      data: liveClasses,
+      data: result.data,
+      pagination: result.pagination,
     });
   } catch (error) {
     next(error);

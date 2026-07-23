@@ -1,6 +1,7 @@
 
 import { CourseStatus, Role, Level } from "@prisma/client";
 import { prisma } from '../lib/prisma';
+import { createId } from '@paralleldrive/cuid2';
 import {
   createAndSend,
   createAndSendBulk,
@@ -142,10 +143,6 @@ export class CourseService {
           category: true,
           instructor: {
             select: { id: true, firstName: true, lastName: true, email: true },
-          },
-          sections: {
-            include: { lessons: true },
-            orderBy: { order: "asc" },
           },
           _count: {
             select: { enrollments: true, lessons: true, reviews: true },
@@ -574,32 +571,39 @@ export class CourseService {
       include: { category: true },
     });
 
-    for (const section of course.sections) {
-      const newSection = await prisma.section.create({
-        data: {
-          title: section.title,
-          description: section.description,
-          order: section.order,
-          courseId: newCourse.id,
-        },
-      });
+    const sectionIdMap = new Map<string, string>();
+    const sectionsData = course.sections.map(s => {
+      const newId = createId();
+      sectionIdMap.set(s.id, newId);
+      return {
+        id: newId,
+        title: s.title,
+        description: s.description,
+        order: s.order,
+        courseId: newCourse.id,
+      };
+    });
 
-      for (const lesson of section.lessons) {
-        await prisma.lesson.create({
-          data: {
-            title: lesson.title,
-            description: lesson.description,
-            videoUrl: lesson.videoUrl,
-            duration: lesson.duration,
-            order: lesson.order,
-            isPreview: lesson.isPreview,
-            isFree: lesson.isFree,
-            sectionId: newSection.id,
-            courseId: newCourse.id,
-          },
-        });
-      }
-    }
+    const lessonsData = course.sections.flatMap(s => {
+      const newSectionId = sectionIdMap.get(s.id)!;
+      return s.lessons.map(l => ({
+        id: createId(),
+        title: l.title,
+        description: l.description,
+        videoUrl: l.videoUrl,
+        duration: l.duration,
+        order: l.order,
+        isPreview: l.isPreview,
+        isFree: l.isFree,
+        sectionId: newSectionId,
+        courseId: newCourse.id,
+      }));
+    });
+
+    await prisma.$transaction([
+      prisma.section.createMany({ data: sectionsData }),
+      prisma.lesson.createMany({ data: lessonsData }),
+    ]);
 
     const completeCourse = await prisma.course.findUnique({
       where: { id: newCourse.id },
