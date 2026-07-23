@@ -1,8 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../config/app_config.dart';
 import '../models/search_results.dart';
 import '../models/search_suggestion.dart';
 import '../models/trending_data.dart';
@@ -12,9 +9,10 @@ import '../types/api_response.dart';
 class SearchApiServiceImpl extends BaseApiService {
   Future<ApiResponse<List<SearchSuggestion>>> getSuggestions(String query) async {
     try {
-      final headers = await getHeaders(requireAuth: false);
-      final url = '${AppConfig.apiBaseUrl}/search/suggestions?q=${Uri.encodeComponent(query)}';
-      final response = await http.get(Uri.parse(url), headers: headers);
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/search/suggestions?q=${Uri.encodeComponent(query)}',
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -43,20 +41,21 @@ class SearchApiServiceImpl extends BaseApiService {
     String sortBy = 'relevance',
   }) async {
     try {
-      final queryParams = <String, String>{
-        'q': query.trim(),
-        'type': type,
-        'page': page.toString(),
-        'limit': limit.toString(),
-        'sortBy': sortBy,
-      };
+      final qParams = <String>[
+        'q=${Uri.encodeComponent(query.trim())}',
+        'type=$type',
+        'page=$page',
+        'limit=$limit',
+        'sortBy=$sortBy',
+      ];
+      if (category != null && category.isNotEmpty) qParams.add('category=${Uri.encodeComponent(category)}');
+      if (level != null && level.isNotEmpty) qParams.add('level=${Uri.encodeComponent(level)}');
+      if (price != null && price.isNotEmpty) qParams.add('price=${Uri.encodeComponent(price)}');
 
-      if (category != null && category.isNotEmpty) queryParams['category'] = category;
-      if (level != null && level.isNotEmpty) queryParams['level'] = level;
-      if (price != null && price.isNotEmpty) queryParams['price'] = price;
-
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/search').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: false));
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/search?${qParams.join('&')}',
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -93,9 +92,9 @@ class SearchApiServiceImpl extends BaseApiService {
 
   Future<ApiResponse<TrendingData>> getTrending() async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/search/trending'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/search/trending',
       );
       final data = jsonDecode(response.body);
 
@@ -111,14 +110,9 @@ class SearchApiServiceImpl extends BaseApiService {
 
   Future<ApiResponse<List<String>>> getRecentSearches() async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.success([]);
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/search/recent'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/search/recent',
       );
       final data = jsonDecode(response.body);
 
@@ -134,15 +128,10 @@ class SearchApiServiceImpl extends BaseApiService {
 
   Future<ApiResponse<dynamic>> saveRecentSearch(String query) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/search/recent'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode({'query': query.trim()}),
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/search/recent',
+        body: {'query': query.trim()},
       );
       final data = jsonDecode(response.body);
 
@@ -157,14 +146,9 @@ class SearchApiServiceImpl extends BaseApiService {
 
   Future<ApiResponse<dynamic>> clearRecentSearches() async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.delete(
-        Uri.parse('${AppConfig.apiBaseUrl}/search/recent'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'DELETE',
+        endpoint: '/search/recent',
       );
       final data = jsonDecode(response.body);
 

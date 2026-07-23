@@ -346,6 +346,77 @@ class BaseApiService {
     return _handleResponse(response);
   }
 
+  // ==================== LOW-LEVEL AUTHENTICATED HTTP ====================
+
+  /// Sends an authenticated HTTP request with automatic 401 token refresh.
+  /// Returns the raw [http.Response] so callers can handle parsing themselves.
+  /// The 401 retry uses the same lock as [_request] via [refreshAccessToken].
+  Future<http.Response> sendAuthenticatedRequest({
+    required String method,
+    required String endpoint,
+    Map<String, String>? extraHeaders,
+    dynamic body,
+  }) async {
+    final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+
+    var currentHeaders = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (extraHeaders != null) ...extraHeaders,
+    };
+
+    final token = await getToken();
+    if (token != null && token.isNotEmpty) {
+      currentHeaders['Authorization'] = 'Bearer $token';
+    }
+
+    var response = await _sendHttpRequest(method, url, currentHeaders, body);
+
+    if (response.statusCode == 401) {
+      final newToken = await refreshAccessToken();
+      if (newToken != null) {
+        currentHeaders['Authorization'] = 'Bearer $newToken';
+        response = await _sendHttpRequest(method, url, currentHeaders, body);
+      }
+    }
+
+    return response;
+  }
+
+  Future<http.Response> _sendHttpRequest(
+    String method,
+    Uri url,
+    Map<String, String> headers,
+    dynamic body,
+  ) async {
+    switch (method) {
+      case 'GET':
+        return await _client.get(url, headers: headers);
+      case 'POST':
+        return await _client.post(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        );
+      case 'PUT':
+        return await _client.put(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        );
+      case 'PATCH':
+        return await _client.patch(
+          url,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        );
+      case 'DELETE':
+        return await _client.delete(url, headers: headers);
+      default:
+        throw Exception('Unsupported HTTP method: $method');
+    }
+  }
+
   // ==================== PUBLIC HTTP METHODS ====================
 
   Future<ApiResponse> get(

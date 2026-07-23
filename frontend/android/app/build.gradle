@@ -30,7 +30,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.buildacad"
+    namespace "com.buildacad.app"
     compileSdk 36
 
     compileOptions {
@@ -48,7 +48,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.buildacad"
+        applicationId "com.buildacad.app"
         minSdkVersion 26
         targetSdk 36
         versionCode flutterVersionCode.toInteger()

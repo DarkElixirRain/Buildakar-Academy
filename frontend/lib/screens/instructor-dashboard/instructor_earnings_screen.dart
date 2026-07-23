@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/instructor_dashboard_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class InstructorEarningsScreen extends StatefulWidget {
   const InstructorEarningsScreen({super.key});
@@ -32,7 +33,9 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
@@ -71,7 +74,7 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
                     children: [
                       Text('Total Earnings', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
                       const SizedBox(height: 8),
-                      Text('\$${totalEarnings.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text('रु ${totalEarnings.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
                       const SizedBox(height: 4),
                       Text('${totalCourses > 0 ? totalCourses : '...'} course${totalCourses == 1 ? '' : 's'}', style: GoogleFonts.inter(color: Colors.white.withValues(alpha: 0.7))),
                     ],
@@ -88,7 +91,7 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
                           children: [
                             Icon(Icons.monetization_on, color: successColor, size: 24),
                             const SizedBox(height: 8),
-                            Text('\$${monthlyEarnings.toStringAsFixed(0)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
+                            Text('रु ${monthlyEarnings.toStringAsFixed(0)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
                             Text('Monthly', style: GoogleFonts.inter(fontSize: 12, color: textSecondaryColor)),
                           ],
                         ),
@@ -103,7 +106,7 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
                           children: [
                             Icon(Icons.hourglass_empty, color: Colors.orange, size: 24),
                             const SizedBox(height: 8),
-                            Text('\$${pendingPayout.toStringAsFixed(0)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
+                            Text('रु ${pendingPayout.toStringAsFixed(0)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
                             Text('Pending', style: GoogleFonts.inter(fontSize: 12, color: textSecondaryColor)),
                           ],
                         ),
@@ -172,7 +175,7 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
                               ],
                             ),
                           ),
-                          Text('${isCredit ? '+' : '-'}\$${amount.toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: isCredit ? Colors.green : Colors.red)),
+                          Text('${isCredit ? '+' : '-'}रु ${amount.toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: isCredit ? Colors.green : Colors.red)),
                         ],
                       ),
                     );

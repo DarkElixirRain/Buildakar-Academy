@@ -510,7 +510,7 @@ class _SortFilterSheetState extends State<SortFilterSheet> {
                   max: 200,
                   divisions: 20,
                   activeColor: primaryColor,
-                  labels: RangeLabels('\$${_price.start.round()}', '\$${_price.end.round()}'),
+                  labels: RangeLabels('रु ${_price.start.round()}', 'रु ${_price.end.round()}'),
                   onChanged: (v) => setState(() => _price = v),
                 ),
                 const SizedBox(height: 8),

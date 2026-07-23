@@ -4,20 +4,24 @@ import googleAuthService from '../services/googleAuth.service';
 export class GoogleAuthController {
   async googleAuth(req: Request, res: Response, next: NextFunction) {
     try {
-      const { code, codeVerifier, redirectUri } = req.body;
+      const { code, idToken, codeVerifier, redirectUri } = req.body;
 
-      if (!code) {
+      let result;
+
+      if (idToken) {
+        result = await googleAuthService.handleGoogleIdToken({ idToken });
+      } else if (code) {
+        result = await googleAuthService.handleGoogleAuth({
+          code,
+          codeVerifier,
+          redirectUri,
+        });
+      } else {
         return res.status(400).json({
           success: false,
-          message: 'Authorization code is required',
+          message: 'Authorization code or ID token is required',
         });
       }
-
-      const result = await googleAuthService.handleGoogleAuth({
-        code,
-        codeVerifier,
-        redirectUri,
-      });
 
       // Store refresh token in HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {

@@ -1577,7 +1577,7 @@ class _InstructorCourseDetailScreenState
               const SizedBox(width: 12),
               _buildStatCard(
                 'Revenue',
-                '\$${(_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0)}',
+                'रु ${(_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0)}',
                 Icons.attach_money_rounded,
                 Colors.green,
                 cardColor,
@@ -1659,7 +1659,7 @@ class _InstructorCourseDetailScreenState
           _buildInfoRow('Category', _courseData['category']?['name'] ?? 'General', textColor, textSecondaryColor),
           _buildInfoRow('Level', _courseData['level'] ?? 'Beginner', textColor, textSecondaryColor),
           _buildInfoRow('Language', _courseData['language'] ?? 'English', textColor, textSecondaryColor),
-          _buildInfoRow('Price', '\$${_courseData['price'] ?? 0}', textColor, textSecondaryColor),
+          _buildInfoRow('Price', 'रु ${_courseData['price'] ?? 0}', textColor, textSecondaryColor),
           _buildInfoRow('Created', _formatDate(_courseData['createdAt']), textColor, textSecondaryColor),
           _buildInfoRow('Last Updated', _formatDate(_courseData['lastUpdated']), textColor, textSecondaryColor),
         ],
@@ -2540,7 +2540,7 @@ class _InstructorCourseDetailScreenState
               ),
               _buildAnalyticsCard(
                 'Revenue',
-                '\$${analytics['totalRevenue']?.toStringAsFixed(0) ?? '0'}',
+                'रु ${analytics['totalRevenue']?.toStringAsFixed(0) ?? '0'}',
                 Icons.attach_money_rounded,
                 Colors.green,
                 cardColor,

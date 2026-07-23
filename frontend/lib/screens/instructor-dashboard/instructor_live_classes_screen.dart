@@ -5,6 +5,7 @@ import '../../constants/colors.dart';
 import '../../providers/live_class_provider.dart';
 import '../../models/live_class_model.dart';
 import '../../services/api_service.dart';
+import '../../providers/theme_provider.dart';
 import '../live/live_class_room_screen.dart';
 
 class InstructorLiveClassesScreen extends StatefulWidget {
@@ -27,7 +28,9 @@ class _InstructorLiveClassesScreenState extends State<InstructorLiveClassesScree
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);

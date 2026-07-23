@@ -53,6 +53,7 @@ class _LiveClassRoomScreenState extends State<LiveClassRoomScreen> {
       });
     } else {
       setState(() => _state = _RoomState.ended);
+      _isLeaving = true;
       Future.delayed(const Duration(milliseconds: 900), () {
         if (mounted) Navigator.of(context).pop();
       });
@@ -101,8 +102,6 @@ Future<void> _connect() async {
     },
     readyToClose: () {
       debugPrint('[LiveClassRoom] 📴 readyToClose');
-      JitsiService.markLeft();
-      if (mounted) Navigator.of(context).pop();
     },
     participantJoined: (email, name, role, participantId) {
       debugPrint('[LiveClassRoom] 👤 participantJoined: $name ($participantId)');
@@ -156,20 +155,13 @@ Future<void> _connect() async {
 
   Future<void> _leaveRoom() async {
     if (_isLeaving) return;
-    setState(() => _isLeaving = true);
+    _isLeaving = true;
 
-    try {
-      if (JitsiService.isInMeeting) {
-        await JitsiService.hangUp();
-      }
-      JitsiService.markLeft();
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLeaving = false);
-      }
+    await JitsiService.hangUp();
+    JitsiService.markLeft();
+
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -183,9 +175,7 @@ Future<void> _connect() async {
 
   @override
   void dispose() {
-    if (JitsiService.isInMeeting && !_isLeaving) {
-      JitsiService.hangUp();
-    }
+    JitsiService.markLeft();
     super.dispose();
   }
 

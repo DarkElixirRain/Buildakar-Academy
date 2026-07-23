@@ -1,5 +1,3 @@
-// lib/screens/live_class/live_class_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -28,8 +26,6 @@ class _LiveScreenState extends State<LiveScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
-    // Load live classes when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadLiveClasses();
     });
@@ -41,31 +37,24 @@ class _LiveScreenState extends State<LiveScreen>
     super.dispose();
   }
 
-  // Load ALL live classes using the provider (categorized)
   Future<void> _loadLiveClasses() async {
     final provider = Provider.of<LiveClassProvider>(context, listen: false);
     await provider.loadAllStudentClasses();
   }
 
-  // Navigate to Create Live Class screen
   void _navigateToCreateLiveClass() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const CreateLiveClassScreen(),
       ),
-    ).then((_) {
-      // Refresh the list when returning from create screen
-      _loadLiveClasses();
-    });
+    ).then((_) => _loadLiveClasses());
   }
 
-  // Join a live class -> launches the Jitsi meeting room
   Future<void> _joinClass(LiveClass liveClass) async {
     final provider = Provider.of<LiveClassProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    // Show "connecting" overlay
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -75,35 +64,27 @@ class _LiveScreenState extends State<LiveScreen>
 
     try {
       final roomData = await provider.joinLiveClass(liveClass.id);
-
-      if (mounted) Navigator.pop(context); // dismiss connecting overlay
+      if (mounted) Navigator.pop(context);
 
       if (roomData != null && mounted) {
-        // Get user info from auth provider
         final user = authProvider.user;
         String userName = 'Student';
         String? userEmail = user?.email;
         String? userAvatarUrl = user?.profileImage;
 
-        // Build display name from user data
         if (user != null) {
-          final firstName = user.firstName ?? '';
-          final lastName = user.lastName ?? '';
+          final firstName = user.firstName;
+          final lastName = user.lastName;
           if (firstName.isNotEmpty || lastName.isNotEmpty) {
             userName = '$firstName $lastName'.trim();
-          } else if (user.email != null && user.email!.isNotEmpty) {
-            userName = user.email!.split('@').first;
+          } else if (user.email.isNotEmpty) {
+            userName = user.email.split('@').first;
           }
         }
 
-        // Use roomData displayName if provided by backend (prefer this)
         if (roomData['displayName'] != null && roomData['displayName'].toString().isNotEmpty) {
           userName = roomData['displayName'].toString();
         }
-
-        debugPrint('[JoinClass] Joining as: $userName');
-        debugPrint('[JoinClass] Email: $userEmail');
-        debugPrint('[JoinClass] Avatar: $userAvatarUrl');
 
         Navigator.push(
           context,
@@ -122,12 +103,10 @@ class _LiveScreenState extends State<LiveScreen>
           ),
         );
       } else if (mounted) {
-        // Show error message
         String errorMessage = provider.errorMessage.isNotEmpty
             ? provider.errorMessage
             : 'Failed to join the class. Please try again.';
-        
-        // Check for specific error types
+
         if (errorMessage.contains('not currently live')) {
           errorMessage = 'This class is not currently live. Please wait for the instructor to start the class.';
         } else if (errorMessage.contains('not enrolled')) {
@@ -135,7 +114,7 @@ class _LiveScreenState extends State<LiveScreen>
         } else if (errorMessage.contains('404') || errorMessage.contains('not found')) {
           errorMessage = 'This class is no longer available.';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -152,7 +131,6 @@ class _LiveScreenState extends State<LiveScreen>
       }
     } catch (e) {
       if (mounted) Navigator.pop(context);
-
       if (mounted) {
         String errorMessage = 'Error: ${e.toString()}';
         if (errorMessage.contains('SocketException')) {
@@ -160,7 +138,6 @@ class _LiveScreenState extends State<LiveScreen>
         } else if (errorMessage.contains('Timeout')) {
           errorMessage = 'Connection timed out. Please try again.';
         }
-        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -173,10 +150,8 @@ class _LiveScreenState extends State<LiveScreen>
     }
   }
 
-  // Start a live class (instructor only)
   Future<void> _startClass(LiveClass liveClass) async {
     final provider = Provider.of<LiveClassProvider>(context, listen: false);
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -199,7 +174,6 @@ class _LiveScreenState extends State<LiveScreen>
 
     final success = await provider.startLiveClass(liveClass.id);
     if (success && mounted) {
-      // Auto-join the class now that it's live
       _joinClass(liveClass);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -214,21 +188,19 @@ class _LiveScreenState extends State<LiveScreen>
     }
   }
 
-  // Set reminder for a class
   void _remindMe(LiveClass liveClass) async {
     final provider = Provider.of<LiveClassProvider>(context, listen: false);
     final classId = liveClass.id;
 
     if (classId.isNotEmpty) {
-      // Toggle follow status locally
       final isFollowing = provider.isFollowingClass(classId);
       await provider.toggleFollowClass(classId);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isFollowing 
+              isFollowing
                   ? 'Reminder removed for "${liveClass.title}"'
                   : 'Reminder set for "${liveClass.title}"',
             ),
@@ -241,7 +213,6 @@ class _LiveScreenState extends State<LiveScreen>
     }
   }
 
-  // Check if user is instructor or admin
   bool _isInstructorOrAdmin() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
@@ -260,27 +231,20 @@ class _LiveScreenState extends State<LiveScreen>
     final backgroundColor = AppColors.getBackgroundColor(brightness);
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
     final double horizontalPadding = screenWidth < 480
-        ? 16
+        ? 16.0
         : screenWidth < 900
-            ? 24
-            : 40;
+            ? 24.0
+            : 40.0;
 
-    int crossAxisCount = 1;
-    if (screenWidth > 600) crossAxisCount = 2;
-    if (screenWidth > 1000) crossAxisCount = 3;
-    if (screenWidth > 1400) crossAxisCount = 4;
     final isGridLayout = screenWidth >= 600;
-
     final liveClassProvider = Provider.of<LiveClassProvider>(context);
 
-    final liveClasses = liveClassProvider.liveClasses ?? [];
-    final upcomingClasses = liveClassProvider.upcomingClasses ?? [];
-    final endedClasses = liveClassProvider.endedClasses ?? [];
-    final allClasses = liveClassProvider.allClasses ?? [];
-    final classSummary = liveClassProvider.classSummary ?? {};
+    final liveClasses = liveClassProvider.liveClasses;
+    final upcomingClasses = liveClassProvider.upcomingClasses;
+    final endedClasses = liveClassProvider.endedClasses;
+    final allClasses = liveClassProvider.allClasses;
+    final classSummary = liveClassProvider.classSummary;
 
     final isLoading = liveClassProvider.isLoading;
     final isFirstLoad = liveClassProvider.isFirstLoad;
@@ -305,9 +269,7 @@ class _LiveScreenState extends State<LiveScreen>
               icon: const Icon(Icons.add_rounded),
               label: Text(
                 'Create Class',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             )
           : null,
@@ -316,201 +278,34 @@ class _LiveScreenState extends State<LiveScreen>
             ? _buildErrorState(errorMessage, textSecondaryColor, primaryColor)
             : Column(
                 children: [
-                  // Header
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Live Classes',
-                                    style: GoogleFonts.inter(
-                                      fontSize: screenWidth < 480 ? 24 : 28,
-                                      fontWeight: FontWeight.w800,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  if (isInstructor) ...[
-                                    const SizedBox(width: 12),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: primaryColor.withAlpha(30),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        'Instructor',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: primaryColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              showSkeleton
-                                  ? SkeletonBox(
-                                      width: 140,
-                                      height: 12,
-                                      color: textSecondaryColor.withAlpha(30),
-                                    )
-                                  : Text(
-                                      totalCount > 0
-                                          ? '$totalCount session${totalCount > 1 ? 's' : ''} total'
-                                          : 'No live sessions available',
-                                      style: GoogleFonts.inter(
-                                        fontSize: screenWidth < 480 ? 13 : 14,
-                                        color: textSecondaryColor,
-                                      ),
-                                    ),
-                            ],
-                          ),
-                        ),
-                        if (liveCount > 0 && !showSkeleton)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withAlpha(30),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.red.withAlpha(75)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const PulsingDot(color: Colors.red, size: 8),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '$liveCount live now',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
+                  _buildHeader(
+                    screenWidth, horizontalPadding, textColor,
+                    textSecondaryColor, primaryColor, isInstructor,
+                    totalCount, liveCount, showSkeleton,
                   ),
-
                   const SizedBox(height: 16),
-
-                  // Tab Bar with refresh indicator - FIXED: Constrained height
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 48, // Fixed height to prevent overflow
-                            decoration: BoxDecoration(
-                              color: textSecondaryColor.withAlpha(20),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: TabBar(
-                              controller: _tabController,
-                              indicator: BoxDecoration(
-                                color: primaryColor,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: primaryColor.withAlpha(75),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              labelColor: Colors.white,
-                              unselectedLabelColor: textSecondaryColor,
-                              dividerColor: Colors.transparent,
-                              labelStyle: GoogleFonts.inter(
-                                fontSize: screenWidth < 480 ? 11 : 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              unselectedLabelStyle: GoogleFonts.inter(
-                                fontSize: screenWidth < 480 ? 11 : 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              tabs: [
-                                Tab(text: 'Live (${showSkeleton ? '-' : liveCount})'),
-                                Tab(text: 'Upcoming (${showSkeleton ? '-' : upcomingCount})'),
-                                Tab(text: 'Ended (${showSkeleton ? '-' : endedCount})'),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (isLoading && !isFirstLoad)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8),
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        IconButton(
-                          icon: const Icon(Icons.refresh_rounded),
-                          onPressed: isLoading ? null : _loadLiveClasses,
-                          tooltip: 'Refresh',
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(),
-                          iconSize: 24,
-                        ),
-                      ],
-                    ),
+                  _buildTabBar(
+                    horizontalPadding, primaryColor,
+                    textSecondaryColor, screenWidth,
+                    liveCount, upcomingCount, endedCount,
+                    showSkeleton, isLoading, isFirstLoad,
                   ),
-
                   const SizedBox(height: 12),
-
-                  // Content - Expanded with proper constraints
                   Expanded(
                     child: showSkeleton
                         ? SkeletonLiveClassList(
                             isDark: isDark,
                             isGrid: isGridLayout,
-                            crossAxisCount: crossAxisCount,
+                            crossAxisCount: _crossAxisCount(screenWidth),
                             horizontalPadding: horizontalPadding,
-                            itemCount: isGridLayout ? crossAxisCount * 2 : 4,
+                            itemCount: isGridLayout ? _crossAxisCount(screenWidth) * 2 : 4,
                           )
                         : TabBarView(
                             controller: _tabController,
                             children: [
-                              _buildContent(
-                                liveClasses,
-                                horizontalPadding,
-                                crossAxisCount,
-                                emptyMessage: 'No classes are live right now',
-                                isLive: true,
-                                screenHeight: screenHeight,
-                              ),
-                              _buildContent(
-                                upcomingClasses,
-                                horizontalPadding,
-                                crossAxisCount,
-                                emptyMessage: 'No upcoming classes scheduled',
-                                isLive: false,
-                                screenHeight: screenHeight,
-                              ),
-                              _buildContent(
-                                endedClasses,
-                                horizontalPadding,
-                                crossAxisCount,
-                                emptyMessage: 'No past classes yet',
-                                isLive: false,
-                                screenHeight: screenHeight,
-                              ),
+                              _buildContent(liveClasses, horizontalPadding, emptyMessage: 'No classes are live right now', isLive: true),
+                              _buildContent(upcomingClasses, horizontalPadding, emptyMessage: 'No upcoming classes scheduled', isLive: false),
+                              _buildContent(endedClasses, horizontalPadding, emptyMessage: 'No past classes yet', isLive: false),
                             ],
                           ),
                   ),
@@ -520,14 +315,323 @@ class _LiveScreenState extends State<LiveScreen>
     );
   }
 
+  int _crossAxisCount(double width) {
+    if (width > 1400) return 4;
+    if (width > 1000) return 3;
+    if (width > 600) return 2;
+    return 1;
+  }
+
+  Widget _buildHeader(
+    double screenWidth, double horizontalPadding,
+    Color textColor, Color textSecondaryColor,
+    Color primaryColor, bool isInstructor,
+    int totalCount, int liveCount, bool showSkeleton,
+  ) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 16, horizontalPadding, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Live Classes',
+                        style: GoogleFonts.inter(
+                          fontSize: screenWidth < 480 ? 24 : 28,
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isInstructor) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withAlpha(30),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'Instructor',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 4),
+                showSkeleton
+                    ? SkeletonBox(width: 140, height: 12, color: textSecondaryColor.withAlpha(30))
+                    : Text(
+                        totalCount > 0
+                            ? '$totalCount session${totalCount > 1 ? 's' : ''} total'
+                            : 'No live sessions available',
+                        style: GoogleFonts.inter(
+                          fontSize: screenWidth < 480 ? 13 : 14,
+                          color: textSecondaryColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+              ],
+            ),
+          ),
+          if (liveCount > 0 && !showSkeleton)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(30),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.red.withAlpha(75)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const PulsingDot(color: Colors.red, size: 8),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$liveCount live now',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabBar(
+    double horizontalPadding, Color primaryColor,
+    Color textSecondaryColor, double screenWidth,
+    int liveCount, int upcomingCount, int endedCount,
+    bool showSkeleton, bool isLoading, bool isFirstLoad,
+  ) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: textSecondaryColor.withAlpha(20),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: false,
+                indicator: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withAlpha(75),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: textSecondaryColor,
+                dividerColor: Colors.transparent,
+                labelStyle: GoogleFonts.inter(
+                  fontSize: screenWidth < 480 ? 11 : 13,
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: GoogleFonts.inter(
+                  fontSize: screenWidth < 480 ? 11 : 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs: [
+                  Tab(text: 'Live (${showSkeleton ? '-' : liveCount})'),
+                  Tab(text: 'Upcoming (${showSkeleton ? '-' : upcomingCount})'),
+                  Tab(text: 'Ended (${showSkeleton ? '-' : endedCount})'),
+                ],
+              ),
+            ),
+          ),
+          if (isLoading && !isFirstLoad)
+            const Padding(
+              padding: EdgeInsets.only(left: 8),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: isLoading ? null : _loadLiveClasses,
+            tooltip: 'Refresh',
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(),
+            iconSize: 24,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    List<LiveClass> items,
+    double horizontalPadding, {
+    required String emptyMessage,
+    required bool isLive,
+  }) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+
+    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
+    final primaryColor = AppColors.getPrimaryColor(brightness);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: textSecondaryColor.withAlpha(15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isLive ? Icons.people_outline_rounded : Icons.videocam_off_rounded,
+                  size: 36,
+                  color: textSecondaryColor.withAlpha(120),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                emptyMessage,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textSecondaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isLive
+                    ? 'Check back later for live sessions'
+                    : 'Stay tuned for upcoming classes',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: textSecondaryColor.withAlpha(180),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (!isLive) ...[
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: _loadLiveClasses,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Refresh'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadLiveClasses,
+      color: primaryColor,
+      child: screenWidth < 600
+          ? ListView.builder(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final liveClass = items[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _cardFor(liveClass),
+                );
+              },
+            )
+          : GridView.builder(
+              padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 400,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                mainAxisExtent: null,
+              ),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final liveClass = items[index];
+                return _cardFor(liveClass);
+              },
+            ),
+    );
+  }
+
+  Widget _cardFor(LiveClass liveClass) {
+    final isFollowing = Provider.of<LiveClassProvider>(context, listen: false)
+        .isFollowingClass(liveClass.id);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    final isInstructor = user?.role == 'INSTRUCTOR' || user?.role == 'ADMIN';
+    final isOwnClass = liveClass.instructorId == user?.id;
+
+    return LiveClassCard(
+      liveClass: liveClass.toJson(),
+      isFollowing: isFollowing,
+      isOwnClass: isOwnClass,
+      isInstructor: isInstructor,
+      onJoin: () => _joinClass(liveClass),
+      onStart: () => _startClass(liveClass),
+      onRemindMe: () => _remindMe(liveClass),
+    );
+  }
+
   Widget _buildErrorState(String errorMessage, Color textSecondaryColor, Color primaryColor) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 64, color: Colors.red.withAlpha(150)),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(20),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline_rounded, size: 36, color: Colors.red),
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load live classes',
@@ -560,138 +664,8 @@ class _LiveScreenState extends State<LiveScreen>
       ),
     );
   }
-
-  Widget _buildContent(
-    List<LiveClass> items,
-    double horizontalPadding,
-    int crossAxisCount, {
-    required String emptyMessage,
-    required bool isLive,
-    required double screenHeight,
-  }) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-
-    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
-    final primaryColor = AppColors.getPrimaryColor(brightness);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    final safeItems = items;
-
-    if (safeItems.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isLive ? Icons.people_outline_rounded : Icons.videocam_off_rounded,
-                size: 64,
-                color: textSecondaryColor.withAlpha(130),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                emptyMessage,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textSecondaryColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isLive
-                    ? 'Check back later for live sessions'
-                    : 'Stay tuned for upcoming classes',
-                style: GoogleFonts.inter(fontSize: 14, color: textSecondaryColor.withAlpha(180)),
-                textAlign: TextAlign.center,
-              ),
-              if (!isLive) const SizedBox(height: 16),
-              if (!isLive)
-                ElevatedButton.icon(
-                  onPressed: _loadLiveClasses,
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Refresh'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadLiveClasses,
-      color: primaryColor,
-      child: screenWidth < 600
-          ? ListView.builder(
-              padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
-              itemCount: safeItems.length,
-              itemBuilder: (context, index) {
-                final liveClass = safeItems[index];
-                final isFollowing = Provider.of<LiveClassProvider>(context, listen: false)
-                    .isFollowingClass(liveClass.id);
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                final user = authProvider.user;
-                final isInstructor = user?.role == 'INSTRUCTOR' || user?.role == 'ADMIN';
-                final isOwnClass = liveClass.instructorId == user?.id;
-                
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: LiveClassCard(
-                    liveClass: liveClass.toJson(),
-                    isFollowing: isFollowing,
-                    isOwnClass: isOwnClass,
-                    isInstructor: isInstructor,
-                    onJoin: () => _joinClass(liveClass),
-                    onStart: () => _startClass(liveClass),
-                    onRemindMe: () => _remindMe(liveClass),
-                  ),
-                );
-              },
-            )
-          : GridView.builder(
-              padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: screenWidth > 1000 ? 1.1 : 0.9,
-              ),
-              itemCount: safeItems.length,
-              itemBuilder: (context, index) {
-                final liveClass = safeItems[index];
-                final isFollowing = Provider.of<LiveClassProvider>(context, listen: false)
-                    .isFollowingClass(liveClass.id);
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                final user = authProvider.user;
-                final isInstructor = user?.role == 'INSTRUCTOR' || user?.role == 'ADMIN';
-                final isOwnClass = liveClass.instructorId == user?.id;
-                
-                return LiveClassCard(
-                  liveClass: liveClass.toJson(),
-                  isFollowing: isFollowing,
-                  isOwnClass: isOwnClass,
-                  isInstructor: isInstructor,
-                  onJoin: () => _joinClass(liveClass),
-                  onStart: () => _startClass(liveClass),
-                  onRemindMe: () => _remindMe(liveClass),
-                );
-              },
-            ),
-    );
-  }
 }
 
-/// Small polished "Connecting..." overlay shown while a join request
-/// is in flight, replacing the bare CircularProgressIndicator dialog.
 class _ConnectingDialog extends StatelessWidget {
   const _ConnectingDialog();
 
@@ -705,6 +679,13 @@ class _ConnectingDialog extends StatelessWidget {
               ? const Color(0xFF1E2028)
               : Colors.white,
           borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(40),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -736,7 +717,6 @@ class _ConnectingDialog extends StatelessWidget {
   }
 }
 
-/// Pulsing dot widget for live indicator
 class PulsingDot extends StatefulWidget {
   final Color color;
   final double size;
@@ -764,10 +744,7 @@ class _PulsingDotState extends State<PulsingDot>
       vsync: this,
     )..repeat();
     _animation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
 

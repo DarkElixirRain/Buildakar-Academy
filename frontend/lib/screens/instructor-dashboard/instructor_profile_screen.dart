@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/instructor_dashboard_provider.dart';
 
 class InstructorProfileScreen extends StatelessWidget {
@@ -10,7 +11,9 @@ class InstructorProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
@@ -70,7 +73,7 @@ class InstructorProfileScreen extends StatelessWidget {
                         const Divider(height: 1, indent: 56),
                         _ProfileTile(icon: Icons.people, label: 'Total Students', value: '${provider.totalStudents}', textColor: textColor, textSecondaryColor: textSecondaryColor),
                         const Divider(height: 1, indent: 56),
-                        _ProfileTile(icon: Icons.attach_money, label: 'Total Revenue', value: '\$${provider.totalRevenue.toStringAsFixed(0)}', textColor: textColor, textSecondaryColor: textSecondaryColor),
+                        _ProfileTile(icon: Icons.attach_money, label: 'Total Revenue', value: 'रु ${provider.totalRevenue.toStringAsFixed(0)}', textColor: textColor, textSecondaryColor: textSecondaryColor),
                         const Divider(height: 1, indent: 56),
                         _ProfileTile(icon: Icons.star, label: 'Average Rating', value: provider.averageRating.toStringAsFixed(1), textColor: textColor, textSecondaryColor: textSecondaryColor),
                       ],

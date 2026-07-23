@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/instructor_dashboard_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class InstructorAnalyticsScreen extends StatefulWidget {
   const InstructorAnalyticsScreen({super.key});
@@ -22,7 +23,9 @@ class _InstructorAnalyticsScreenState extends State<InstructorAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
@@ -59,7 +62,7 @@ class _InstructorAnalyticsScreenState extends State<InstructorAnalyticsScreen> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _AnalyticCard(label: 'Revenue', value: '\$${(a?['totalRevenue'] ?? provider.totalRevenue).toStringAsFixed(0)}', icon: Icons.trending_up, color: Colors.green, cardColor: cardColor, textColor: textColor, textSecondaryColor: textSecondaryColor),
+                    _AnalyticCard(label: 'Revenue', value: 'रु ${(a?['totalRevenue'] ?? provider.totalRevenue).toStringAsFixed(0)}', icon: Icons.trending_up, color: Colors.green, cardColor: cardColor, textColor: textColor, textSecondaryColor: textSecondaryColor),
                     const SizedBox(width: 12),
                     _AnalyticCard(label: 'Reviews', value: '${a?['totalReviews'] ?? provider.totalReviews}', icon: Icons.rate_review, color: Colors.purple, cardColor: cardColor, textColor: textColor, textSecondaryColor: textSecondaryColor),
                   ],

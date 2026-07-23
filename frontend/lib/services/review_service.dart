@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
@@ -13,18 +12,13 @@ class ReviewApiService extends BaseApiService {
     String? comment,
   }) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/reviews'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode({
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/courses/$courseId/reviews',
+        body: {
           'rating': rating,
           if (comment != null && comment.isNotEmpty) 'comment': comment,
-        }),
+        },
       );
       final data = jsonDecode(response.body);
 
@@ -43,19 +37,14 @@ class ReviewApiService extends BaseApiService {
     String? comment,
   }) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
       final body = <String, dynamic>{};
       if (rating != null) body['rating'] = rating;
       if (comment != null && comment.isNotEmpty) body['comment'] = comment;
 
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/reviews/$reviewId'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode(body),
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/reviews/$reviewId',
+        body: body,
       );
       final data = jsonDecode(response.body);
 
@@ -70,14 +59,9 @@ class ReviewApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> deleteReview(String reviewId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.delete(
-        Uri.parse('${AppConfig.apiBaseUrl}/reviews/$reviewId'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'DELETE',
+        endpoint: '/reviews/$reviewId',
       );
       final data = jsonDecode(response.body);
 
@@ -96,9 +80,11 @@ class ReviewApiService extends BaseApiService {
     int limit = 10,
   }) async {
     try {
-      final queryParams = <String, String>{'page': page.toString(), 'limit': limit.toString()};
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/reviews').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: false));
+      final queryString = '?page=$page&limit=$limit';
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/courses/$courseId/reviews$queryString',
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -115,14 +101,9 @@ class ReviewApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> getMyReview(String courseId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/my-review'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/courses/$courseId/my-review',
       );
       final data = jsonDecode(response.body);
 

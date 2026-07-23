@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/instructor_dashboard_provider.dart';
+import '../../providers/theme_provider.dart';
 
 class InstructorStudentsScreen extends StatefulWidget {
   const InstructorStudentsScreen({super.key});
@@ -30,7 +31,9 @@ class _InstructorStudentsScreenState extends State<InstructorStudentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);

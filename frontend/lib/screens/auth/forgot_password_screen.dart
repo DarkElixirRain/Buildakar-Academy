@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../widgets/splash_logo.dart'; 
+import '../../providers/theme_provider.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -270,8 +272,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final size = MediaQuery.of(context).size;
     final isSmallDevice = size.width < 375;
     final isTablet = size.width >= 768;
@@ -836,7 +839,9 @@ class CustomInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -1021,7 +1026,9 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final isEnabled = !isLoading;
     final primaryColor = AppColors.getPrimaryColor(brightness);
 

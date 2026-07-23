@@ -5,34 +5,21 @@ import { hashCode, compareCode } from "../utils/hash";
 import { sendVerificationEmail } from "./email.service";
 
 export async function sendVerificationCode(email: string) {
-  // Delete any existing code
-  await prisma.emailVerification.deleteMany({
-    where: { email },
-  });
+  const pending = await prisma.pendingRegistration.findUnique({ where: { email } });
+  if (!pending) {
+    throw new Error('No pending registration found for this email');
+  }
 
-  // Generate new code
   const code = generateVerificationCode();
   const codeHash = await hashCode(code);
+  const expiresInMinutes = Number(process.env.VERIFICATION_CODE_EXPIRES_MINUTES ?? 10);
+  const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
-  // Set expiration
-  const expiresInMinutes = Number(
-  process.env.VERIFICATION_CODE_EXPIRES_MINUTES ?? 10
-);
-
-const expiresAt = new Date(
-  Date.now() + expiresInMinutes * 60 * 1000
-);
-
-  // Save the new code
-  await prisma.emailVerification.create({
-    data: {
-      email,
-      codeHash,
-      expiresAt,
-    },
+  await prisma.pendingRegistration.update({
+    where: { email },
+    data: { codeHash, expiresAt },
   });
 
-  // Send email
   await sendVerificationEmail(email, code);
 }
 
@@ -40,39 +27,39 @@ export async function verifyverificationCode(
   email: string,
   code: string  
 ) {
-  const verification = await prisma.emailVerification.findFirst({
+  const pending = await prisma.pendingRegistration.findUnique({
     where: { email },
-    orderBy: {
-      createdAt: "desc",
-    },
   });
 
-  if (!verification) {
-    throw new Error("Verification code not found.");
+  if (!pending) {
+    throw new Error('Verification code not found.');
   }
 
-  if (verification.expiresAt < new Date()) {
-    throw new Error("Verification code has expired.");
+  if (pending.expiresAt < new Date()) {
+    throw new Error('Verification code has expired.');
   }
 
-  const isValid = await compareCode(code, verification.codeHash);
+  const isValid = await compareCode(code, pending.codeHash);
 
   if (!isValid) {
-    throw new Error("Invalid verification code.");
+    throw new Error('Invalid verification code.');
   }
 
   await prisma.$transaction([
-    prisma.user.update({
-      where: { email },
+    prisma.user.create({
       data: {
+        email: pending.email,
+        password: pending.passwordHash,
+        firstName: pending.firstName,
+        lastName: pending.lastName,
+        role: pending.role as any,
         isVerified: true,
       },
     }),
-    prisma.emailVerification.deleteMany({
+    prisma.pendingRegistration.delete({
       where: { email },
     }),
   ]);
 
   return true;
 }
-

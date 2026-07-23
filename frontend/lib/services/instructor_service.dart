@@ -2,9 +2,6 @@
 
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../config/app_config.dart';
 import '../models/course_model.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
@@ -15,9 +12,9 @@ class InstructorApiService extends BaseApiService {
   // GET /instructors/top - Get top instructors
   Future<ApiResponse<List<Map<String, dynamic>>>> getTopInstructors({int limit = 10}) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/top?limit=$limit'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/top?limit=$limit',
       );
       final data = jsonDecode(response.body);
 
@@ -53,8 +50,8 @@ class InstructorApiService extends BaseApiService {
         if (categoryId != null && categoryId.isNotEmpty) 'categoryId': categoryId,
       };
 
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/instructors').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: false));
+      final endpoint = Uri(path: '/instructors', queryParameters: queryParams).toString();
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: endpoint);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -72,9 +69,9 @@ class InstructorApiService extends BaseApiService {
   // GET /instructors/:id - Get instructor by ID
   Future<ApiResponse<Map<String, dynamic>>> getInstructorById(String id) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/$id'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/$id',
       );
       final data = jsonDecode(response.body);
 
@@ -95,9 +92,9 @@ class InstructorApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/$instructorId/follow'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/instructors/$instructorId/follow',
       );
       final data = jsonDecode(response.body);
 
@@ -117,9 +114,9 @@ class InstructorApiService extends BaseApiService {
     int offset = 0,
   }) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/$instructorId/followers?limit=$limit&offset=$offset'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/$instructorId/followers?limit=$limit&offset=$offset',
       );
       final data = jsonDecode(response.body);
 
@@ -135,9 +132,9 @@ class InstructorApiService extends BaseApiService {
   // GET /instructors/search - Search instructors
   Future<ApiResponse<List<Map<String, dynamic>>>> searchInstructors(String query, {int limit = 10}) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/search?q=${Uri.encodeComponent(query)}&limit=$limit'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/search?q=${Uri.encodeComponent(query)}&limit=$limit',
       );
       final data = jsonDecode(response.body);
 
@@ -164,30 +161,19 @@ class InstructorApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      // ✅ FIX: Use proper headers without sending a request body
-      final headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-      
-      print('🔑 Using token: ${token.substring(0, token.length > 10 ? 10 : token.length)}...');
-      print('📡 Making GET request to: ${AppConfig.apiBaseUrl}/instructors/courses');
-      
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/courses'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/courses',
       );
-      
+
       print('📡 getInstructorCourses response status: ${response.statusCode}');
       print('📡 getInstructorCourses response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}...');
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         List<Course> courses = [];
-        
-        // Handle different response formats
+
         if (data['data'] is List) {
           courses = (data['data'] as List)
               .map((item) => Course.fromJson(item))
@@ -197,7 +183,7 @@ class InstructorApiService extends BaseApiService {
               .map((item) => Course.fromJson(item))
               .toList();
         }
-        
+
         print('✅ Loaded ${courses.length} courses');
         return ApiResponse.success(courses, message: data['message']);
       } else if (response.statusCode == 401) {
@@ -219,15 +205,9 @@ class InstructorApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-      
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/stats'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/stats',
       );
       final data = jsonDecode(response.body);
 
@@ -256,13 +236,9 @@ class InstructorApiService extends BaseApiService {
         queryParams['courseId'] = courseId;
       }
 
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/instructors/analytics')
-          .replace(queryParameters: queryParams);
-      
-      final response = await http.get(
-        uri,
-        headers: await getHeaders(requireAuth: true),
-      );
+      final endpoint = Uri(path: '/instructors/analytics', queryParameters: queryParams).toString();
+
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: endpoint);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -285,10 +261,9 @@ class InstructorApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/profile'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/instructors/profile',
         body: jsonEncode(profileData),
       );
       final data = jsonDecode(response.body);
@@ -325,13 +300,9 @@ class InstructorApiService extends BaseApiService {
         'sortBy': sortBy ?? 'newest',
       };
 
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/instructors/students')
-          .replace(queryParameters: queryParams);
-      
-      final response = await http.get(
-        uri,
-        headers: await getHeaders(requireAuth: true),
-      );
+      final endpoint = Uri(path: '/instructors/students', queryParameters: queryParams).toString();
+
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: endpoint);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -364,13 +335,9 @@ class InstructorApiService extends BaseApiService {
         if (endDate != null && endDate.isNotEmpty) 'endDate': endDate,
       };
 
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/instructors/earnings')
-          .replace(queryParameters: queryParams);
-      
-      final response = await http.get(
-        uri,
-        headers: await getHeaders(requireAuth: true),
-      );
+      final endpoint = Uri(path: '/instructors/earnings', queryParameters: queryParams).toString();
+
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: endpoint);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {

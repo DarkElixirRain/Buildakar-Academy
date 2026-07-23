@@ -51,6 +51,10 @@ class ApiService extends BaseApiService {
   Future<AuthResponse> register(RegisterRequest request) => _authService.register(request);
   
   Future<AuthResponse> login(LoginRequest request) => _authService.login(request);
+
+  Future<ApiResponse> verifyEmail(String email, String code) => _authService.verifyEmail(email, code);
+
+  Future<ApiResponse> resendVerification(String email) => _authService.resendVerification(email);
   
   Future<void> logout() => _authService.logout();
   

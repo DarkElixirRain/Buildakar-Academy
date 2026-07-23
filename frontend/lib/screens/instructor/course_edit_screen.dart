@@ -393,7 +393,7 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
                 textColor: textColor,
                 cardColor: cardColor,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefixText: '\$ ',
+                prefixText: 'रु ',
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a price';
@@ -414,7 +414,7 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
                 textColor: textColor,
                 cardColor: cardColor,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefixText: '\$ ',
+                prefixText: 'रु ',
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
                     final parsed = double.tryParse(value.trim());

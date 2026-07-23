@@ -1457,7 +1457,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
             children: [
               Text(
                 course.price > 0 
-                    ? '\$${course.price.toStringAsFixed(2)}'
+                    ? 'रु ${course.price.toStringAsFixed(2)}'
                     : 'Free',
                 style: TextStyle(
                   color: _textColor,
@@ -1467,7 +1467,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
               ),
               if (course.originalPrice != null && course.originalPrice! > 0)
                 Text(
-                  '\$${course.originalPrice!.toStringAsFixed(2)}',
+                  'रु ${course.originalPrice!.toStringAsFixed(2)}',
                   style: TextStyle(
                     color: _textSecondaryColor,
                     fontSize: isLargeScreen ? 16 : (_isSmallScreen ? 12 : 14),

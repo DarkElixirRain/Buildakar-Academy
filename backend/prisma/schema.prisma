@@ -502,3 +502,17 @@ model EmailVerification {
 
   @@index([email])
 }
+
+model PendingRegistration {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  firstName    String
+  lastName     String
+  passwordHash String
+  role         String   @default("STUDENT")
+  codeHash     String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+}

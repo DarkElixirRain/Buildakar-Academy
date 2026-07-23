@@ -9,10 +9,19 @@
       "client_info": {
         "mobilesdk_app_id": "1:262671772910:android:3ec82b4d09336f30d657ff",
         "android_client_info": {
-          "package_name": "com.buildakarinnovations.app"
+          "package_name": "com.buildacad.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "743824025812-jvsj6lh60uuedh2hrcooq4a8h1loi5ls.apps.googleusercontent.com",
+          "client_type": 1
+        },
+        {
+          "client_id": "743824025812-73jkos8mjp03muupgkuj9h24p4chh7hk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAZkHiZQ5HrAlmSBp_d_rc4p-fGSf6L5Lk"

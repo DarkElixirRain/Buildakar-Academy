@@ -190,7 +190,7 @@ class _GridCard extends StatelessWidget {
                       const Spacer(),
                       if (oldPrice != null && oldPrice > price)
                         Text(
-                          '\$${oldPrice.toStringAsFixed(0)}',
+                          'रु ${oldPrice.toStringAsFixed(0)}',
                           style: GoogleFonts.inter(
                             fontSize: 11.5,
                             color: textSecondaryColor,
@@ -199,7 +199,7 @@ class _GridCard extends StatelessWidget {
                         ),
                       const SizedBox(width: 4),
                       Text(
-                        price == 0 ? 'Free' : '\$${price.toStringAsFixed(0)}',
+                        price == 0 ? 'Free' : 'रु ${price.toStringAsFixed(0)}',
                         style: GoogleFonts.inter(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w800,
@@ -308,7 +308,7 @@ class _ListCard extends StatelessWidget {
                         RatingPill(rating: (course['rating'] as num).toDouble()),
                       const Spacer(),
                       Text(
-                        price == 0 ? 'Free' : '\$${price.toStringAsFixed(0)}',
+                        price == 0 ? 'Free' : 'रु ${price.toStringAsFixed(0)}',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,

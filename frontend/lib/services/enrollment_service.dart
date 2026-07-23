@@ -2,21 +2,15 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
 class EnrollmentApiService extends BaseApiService {
   Future<ApiResponse<List<Map<String, dynamic>>>> getContinueLearning({int limit = 5}) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/enroll/continue-learning?limit=$limit'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/enroll/continue-learning?limit=$limit',
       );
 
       final data = jsonDecode(response.body);
@@ -67,19 +61,15 @@ class EnrollmentApiService extends BaseApiService {
     bool? isCompleted,
   }) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
+      String endpoint = '/enroll/my-enrollments?page=$page&limit=$limit';
+      if (isCompleted != null) {
+        endpoint += '&isCompleted=$isCompleted';
       }
 
-      final queryParams = <String, String>{
-        'page': page.toString(),
-        'limit': limit.toString(),
-        if (isCompleted != null) 'isCompleted': isCompleted.toString(),
-      };
-
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/enroll/my-enrollments').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: true));
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: endpoint,
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -97,14 +87,9 @@ class EnrollmentApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> getCourseProgress(String courseId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/enroll/courses/$courseId/progress'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/enroll/courses/$courseId/progress',
       );
       final data = jsonDecode(response.body);
 
@@ -119,15 +104,10 @@ class EnrollmentApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> updateLessonProgress(String lessonId, bool isCompleted) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/enroll/lessons/$lessonId/progress'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode({'isCompleted': isCompleted}),
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/enroll/lessons/$lessonId/progress',
+        body: {'isCompleted': isCompleted},
       );
       final data = jsonDecode(response.body);
 
@@ -142,14 +122,9 @@ class EnrollmentApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> enrollInCourse(String courseId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/enroll/$courseId'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/enroll/$courseId',
       );
       final data = jsonDecode(response.body);
 
@@ -164,14 +139,9 @@ class EnrollmentApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> unenrollFromCourse(String courseId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.delete(
-        Uri.parse('${AppConfig.apiBaseUrl}/enroll/$courseId'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'DELETE',
+        endpoint: '/enroll/$courseId',
       );
       final data = jsonDecode(response.body);
 
@@ -186,14 +156,9 @@ class EnrollmentApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> checkEnrollmentStatus(String courseId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/enroll/$courseId/status'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/enroll/$courseId/status',
       );
       final data = jsonDecode(response.body);
 

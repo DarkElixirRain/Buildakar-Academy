@@ -6,6 +6,7 @@ import '../../constants/colors.dart';
 import '../../widgets/splash_logo.dart';
 import '../../widgets/splash_title.dart';
 import '../../widgets/splash_loading.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -87,8 +88,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(brightness),

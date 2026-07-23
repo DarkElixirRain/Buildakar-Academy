@@ -86,23 +86,9 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// CORS configuration - ACCEPT ANY ORIGIN
+// CORS configuration - ACCEPT ANY ORIGIN (development)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // ALLOW EVERYTHING in development
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    
-    // For production, you might want to be more restrictive
-    // But for now, allow all
-    return callback(null, true);
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],

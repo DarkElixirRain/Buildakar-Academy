@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/instructor_course_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../providers/instructor_dashboard_provider.dart';
 import '../../models/course_model.dart';
 import '../instructor/course_creation_screen.dart';
@@ -36,7 +37,9 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
@@ -330,7 +333,7 @@ class _CourseListTile extends StatelessWidget {
                         Text('${course.studentsCount} students', style: GoogleFonts.inter(fontSize: 12, color: textSecondaryColor)),
                         if (course.price > 0) ...[
                           const SizedBox(width: 8),
-                          Text('\$${course.price.toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                          Text('रु ${course.price.toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
                         ],
                       ],
                     ),

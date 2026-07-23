@@ -1,8 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
@@ -12,16 +9,15 @@ class CategoryApiService extends BaseApiService {
     bool? isActive,
   }) async {
     try {
-      final queryParams = <String, String>{
-        if (includeCourses) 'includeCourses': 'true',
-        if (isActive != null) 'isActive': isActive.toString(),
-      };
+      final qParams = <String>[];
+      if (includeCourses) qParams.add('includeCourses=true');
+      if (isActive != null) qParams.add('isActive=$isActive');
+      final qs = qParams.isNotEmpty ? '?${qParams.join('&')}' : '';
 
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/categories').replace(
-        queryParameters: queryParams,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/categories$qs',
       );
-
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: false));
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -43,12 +39,11 @@ class CategoryApiService extends BaseApiService {
     bool includeCourses = false,
   }) async {
     try {
-      final queryParams = <String, String>{if (includeCourses) 'includeCourses': 'true'};
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/categories/$id').replace(
-        queryParameters: queryParams,
+      final qs = includeCourses ? '?includeCourses=true' : '';
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/categories/$id$qs',
       );
-
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: false));
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -69,18 +64,16 @@ class CategoryApiService extends BaseApiService {
     String sortBy = 'newest',
   }) async {
     try {
-      final queryParams = <String, String>{
-        if (includeCourses) 'includeCourses': 'true',
-        'limit': limit.toString(),
-        'offset': offset.toString(),
-        'sortBy': sortBy,
-      };
-
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/categories/slug/$slug').replace(
-        queryParameters: queryParams,
+      final qParams = <String>[
+        if (includeCourses) 'includeCourses=true',
+        'limit=$limit',
+        'offset=$offset',
+        'sortBy=$sortBy',
+      ];
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/categories/slug/$slug?${qParams.join('&')}',
       );
-
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: false));
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -95,11 +88,10 @@ class CategoryApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> getCategoryStats(String id) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/categories/$id/stats'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/categories/$id/stats',
       );
-
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {

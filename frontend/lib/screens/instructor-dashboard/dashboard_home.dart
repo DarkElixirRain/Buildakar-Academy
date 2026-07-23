@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/instructor_dashboard_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../instructor/course_creation_screen.dart';
 import 'instructor_dashboard_screens.dart' show setSubScreen;
 
@@ -11,8 +12,9 @@ class DashboardHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
@@ -58,7 +60,7 @@ class DashboardHome extends StatelessWidget {
                 stats: [
                   _StatItem(label: 'Courses', value: '${provider.totalCourses}', icon: Icons.video_library_outlined, color: Colors.indigo),
                   _StatItem(label: 'Students', value: '${provider.totalStudents}', icon: Icons.groups_outlined, color: Colors.orange),
-                  _StatItem(label: 'Revenue', value: '\$${provider.totalRevenue.toStringAsFixed(0)}', icon: Icons.attach_money, color: Colors.green),
+                  _StatItem(label: 'Revenue', value: 'रु ${provider.totalRevenue.toStringAsFixed(0)}', icon: Icons.attach_money, color: Colors.green),
                   _StatItem(label: 'Rating', value: provider.averageRating.toStringAsFixed(1), icon: Icons.star_half, color: Colors.amber),
                 ],
                 isDark: isDark, cardColor: AppColors.getBackgroundElementColor(brightness),

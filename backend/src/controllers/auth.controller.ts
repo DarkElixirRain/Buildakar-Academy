@@ -2,35 +2,39 @@ import { Request, Response, NextFunction } from 'express';
 import authService from '../services/auth.services';
 import { schemas } from '../utils/validation';
 import { sendVerificationCode, verifyverificationCode } from '../services/verificaton.service';
+import { sendVerificationEmail } from '../services/email.service';
+import { prisma } from '../lib/prisma';
+import { hashPassword } from '../utils/password.utils';
+import { hashCode } from '../utils/hash';
+import { generateVerificationCode } from '../utils/generateVerificationCode';
 
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const validatedData = schemas.register.parse(req.body);
+      const { email, password, firstName, lastName, role } = schemas.register.parse(req.body);
 
-      const result = await authService.register(validatedData);
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) {
+        throw new Error('User already exists with this email');
+      }
 
-    // Send verification code to the user's email
-    await sendVerificationCode(result.user.email);
-      
+      const passwordHash = await hashPassword(password);
+      const code = generateVerificationCode();
+      const codeHash = await hashCode(code);
+      const expiresInMinutes = Number(process.env.VERIFICATION_CODE_EXPIRES_MINUTES ?? 10);
+      const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
 
-      res.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        expires: result.refreshTokenExpiresAt,
+      await prisma.pendingRegistration.upsert({
+        where: { email },
+        update: { firstName, lastName, passwordHash, role: role ?? 'STUDENT', codeHash, expiresAt },
+        create: { email, firstName, lastName, passwordHash, role: role ?? 'STUDENT', codeHash, expiresAt },
       });
+
+      await sendVerificationEmail(email, code);
 
       res.status(201).json({
         success: true,
         message: 'Registration successful. Please check your email for the verification code.',
-        data: {
-          user: result.user,
-          accessToken: result.accessToken,
-          accessTokenExpiresAt: result.accessTokenExpiresAt,
-          refreshToken: result.refreshToken,
-          refreshTokenExpiresAt: result.refreshTokenExpiresAt,
-        },
       });
     } catch (error) {
       next(error);

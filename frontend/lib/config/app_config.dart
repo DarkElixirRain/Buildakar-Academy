@@ -7,15 +7,15 @@ class AppConfig {
   // --- API base URL ---
   static String get _host {
     if (kIsWeb) {
-      return '192.168.1.11';  // Changed from .10 to .11
+      return '192.168.1.10';
     }
     if (Platform.isAndroid) {
-      return '192.168.1.11';  // Changed from .10 to .11
+      return '192.168.1.10';
     }
     if (Platform.isIOS) {
-      return '192.168.1.11';  // Changed from .10 to .11
+      return '192.168.1.10';
     }
-    return '192.168.1.11';    // Changed from .10 to .11
+    return '192.168.1.10';
   }
 
   static String get _port => '3000';
@@ -28,14 +28,14 @@ class AppConfig {
   static const String googleWebClientId =
       '743824025812-73jkos8mjp03muupgkuj9h24p4chh7hk.apps.googleusercontent.com';
 
+  static const String googleAndroidClientId =
+      '743824025812-jvsj6lh60uuedh2hrcooq4a8h1loi5ls.apps.googleusercontent.com';
+
   static String get currentFrontendUrl {
-    if (kIsWeb) {
-      return 'http://192.168.1.11:3000';  // Changed from .10 to .11
-    }
-    return 'http://192.168.1.11:3000';    // Changed from .10 to .11
+    return 'http://$_host:$_port';
   }
 
-  static String get webUrl => 'http://192.168.1.11:3000';  // Changed from .10 to .11
+  static String get webUrl => 'http://$_host:$_port';
 
   static void printConfig() {
     print('=== AppConfig ===');

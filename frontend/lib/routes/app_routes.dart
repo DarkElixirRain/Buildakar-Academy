@@ -5,6 +5,7 @@ import 'package:buildacad/models/course_model.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
+import '../screens/auth/verify_email_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/notifications/notification_screen.dart';
 import '../screens/explore/explore_screen.dart';
@@ -21,6 +22,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String verifyEmail = '/verify-email';
   static const String forgotPassword = '/forgot-password';
   static const String notifications = '/notifications';
   static const String explore = '/explore';
@@ -80,6 +82,12 @@ class AppRoutes {
       
       case signup:
         return MaterialPageRoute(builder: (_) => const SignupScreen());
+      
+      case verifyEmail:
+        final email = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) => VerifyEmailScreen(email: email),
+        );
       
       case forgotPassword:
         return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());

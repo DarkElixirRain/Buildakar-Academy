@@ -6,6 +6,7 @@ import '../../widgets/google_sign_in_button.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
 import '../../models/auth_model.dart';
+import '../../providers/theme_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -17,11 +18,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   String? _emailError;
   String? _passwordError;
-  
+
   final FocusNode _emailFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
 
@@ -55,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -63,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success && mounted) {
       Navigator.pushReplacementNamed(context, '/home');
-      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Welcome back!'),
@@ -72,7 +72,15 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } else if (mounted) {
-      _showErrorDialog('Login Failed', authProvider.error ?? 'Invalid email or password');
+      final errorMsg = authProvider.error ?? 'Invalid email or password';
+      final isUnverified = errorMsg.toLowerCase().contains('verify') ||
+          errorMsg.toLowerCase().contains('verified') ||
+          errorMsg.toLowerCase().contains('not verified');
+      if (isUnverified) {
+        _showVerifyEmailDialog(errorMsg);
+      } else {
+        _showErrorDialog('Login Failed', errorMsg);
+      }
     }
   }
 
@@ -89,6 +97,43 @@ class _LoginScreenState extends State<LoginScreen> {
               Provider.of<AuthProvider>(context, listen: false).clearError();
             },
             child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showVerifyEmailDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.email_outlined, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text('Email Not Verified'),
+          ],
+        ),
+        content: Text(message, style: const TextStyle(fontSize: 15)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushReplacementNamed(
+                context,
+                '/verify-email',
+                arguments: _emailController.text.trim(),
+              );
+            },
+            child: const Text(
+              'Verify Email',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -143,8 +188,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final size = MediaQuery.of(context).size;
     final isSmallDevice = size.width < 375;
     final isTablet = size.width >= 768;
@@ -191,19 +237,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 constraints: const BoxConstraints(maxWidth: 480),
                 padding: EdgeInsets.all(cardPadding),
                 decoration: BoxDecoration(
-                  color: isDark 
+                  color: isDark
                       ? AppColors.darkBackgroundElement.withValues(alpha: 0.8)
                       : AppColors.lightBackgroundElement.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: isDark 
+                    color: isDark
                         ? Colors.white.withValues(alpha: 0.05)
                         : Colors.black.withValues(alpha: 0.05),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: isDark 
+                      color: isDark
                           ? Colors.black.withValues(alpha: 0.4)
                           : Colors.grey.withValues(alpha: 0.1),
                       offset: const Offset(0, 8),
@@ -219,11 +265,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.all(14),
                         margin: const EdgeInsets.only(bottom: 20),
                         decoration: BoxDecoration(
-                          color: isDark 
+                          color: isDark
                               ? Colors.red.withValues(alpha: 0.12)
                               : const Color(0xFFFEF2F2),
                           border: Border.all(
-                            color: isDark 
+                            color: isDark
                                 ? Colors.red.withValues(alpha: 0.25)
                                 : const Color(0xFFFECACA),
                             width: 1,
@@ -314,8 +360,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       isDark: isDark,
                       isSmallDevice: isSmallDevice,
                     ),
-                    const SizedBox(height: 12),
-                    _buildAppleButton(isDark, isSmallDevice),
                   ],
                 ),
               ),
@@ -363,7 +407,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildEmailField(bool isDark) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -380,12 +424,12 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: isDark 
+              color: isDark
                   ? AppColors.darkBackgroundElement
                   : AppColors.lightBackgroundElement,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _emailError != null 
+                color: _emailError != null
                     ? const Color(0xFFEF4444)
                     : AppColors.getBackgroundSelectedColor(brightness),
                 width: _emailError != null ? 2 : 1,
@@ -398,7 +442,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Icon(
                     Icons.email_outlined,
                     size: 20,
-                    color: _emailError != null 
+                    color: _emailError != null
                         ? const Color(0xFFEF4444)
                         : AppColors.getTextSecondaryColor(brightness),
                   ),
@@ -464,7 +508,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildPasswordField(bool isDark) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -481,12 +525,12 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: isDark 
+              color: isDark
                   ? AppColors.darkBackgroundElement
                   : AppColors.lightBackgroundElement,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _passwordError != null 
+                color: _passwordError != null
                     ? const Color(0xFFEF4444)
                     : AppColors.getBackgroundSelectedColor(brightness),
                 width: _passwordError != null ? 2 : 1,
@@ -499,7 +543,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Icon(
                     Icons.lock_outlined,
                     size: 20,
-                    color: _passwordError != null 
+                    color: _passwordError != null
                         ? const Color(0xFFEF4444)
                         : AppColors.getTextSecondaryColor(brightness),
                   ),
@@ -536,8 +580,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 IconButton(
                   icon: Icon(
-                    _obscurePassword 
-                        ? Icons.visibility_off_outlined 
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
                     size: 20,
                     color: AppColors.getTextSecondaryColor(brightness),
@@ -613,59 +657,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   letterSpacing: 0.5,
                 ),
               ),
-      ),
-    );
-  }
-
-  Widget _buildAppleButton(bool isDark, bool isSmallDevice) {
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-    
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Apple Sign-In coming soon!'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-        style: OutlinedButton.styleFrom(
-          backgroundColor: isDark 
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.white,
-          foregroundColor: AppColors.getTextColor(brightness),
-          padding: EdgeInsets.symmetric(
-            vertical: isSmallDevice ? 12 : 14,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          side: BorderSide(
-            color: AppColors.getBackgroundSelectedColor(brightness),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.apple,
-              size: isSmallDevice ? 20 : 22,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Continue with Apple',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: isSmallDevice ? 13 : 15,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

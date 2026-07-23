@@ -1,22 +1,14 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
 class NotesMaterialsApiService extends BaseApiService {
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseNotes(String courseId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/notes'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/courses/$courseId/notes',
       );
       final data = jsonDecode(response.body);
 
@@ -34,15 +26,10 @@ class NotesMaterialsApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> addCourseNote(String courseId, String content, String? lessonId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/notes'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode({'content': content, 'lessonId': lessonId}),
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/courses/$courseId/notes',
+        body: {'content': content, 'lessonId': lessonId},
       );
       final data = jsonDecode(response.body);
 
@@ -57,14 +44,9 @@ class NotesMaterialsApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> deleteCourseNote(String noteId) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.delete(
-        Uri.parse('${AppConfig.apiBaseUrl}/notes/$noteId'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'DELETE',
+        endpoint: '/notes/$noteId',
       );
       final data = jsonDecode(response.body);
 
@@ -79,9 +61,9 @@ class NotesMaterialsApiService extends BaseApiService {
 
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseMaterials(String courseId) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/materials'),
-        headers: await getHeaders(requireAuth: false),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/courses/$courseId/materials',
       );
       final data = jsonDecode(response.body);
 

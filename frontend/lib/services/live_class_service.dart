@@ -17,12 +17,11 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/instructor'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/instructor',
       );
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -48,11 +47,10 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes'),
-        headers: headers,
-        body: jsonEncode(liveClassData),
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/live-classes',
+        body: liveClassData,
       );
       final data = jsonDecode(response.body);
 
@@ -79,11 +77,10 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/$id'),
-        headers: headers,
-        body: jsonEncode(liveClassData),
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/live-classes/$id',
+        body: liveClassData,
       );
       final data = jsonDecode(response.body);
 
@@ -110,10 +107,9 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/$id/start'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/live-classes/$id/start',
       );
       final data = jsonDecode(response.body);
 
@@ -140,10 +136,9 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/$id/end'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/live-classes/$id/end',
       );
       final data = jsonDecode(response.body);
 
@@ -170,10 +165,9 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/$id/cancel'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/live-classes/$id/cancel',
       );
       final data = jsonDecode(response.body);
 
@@ -202,24 +196,23 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/student/all'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/student/all',
       );
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final Map<String, dynamic> result = data['data'] ?? {};
-        
+
         // Parse the categorized lists
         _parseClassList(result, 'live');
         _parseClassList(result, 'upcoming');
         _parseClassList(result, 'ended');
         _parseClassList(result, 'cancelled');
         _parseClassList(result, 'all');
-        
+
         return ApiResponse.success(result, message: data['message']);
       } else if (response.statusCode == 401) {
         await clearToken();
@@ -248,12 +241,11 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/student'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/student',
       );
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -279,12 +271,11 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/student/upcoming'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/student/upcoming',
       );
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -310,12 +301,11 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/student/current'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/student/current',
       );
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -341,24 +331,23 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/student/stats'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/student/stats',
       );
-      
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final Map<String, dynamic> stats = data['data'] ?? {};
-        
+
         // Parse the classes list if present
         if (stats['classes'] != null && stats['classes'] is List) {
           stats['classes'] = (stats['classes'] as List)
               .map((item) => LiveClass.fromJson(item))
               .toList();
         }
-        
+
         return ApiResponse.success(stats, message: data['message']);
       } else if (response.statusCode == 401) {
         await clearToken();
@@ -378,10 +367,9 @@ class LiveClassApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated. Please login again.');
       }
 
-      final headers = await getHeaders(requireAuth: true);
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/$id/join'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/live-classes/$id/join',
       );
       final data = jsonDecode(response.body);
 
@@ -405,10 +393,9 @@ class LiveClassApiService extends BaseApiService {
   /// GET /live-classes/course/:courseId - Get course live classes
   Future<ApiResponse<List<LiveClass>>> getCourseLiveClasses(String courseId) async {
     try {
-      final headers = await getHeaders(requireAuth: false);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/course/$courseId'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/course/$courseId',
       );
       final data = jsonDecode(response.body);
 
@@ -427,10 +414,9 @@ class LiveClassApiService extends BaseApiService {
   /// GET /live-classes/:id - Get live class by ID
   Future<ApiResponse<LiveClass>> getLiveClassById(String id) async {
     try {
-      final headers = await getHeaders(requireAuth: false);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/live-classes/$id'),
-        headers: headers,
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/live-classes/$id',
       );
       final data = jsonDecode(response.body);
 

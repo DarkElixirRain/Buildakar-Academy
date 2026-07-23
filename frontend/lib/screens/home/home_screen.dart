@@ -23,7 +23,7 @@ import '../../widgets/main_layout.dart';
 import '../explore/explore_screen.dart';
 import '../search/search_screen.dart';
 import '../category/category_detail_screen.dart';
-import '../../constants/dummy_data.dart';
+import '../../models/live_class_model.dart';
 // Import the SettingsScreen
 import '../settings/settings_screen.dart';
 // Import the Instructor Dashboard
@@ -203,7 +203,7 @@ class _HomeContentState extends State<HomeContent> {
         _topInstructors = instructorResponse.data!;
         print('✅ Loaded ${_topInstructors.length} instructors from API');
       } else {
-        _topInstructors = getDummyTopInstructors();
+        _topInstructors = <Map<String, dynamic>>[];
         if (instructorResponse.error != null) {
           print('⚠️ Failed to load instructors: ${instructorResponse.error}');
         }
@@ -218,7 +218,7 @@ class _HomeContentState extends State<HomeContent> {
         }
         print('✅ Loaded ${_popularCourses.length} popular courses from API');
       } else {
-        _popularCourses = getDummyPopularCourses();
+        _popularCourses = <Map<String, dynamic>>[];
         if (popularResponse.error != null) {
           print('⚠️ Failed to load popular courses: ${popularResponse.error}');
         }
@@ -228,7 +228,7 @@ class _HomeContentState extends State<HomeContent> {
         _featuredCourses = featuredResponse.data!;
         print('✅ Loaded ${_featuredCourses.length} featured courses from API');
       } else {
-        _featuredCourses = getDummyFeaturedCourses();
+        _featuredCourses = <Map<String, dynamic>>[];
         if (featuredResponse.error != null) {
           print('⚠️ Failed to load featured courses: ${featuredResponse.error}');
         }
@@ -238,7 +238,7 @@ class _HomeContentState extends State<HomeContent> {
         _recommendedCourses = recommendedResponse.data!;
         print('✅ Loaded ${_recommendedCourses.length} recommended courses from API');
       } else {
-        _recommendedCourses = getDummyRecommendedCourses();
+        _recommendedCourses = <Map<String, dynamic>>[];
         if (recommendedResponse.error != null) {
           print('⚠️ Failed to load recommended courses: ${recommendedResponse.error}');
         }
@@ -248,13 +248,26 @@ class _HomeContentState extends State<HomeContent> {
         _continueLearning = continueLearningResponse.data!;
         print('✅ Loaded ${_continueLearning.length} continue learning courses from API');
       } else {
-        _continueLearning = getDummyContinueLearning();
+        _continueLearning = <Map<String, dynamic>>[];
         if (continueLearningResponse.error != null) {
           print('⚠️ Failed to load continue learning: ${continueLearningResponse.error}');
         }
       }
 
-      _liveClasses = getDummyLiveClasses();
+      final liveResponse = await _apiService.getAllStudentLiveClasses();
+      if (liveResponse.success && liveResponse.data != null) {
+        final liveData = liveResponse.data!;
+        final liveList = (liveData['live'] as List<LiveClass>?) ?? [];
+        final upcomingList = (liveData['upcoming'] as List<LiveClass>?) ?? [];
+        final allList = [...liveList, ...upcomingList];
+        _liveClasses = allList.map((lc) => _liveClassToWidgetMap(lc)).toList();
+        print('✅ Loaded ${_liveClasses.length} live classes from API');
+      } else {
+        _liveClasses = <Map<String, dynamic>>[];
+        if (liveResponse.error != null) {
+          print('⚠️ Failed to load live classes: ${liveResponse.error}');
+        }
+      }
 
       setState(() {
         _error = null;
@@ -262,12 +275,12 @@ class _HomeContentState extends State<HomeContent> {
     } catch (e) {
       if (!mounted) return;
       
-      _topInstructors = getDummyTopInstructors();
-      _popularCourses = getDummyPopularCourses();
-      _featuredCourses = getDummyFeaturedCourses();
-      _recommendedCourses = getDummyRecommendedCourses();
-      _continueLearning = getDummyContinueLearning();
-      _liveClasses = getDummyLiveClasses();
+      _topInstructors = <Map<String, dynamic>>[];
+      _popularCourses = <Map<String, dynamic>>[];
+      _featuredCourses = <Map<String, dynamic>>[];
+      _recommendedCourses = <Map<String, dynamic>>[];
+      _continueLearning = <Map<String, dynamic>>[];
+      _liveClasses = <Map<String, dynamic>>[];
       
       setState(() {
         _error = 'Failed to load some data. Showing cached content.';
@@ -321,17 +334,13 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   void _handleCategoryPress(String categoryId) {
-    final categoryData = getDummyCategoryById(categoryId);
-    
-    final categorySlug = categoryData['slug'] ?? categoryId;
-    
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CategoryDetailScreen(
           categoryId: categoryId,
-          categorySlug: categorySlug,
-          categoryName: categoryData['name'] ?? 'Category',
+          categorySlug: categoryId,
+          categoryName: 'Category',
         ),
       ),
     );
@@ -432,6 +441,22 @@ void _handleInstructorFollow(String instructorId) {
       '/instructor',
       arguments: {'instructorId': instructorId},
     );
+  }
+
+  Map<String, dynamic> _liveClassToWidgetMap(LiveClass lc) {
+    final isLive = lc.status == 'live';
+    final scheduled = lc.scheduledTime;
+    return {
+      'id': lc.id,
+      'title': lc.title,
+      'instructor': lc.instructor,
+      'image': lc.thumbnail,
+      'category': lc.category,
+      'isLive': isLive,
+      'attendees': lc.participantsCount,
+      'date': '${scheduled.month}/${scheduled.day}/${scheduled.year}',
+      'time': '${scheduled.hour.toString().padLeft(2, '0')}:${scheduled.minute.toString().padLeft(2, '0')}',
+    };
   }
 
   bool _hasContinueLearningData() {

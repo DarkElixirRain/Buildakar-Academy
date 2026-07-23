@@ -2,21 +2,17 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
 class NotificationApiService extends BaseApiService {
   Future<ApiResponse<Map<String, dynamic>>> getNotifications({int page = 1, int limit = 20}) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final queryParams = <String, String>{'page': page.toString(), 'limit': limit.toString()};
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/notifications').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: true));
+      final queryString = '?page=$page&limit=$limit';
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/notifications$queryString',
+      );
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -33,14 +29,9 @@ class NotificationApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> markNotificationAsRead(String id) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.put(
-        Uri.parse('${AppConfig.apiBaseUrl}/notifications/$id/read'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'PUT',
+        endpoint: '/notifications/$id/read',
       );
       final data = jsonDecode(response.body);
 
@@ -55,14 +46,9 @@ class NotificationApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> markAllNotificationsAsRead() async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.put(
-        Uri.parse('${AppConfig.apiBaseUrl}/notifications/read-all'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'PUT',
+        endpoint: '/notifications/read-all',
       );
       final data = jsonDecode(response.body);
 
@@ -77,14 +63,9 @@ class NotificationApiService extends BaseApiService {
 
   Future<ApiResponse<dynamic>> deleteNotification(String id) async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.delete(
-        Uri.parse('${AppConfig.apiBaseUrl}/notifications/$id'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'DELETE',
+        endpoint: '/notifications/$id',
       );
       final data = jsonDecode(response.body);
 
@@ -99,14 +80,9 @@ class NotificationApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> getUnreadCount() async {
     try {
-      final token = await getToken();
-      if (token == null) {
-        return ApiResponse.error('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/notifications/unread-count'),
-        headers: await getHeaders(requireAuth: true),
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/notifications/unread-count',
       );
       final data = jsonDecode(response.body);
 

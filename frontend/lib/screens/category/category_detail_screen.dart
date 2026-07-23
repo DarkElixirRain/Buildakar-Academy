@@ -1483,7 +1483,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   children: [
                     if (hasDiscount) ...[
                       Text(
-                        '\$${originalPrice.toStringAsFixed(0)}', 
+                        'रु ${originalPrice.toStringAsFixed(0)}', 
                         style: TextStyle(
                           fontSize: isSmallPhone ? 10 : 11, 
                           color: textSecondary, 
@@ -1493,7 +1493,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       const SizedBox(width: 4),
                     ],
                     Text(
-                      '\$${price.toStringAsFixed(0)}', 
+                      'रु ${price.toStringAsFixed(0)}', 
                       style: TextStyle(
                         fontSize: isSmallPhone ? 12.5 : 14, 
                         fontWeight: FontWeight.bold, 

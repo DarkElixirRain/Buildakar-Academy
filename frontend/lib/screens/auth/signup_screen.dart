@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/splash_logo.dart';
 import '../../widgets/google_button.dart';
 
@@ -235,8 +236,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final size = MediaQuery.of(context).size.width;
     final isSmallDevice = size < 375;
     final isTablet = size >= 768;
@@ -597,7 +599,9 @@ class CustomInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -781,7 +785,9 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final isEnabled = !isLoading;
     final primaryColor = AppColors.getPrimaryColor(brightness);
 
@@ -844,7 +850,9 @@ class SocialLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return SizedBox(
       width: double.infinity,

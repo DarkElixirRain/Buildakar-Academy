@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/auth_model.dart';
-import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import 'google_button.dart';
 
-/// A Google Sign-In button that uses dummy implementation for now.
-/// TODO: Replace with actual Google Sign-In when ready
 class GoogleSignInButton extends StatefulWidget {
   final void Function(AuthResponse response) onSuccess;
   final void Function(Object error) onError;
@@ -24,24 +22,29 @@ class GoogleSignInButton extends StatefulWidget {
 }
 
 class _GoogleSignInButtonState extends State<GoogleSignInButton> {
-  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
   bool _loading = false;
 
   Future<void> _handleSignIn() async {
-    // Don't allow multiple sign-in attempts
     if (_loading) return;
-    
+
     setState(() => _loading = true);
-    
+
     try {
-      // Call the dummy sign-in method
-      final result = await _apiService.signInWithGoogle();
-      
-      // Check if the result was successful
-      if (result.success) {
-        widget.onSuccess(result);
+      final success = await _authService.signInWithGoogle();
+      if (success) {
+        final user = _authService.currentUser;
+        if (user != null) {
+          widget.onSuccess(AuthResponse(
+            success: true,
+            message: 'Google sign in successful',
+            data: AuthData(user: user),
+          ));
+        } else {
+          widget.onError(Exception('Failed to get user data'));
+        }
       } else {
-        widget.onError(Exception(result.message ?? 'Google sign-in failed'));
+        widget.onError(Exception('Google sign-in failed'));
       }
     } catch (e) {
       widget.onError(e);

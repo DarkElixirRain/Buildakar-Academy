@@ -2,9 +2,11 @@
 
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/auth_model.dart';
 import 'base_api_service.dart';
 import '../types/api_response.dart';
+import '../config/app_config.dart';
 
 // AuthApiService - Handles API calls for authentication
 class AuthApiService extends BaseApiService {
@@ -20,6 +22,10 @@ class AuthApiService extends BaseApiService {
       print('📦 AuthApiService: Login response received');
       print('📊 AuthApiService: Response success: ${response.success}');
       print('📊 AuthApiService: Response data: ${response.data}');
+
+      if (!response.success) {
+        throw Exception(response.error ?? response.message ?? 'Login failed');
+      }
       
       if (response.data == null) {
         print('❌ AuthApiService: Response data is null');
@@ -57,6 +63,10 @@ class AuthApiService extends BaseApiService {
         data: request.toJson(),
         requireAuth: false,
       );
+
+      if (!response.success) {
+        throw Exception(response.error ?? response.message ?? 'Registration failed');
+      }
       
       if (response.data == null) {
         throw Exception('No data received from server');
@@ -85,14 +95,31 @@ class AuthApiService extends BaseApiService {
   // Sign in with Google
   Future<AuthResponse> signInWithGoogle() async {
     try {
-      final response = await post('/auth/google', requireAuth: false);
-      
+      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize(
+        clientId: AppConfig.googleAndroidClientId,
+        serverClientId: AppConfig.googleWebClientId,
+      );
+
+      final GoogleSignInAccount account = await googleSignIn.authenticate();
+      final GoogleSignInAuthentication auth = account.authentication;
+
+      if (auth.idToken == null) {
+        throw Exception('Failed to get Google ID token');
+      }
+
+      final response = await post(
+        '/auth/google',
+        data: {'idToken': auth.idToken},
+        requireAuth: false,
+      );
+
       if (response.data == null) {
         throw Exception('No data received from server');
       }
-      
+
       final rawData = response.data as Map<String, dynamic>;
-      
+
       final transformedData = {
         'success': true,
         'message': response.message ?? 'Google sign in successful',
@@ -103,7 +130,7 @@ class AuthApiService extends BaseApiService {
           'expiresAt': rawData['accessTokenExpiresAt'],
         }
       };
-      
+
       return AuthResponse.fromJson(transformedData);
     } catch (e) {
       print('❌ AuthApiService: Google sign in error: $e');
@@ -186,6 +213,36 @@ class AuthApiService extends BaseApiService {
       }
     } catch (e) {
       print('❌ AuthApiService: Update role error: $e');
+      rethrow;
+    }
+  }
+
+  // Verify email with 6-digit code
+  Future<ApiResponse> verifyEmail(String email, String code) async {
+    try {
+      final response = await post(
+        '/auth/verify-email',
+        data: {'email': email, 'code': code},
+        requireAuth: false,
+      );
+      return response;
+    } catch (e) {
+      print('❌ AuthApiService: verifyEmail error: $e');
+      rethrow;
+    }
+  }
+
+  // Resend verification code
+  Future<ApiResponse> resendVerification(String email) async {
+    try {
+      final response = await post(
+        '/auth/resend-verification',
+        data: {'email': email},
+        requireAuth: false,
+      );
+      return response;
+    } catch (e) {
+      print('❌ AuthApiService: resendVerification error: $e');
       rethrow;
     }
   }
@@ -315,12 +372,13 @@ class AuthService {
         print('✅ AuthService: Login successful for: ${response.data!.user.name}');
         return true;
       } else {
-        print('❌ AuthService: Login failed: ${response.message ?? response.error}');
-        return false;
+        final errMsg = response.message ?? response.error ?? 'Login failed';
+        print('❌ AuthService: Login failed: $errMsg');
+        throw Exception(errMsg);
       }
     } catch (e) {
       print('❌ AuthService: Login error: $e');
-      return false;
+      rethrow;
     }
   }
   

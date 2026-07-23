@@ -31,6 +31,7 @@ const instructorOrAdmin = roleMiddleware([
 
 const studentOrAdmin = roleMiddleware([
   Role.STUDENT,
+  Role.INSTRUCTOR,
   Role.ADMIN,
 ]);
 

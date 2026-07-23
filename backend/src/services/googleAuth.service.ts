@@ -24,10 +24,77 @@ interface GoogleProfile {
   family_name?: string;
 }
 
-/**
- * Exchanges Google authorization code for tokens, fetches profile,
- * creates or links a local user, and returns the same shape as existing login.
- */
+const createOrLinkUser = async (profile: GoogleProfile) => {
+  const { email } = profile;
+  const firstName: string = profile.given_name || (profile.name ? profile.name.split(' ')[0] : '');
+  const lastName: string = profile.family_name || (profile.name ? profile.name.split(' ').slice(1).join(' ') : '');
+
+  let user = await prisma.user.findFirst({
+    where: {
+      OR: [{ googleId: profile.id }, { email }],
+    },
+  });
+
+  if (!user) {
+    const randomPassword = Math.random().toString(36).slice(-12) + Date.now();
+    const hashed = await hashPassword(randomPassword);
+
+    user = await prisma.user.create({
+      data: {
+        email,
+        password: hashed,
+        firstName: firstName || 'Google',
+        lastName: lastName || 'User',
+        googleId: profile.id,
+        authProvider: 'GOOGLE',
+        isVerified: true,
+      },
+    });
+  } else {
+    if (!user.isActive) {
+      throw new Error('Account is deactivated');
+    }
+    const updates: any = {};
+    if (!user.firstName && firstName) updates.firstName = firstName;
+    if (!user.lastName && lastName) updates.lastName = lastName;
+    if (!user.googleId) updates.googleId = profile.id;
+    if (user.authProvider !== 'GOOGLE') updates.authProvider = 'GOOGLE';
+    if (!user.isVerified) updates.isVerified = true;
+    if (Object.keys(updates).length > 0) {
+      user = await prisma.user.update({ where: { id: user.id }, data: updates });
+    }
+  }
+
+  const payload: AccessTokenPayload = {
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+  };
+
+  const tokens = generateTokenPair(payload);
+
+  await prisma.refreshToken.deleteMany({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash: hashRefreshToken(tokens.refreshToken),
+      userId: user.id,
+      expiresAt: tokens.refreshTokenExpiresAt,
+    },
+  });
+
+  const { password: _pw, ...userWithoutPassword } = user;
+
+  return {
+    user: userWithoutPassword,
+    ...tokens,
+  };
+};
+
 export const handleGoogleAuth = async (params: {
   code: string;
   codeVerifier?: string | null;
@@ -60,7 +127,6 @@ export const handleGoogleAuth = async (params: {
 
   const tokenData = (await tokenRes.json()) as GoogleTokenResponse;
 
-  // Fetch user profile
   const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
@@ -74,82 +140,46 @@ export const handleGoogleAuth = async (params: {
 
   const profile = (await userInfoRes.json()) as GoogleProfile;
 
-  const email: string = profile.email;
-  const firstName: string = profile.given_name || (profile.name ? profile.name.split(' ')[0] : '');
-  const lastName: string = profile.family_name || (profile.name ? profile.name.split(' ').slice(1).join(' ') : '');
+  return createOrLinkUser(profile);
+};
 
-  // Prefer provider id lookup first, then email fallback for linking existing accounts.
-  let user = await prisma.user.findFirst({
-    where: {
-      OR: [{ googleId: profile.id }, { email }],
-    },
-  });
+export const handleGoogleIdToken = async (params: {
+  idToken: string;
+}) => {
+  const { idToken } = params;
 
-  if (!user) {
-    // Create a new user. Password is required in existing schema, so create a random one.
-    const randomPassword = Math.random().toString(36).slice(-12) + Date.now();
-    const hashed = await hashPassword(randomPassword);
+  // Validate the ID token using Google's token info endpoint
+  const verifyRes = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
+  );
 
-    user = await prisma.user.create({
-      data: {
-        email,
-        password: hashed,
-        firstName: firstName || 'Google',
-        lastName: lastName || 'User',
-        googleId: profile.id,
-        authProvider: 'GOOGLE',
-        isVerified: true,
-      },
-    });
-  } else {
-    // Existing user: ensure active
-    if (!user.isActive) {
-      throw new Error('Account is deactivated');
-    }
-    // Optionally update name fields if empty
-    const updates: any = {};
-    if (!user.firstName && firstName) updates.firstName = firstName;
-    if (!user.lastName && lastName) updates.lastName = lastName;
-    if (!user.googleId) updates.googleId = profile.id;
-    if (user.authProvider !== 'GOOGLE') updates.authProvider = 'GOOGLE';
-    if (!user.isVerified) updates.isVerified = true;
-    if (Object.keys(updates).length > 0) {
-      user = await prisma.user.update({ where: { id: user.id }, data: updates });
-    }
+  if (!verifyRes.ok) {
+    const text = await verifyRes.text();
+    throw new Error(`Failed to verify Google ID token: ${text}`);
   }
 
-// Generate your application's tokens
-const payload: AccessTokenPayload = {
-  userId: user.id,
-  email: user.email,
-  role: user.role,
+  const payload = await verifyRes.json() as {
+    sub: string;
+    email: string;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+    email_verified?: string;
+  };
+
+  if (!payload.email) {
+    throw new Error('Google account has no email');
+  }
+
+  const profile: GoogleProfile = {
+    id: payload.sub,
+    email: payload.email,
+    name: payload.name,
+    given_name: payload.given_name,
+    family_name: payload.family_name,
+  };
+
+  return createOrLinkUser(profile);
 };
 
-const tokens = generateTokenPair(payload);
-
-// Remove any existing refresh tokens (single active session)
-await prisma.refreshToken.deleteMany({
-  where: {
-    userId: user.id,
-  },
-});
-
-// Store hashed refresh token
-await prisma.refreshToken.create({
-  data: {
-    tokenHash: hashRefreshToken(tokens.refreshToken),
-    userId: user.id,
-    expiresAt: tokens.refreshTokenExpiresAt,
-  },
-});
-
-// Return user without password
-const { password: _pw, ...userWithoutPassword } = user;
-
-return {
-  user: userWithoutPassword,
-  ...tokens,
-};
-};
-
-export default { handleGoogleAuth };
+export default { handleGoogleAuth, handleGoogleIdToken };
