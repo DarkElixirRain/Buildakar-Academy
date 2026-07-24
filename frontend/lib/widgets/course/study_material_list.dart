@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../models/course_model.dart';
-import '../../theme/app_colors.dart';
+import 'package:buildacad/constants/colors.dart';
 
 class StudyMaterialList extends StatefulWidget {
   final List<StudyMaterial> materials;
   final bool isEnrolled;
-  final AppColors colors;
+  final dynamic colors;
 
   const StudyMaterialList({
     super.key,

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BuildAcad - Course Learning</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&family=Sora:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "secondary": "#a73a00",
+                        "on-secondary-fixed": "#370e00",
+                        "on-primary-fixed": "#001a42",
+                        "surface-light": "#FFFFFF",
+                        "secondary-fixed": "#ffdbce",
+                        "primary-container": "#2170e4",
+                        "on-surface-variant": "#424754",
+                        "on-secondary-container": "#571a00",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#924700",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#d8e2ff",
+                        "on-surface": "#0b1c30",
+                        "surface-dark": "#151E2E",
+                        "background-dark": "#0B1220",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727785",
+                        "text-primary-light": "#0F172A",
+                        "on-error": "#ffffff",
+                        "text-primary-dark": "#F1F5F9",
+                        "secondary-container": "#fd651e",
+                        "on-primary-container": "#fefcff",
+                        "border-dark": "#263349",
+                        "surface-tint": "#005ac2",
+                        "on-tertiary-fixed": "#311400",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "error": "#DC2626",
+                        "surface": "#f8f9ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#f8f9ff",
+                        "border-light": "#E2E8F0",
+                        "background-light": "#F8FAFC",
+                        "secondary-fixed-dim": "#ffb599",
+                        "on-tertiary-container": "#fffbff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "primary": "#0058be",
+                        "tertiary-container": "#b75b00",
+                        "inverse-surface": "#213145",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "outline-variant": "#c2c6d6",
+                        "on-secondary-fixed-variant": "#7f2b00",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-dim": "#cbdbf5",
+                        "on-background": "#0b1c30",
+                        "inverse-primary": "#adc6ff",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "nav-bar-h": "64px",
+                        "margin-screen": "16px",
+                        "base": "4px",
+                        "gutter-grid": "12px",
+                        "target-min": "44px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "numeric-tabular": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Sora"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Sora"],
+                        "headline-sm-mobile": ["Sora"],
+                        "headline-md-mobile": ["Sora"]
+                    },
+                    "fontSize": {
+                        "numeric-tabular": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-sm-mobile": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "headline-md-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .glass-controls {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .bento-card {
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        .tab-active {
+            border-bottom: 2px solid #0058be;
+            color: #0058be;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-border-light flex justify-between items-center px-margin-screen h-nav-bar-h w-full max-w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+<h1 class="font-headline-md-mobile text-headline-md-mobile text-primary font-bold tracking-tight">BuildAcad</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-variant p-2 rounded-full transition-colors cursor-pointer">notifications</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-light">
+<img class="w-full h-full object-cover" data-alt="A sharp, professional studio headshot of a young mechanical engineer wearing a clean white shirt. He has a friendly but authoritative expression, posed against a minimalist, high-key light blue architectural background. The lighting is crisp and modern, reflecting a premium academic environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByjv0v4BBoJ4H1KwIpRKmzyw7EM_ECVoPbfX9fxF8DEpupB5vT9eqaEhY8FlhOAZjRGfoyU4tFcCWo2rGLO-LX5tJ0S1whmFiRkPpW-h2dsXV13kDIGtunUr1snN7k7WKhS07ILiQaRi5R1-HolCs_iBvFaDNUPaemK4oziNt1W2z3akVJ3lO0GDfewSlTxUo6u17aIFXV7gyvbnvKdgrxK1LIl6jFRdFbVhjHl-n-lbQ1GH2xBOug3ZcaAb4Sb0hL-otQ-og0H8th"/>
+</div>
+</div>
+</header>
+<main class="pt-nav-bar-h pb-32">
+<!-- Custom Video Player Section -->
+<section class="relative aspect-video w-full bg-black overflow-hidden group">
+<img class="w-full h-full object-cover opacity-80" data-alt="A cinematic, high-definition frame of a masterclass session on aerospace engineering. The visual features a sophisticated 3D model of a rocket engine being analyzed with glowing blue holographic annotations. The lighting is dramatic and technical, with deep shadows and vibrant primary blue light trails, creating a high-performance educational atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBriApGyZ3yuV0Js9RLlDAe-A8N7ACFvD79FjSEGNaYLQowCOydP6JcxYiuE2xvDfttQmASw0AEca6LdDXWQrbqDL09k-frsmuJc53a1YyPe_kErxpCJ8EN-M0QcsdZjq5TN3KCLxVi1AmPE10mvwhb2gyRY2y-SUklzCWkYBGvLkaoGhRwUtBUZpLN-2VbzKmVq1zCsqqhpa7zuQG0iYWP37oHMrKPqlzzXb5Ql1fonxm8ThRcPmO1V3GHCF2S4K7fZmfjJ1CFLiOr"/>
+<!-- Glass Controls Overlay -->
+<div class="absolute inset-0 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div class="flex justify-between items-start">
+<span class="bg-secondary-container text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">Live Now</span>
+<span class="material-symbols-outlined text-white">settings</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Progress Bar -->
+<div class="w-full h-1.5 bg-white/20 rounded-full overflow-hidden cursor-pointer">
+<div class="h-full bg-primary w-2/3"></div>
+</div>
+<!-- Control Bar -->
+<div class="glass-controls rounded-2xl p-3 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-white cursor-pointer hover:scale-110 transition-transform">play_arrow</span>
+<span class="material-symbols-outlined text-white cursor-pointer hover:scale-110 transition-transform">skip_next</span>
+<span class="material-symbols-outlined text-white cursor-pointer hover:scale-110 transition-transform">volume_up</span>
+<span class="text-white text-body-sm font-numeric-tabular">12:45 / 18:30</span>
+</div>
+<span class="material-symbols-outlined text-white cursor-pointer hover:scale-110 transition-transform">fullscreen</span>
+</div>
+</div>
+</div>
+<!-- Play Button Center (Visible when not playing/hovering) -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-white text-4xl fill-icon" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</section>
+<!-- Course Info -->
+<section class="px-margin-screen mt-6">
+<h2 class="font-headline-md text-headline-md text-on-surface">Advanced Propulsion Systems 101</h2>
+<p class="text-on-surface-variant text-body-sm mt-1">Module 4: Ion Thruster Architecture</p>
+</section>
+<!-- Segmented Control -->
+<section class="px-margin-screen mt-8">
+<div class="flex border-b border-border-light overflow-x-auto no-scrollbar">
+<button class="tab-active flex-1 py-3 text-body-md font-semibold whitespace-nowrap transition-colors" id="btn-lessons" onclick="switchTab('lessons')">Lessons</button>
+<button class="flex-1 py-3 text-on-surface-variant font-semibold whitespace-nowrap transition-colors" id="btn-notes" onclick="switchTab('notes')">Notes</button>
+<button class="flex-1 py-3 text-on-surface-variant font-semibold whitespace-nowrap transition-colors" id="btn-materials" onclick="switchTab('materials')">Study Materials</button>
+</div>
+</section>
+<!-- Tab Content Area -->
+<section class="px-margin-screen mt-6">
+<!-- Lessons List -->
+<div class="space-y-4" id="tab-lessons">
+<div class="flex items-center gap-4 p-4 rounded-xl bg-white border border-border-light border-l-4 border-l-primary bento-card">
+<div class="w-10 h-10 rounded-full bg-primary-container/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined fill-icon" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+</div>
+<div class="flex-1">
+<p class="text-body-md font-semibold text-primary">Current: Ion Chamber Design</p>
+<p class="text-body-sm text-on-surface-variant">18 mins • Video Lecture</p>
+</div>
+<span class="material-symbols-outlined text-primary">equalizer</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low border border-border-light hover:bg-surface-variant/50 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-outline">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<div class="flex-1">
+<p class="text-body-md font-semibold text-on-surface">Thermal Management Basics</p>
+<p class="text-body-sm text-on-surface-variant">24 mins • Interactive Lab</p>
+</div>
+<span class="material-symbols-outlined text-outline">navigate_next</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low border border-border-light hover:bg-surface-variant/50 transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-outline">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<div class="flex-1">
+<p class="text-body-md font-semibold text-on-surface">Module 4 Quiz</p>
+<p class="text-body-sm text-on-surface-variant">10 Questions • Assessment</p>
+</div>
+<span class="material-symbols-outlined text-outline">navigate_next</span>
+</div>
+</div>
+<!-- Notes List (Hidden by default) -->
+<div class="hidden space-y-4 relative" id="tab-notes">
+<div class="p-4 rounded-xl bg-white border border-border-light bento-card">
+<div class="flex justify-between items-start mb-2">
+<span class="text-label-caps text-primary font-bold">04:12</span>
+<span class="material-symbols-outlined text-outline text-sm">more_vert</span>
+</div>
+<p class="text-body-sm text-on-surface">The grid alignment is crucial for electrostatic stability. Check the spacing ratios in the textbook (p. 42).</p>
+</div>
+<div class="p-4 rounded-xl bg-white border border-border-light bento-card">
+<div class="flex justify-between items-start mb-2">
+<span class="text-label-caps text-primary font-bold">12:30</span>
+<span class="material-symbols-outlined text-outline text-sm">more_vert</span>
+</div>
+<p class="text-body-sm text-on-surface">Ask prof about the secondary electron emission coefficient for xenon-fed thrusters.</p>
+</div>
+</div>
+<!-- Materials List (Hidden by default) -->
+<div class="hidden space-y-3" id="tab-materials">
+<div class="flex items-center gap-4 p-4 rounded-xl bg-white border border-border-light hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex-1">
+<p class="text-body-md font-semibold">Ion Thruster Physics.pdf</p>
+<p class="text-body-sm text-on-surface-variant">4.2 MB • Research Paper</p>
+</div>
+<span class="material-symbols-outlined text-outline">download</span>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-white border border-border-light hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined">table_view</span>
+</div>
+<div class="flex-1">
+<p class="text-body-md font-semibold">Efficiency_Calculations.xlsx</p>
+<p class="text-body-sm text-on-surface-variant">1.1 MB • Spreadsheet</p>
+</div>
+<span class="material-symbols-outlined text-outline">download</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Mark Complete Fixed Action -->
+<div class="fixed bottom-[nav-bar-h] w-full bg-white/80 backdrop-blur-md p-4 border-t border-border-light flex justify-center z-40">
+<button class="w-full h-12 rounded-xl border-[1.5px] border-primary text-primary font-semibold flex items-center justify-center gap-2 transition-all active:scale-95" id="mark-complete-btn" onclick="toggleComplete()">
+<span class="material-symbols-outlined" id="complete-icon">check_circle</span>
+<span id="complete-text">Mark Complete</span>
+</button>
+</div>
+<!-- Floating Action Button (Notes tab only) -->
+<button class="hidden fixed bottom-36 right-6 w-14 h-14 bg-secondary-container text-white rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-105 active:scale-95 transition-transform" id="fab-notes">
+<span class="material-symbols-outlined">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-bar-h pb-safe bg-surface border-t border-border-light flex justify-around items-center px-4">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1.5 transition-all duration-300 active:scale-97 cursor-pointer">
+<span class="material-symbols-outlined fill-icon" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-4 py-1.5 cursor-pointer">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-label-caps text-label-caps">Explore</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-4 py-1.5 cursor-pointer">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-label-caps">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-4 py-1.5 cursor-pointer">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</div>
+</nav>
+<script>
+        function switchTab(tab) {
+            const tabs = ['lessons', 'notes', 'materials'];
+            tabs.forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('btn-' + t).classList.remove('tab-active', 'text-primary');
+                document.getElementById('btn-' + t).classList.add('text-on-surface-variant');
+            });
+            
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).classList.add('tab-active', 'text-primary');
+            document.getElementById('btn-' + tab).classList.remove('text-on-surface-variant');
+
+            // FAB visibility
+            const fab = document.getElementById('fab-notes');
+            if (tab === 'notes') {
+                fab.classList.remove('hidden');
+                fab.classList.add('flex');
+            } else {
+                fab.classList.add('hidden');
+                fab.classList.remove('flex');
+            }
+        }
+
+        let isCompleted = false;
+        function toggleComplete() {
+            const btn = document.getElementById('mark-complete-btn');
+            const icon = document.getElementById('complete-icon');
+            const text = document.getElementById('complete-text');
+
+            isCompleted = !isCompleted;
+
+            if (isCompleted) {
+                btn.classList.add('bg-primary', 'text-white');
+                btn.classList.remove('text-primary');
+                text.innerText = 'Completed';
+                icon.style.fontVariationSettings = "'FILL' 1";
+            } else {
+                btn.classList.remove('bg-primary', 'text-white');
+                btn.classList.add('text-primary');
+                text.innerText = 'Mark Complete';
+                icon.style.fontVariationSettings = "'FILL' 0";
+            }
+        }
+    </script>
+</body></html>

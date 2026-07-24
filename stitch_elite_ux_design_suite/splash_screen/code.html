@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BuildAcad - Splash</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&family=Sora:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "secondary": "#a73a00",
+                        "on-secondary-fixed": "#370e00",
+                        "on-primary-fixed": "#001a42",
+                        "surface-light": "#FFFFFF",
+                        "secondary-fixed": "#ffdbce",
+                        "primary-container": "#2170e4",
+                        "on-surface-variant": "#424754",
+                        "on-secondary-container": "#571a00",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#924700",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#d8e2ff",
+                        "on-surface": "#0b1c30",
+                        "surface-dark": "#151E2E",
+                        "background-dark": "#0B1220",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727785",
+                        "text-primary-light": "#0F172A",
+                        "on-error": "#ffffff",
+                        "text-primary-dark": "#F1F5F9",
+                        "secondary-container": "#fd651e",
+                        "on-primary-container": "#fefcff",
+                        "border-dark": "#263349",
+                        "surface-tint": "#005ac2",
+                        "on-tertiary-fixed": "#311400",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "error": "#DC2626",
+                        "surface": "#f8f9ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#f8f9ff",
+                        "border-light": "#E2E8F0",
+                        "background-light": "#F8FAFC",
+                        "secondary-fixed-dim": "#ffb599",
+                        "on-tertiary-container": "#fffbff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "primary": "#0058be",
+                        "tertiary-container": "#b75b00",
+                        "inverse-surface": "#213145",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "outline-variant": "#c2c6d6",
+                        "on-secondary-fixed-variant": "#7f2b00",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-dim": "#cbdbf5",
+                        "on-background": "#0b1c30",
+                        "inverse-primary": "#adc6ff",
+                        "surface-container-lowest": "#ffffff",
+                        "brand-navy": "#0B1220",
+                        "brand-blue": "#3B82F6",
+                        "slate-custom": "#94A3B8"
+                    },
+                    "spacing": {
+                        "nav-bar-h": "64px",
+                        "margin-screen": "16px",
+                        "base": "4px",
+                        "gutter-grid": "12px",
+                        "target-min": "44px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "numeric-tabular": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Sora"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Sora"]
+                    },
+                    "fontSize": {
+                        "numeric-tabular": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        @keyframes scaleFadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes progressFill {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .animate-logo {
+            animation: scaleFadeIn 400ms ease-out forwards;
+        }
+
+        .animate-wordmark {
+            opacity: 0;
+            animation: slideUpFade 500ms ease-out 400ms forwards;
+        }
+
+        .animate-tagline {
+            opacity: 0;
+            animation: slideUpFade 500ms ease-out 700ms forwards;
+        }
+
+        .progress-line {
+            height: 2px;
+            width: 0%;
+            background-color: #3B82F6;
+            animation: progressFill 2500ms cubic-bezier(0.65, 0, 0.35, 1) 200ms forwards;
+        }
+
+        .radial-glow {
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, rgba(11, 18, 32, 0) 70%);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-brand-navy m-0 p-0 overflow-hidden h-screen flex flex-col items-center justify-center">
+<!-- Subtle Radial Glow Background -->
+<div class="absolute inset-0 radial-glow pointer-events-none z-0"></div>
+<!-- Center Content -->
+<main class="relative z-10 flex flex-col items-center text-center">
+<!-- Logo Container -->
+<div class="mb-6">
+<img alt="BuildAcad Logo Mark" class="w-32 h-32 md:w-40 md:h-40 object-contain animate-logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbHuENg4IkubK7txL5HnaFVlCPSxn06fop8dt-rkBAz0OdWXbFVt09oWgAjC67zSDpC4QJ7o8QvHIoWgDI5ulWqRTArCT9oh8TKdkQ8U_OfTyyXvcjCkBxP4BSV65h-XCrhZmF_qH2Bc6UrH22s9juUaj5poYg--wgguKlOZ38ZSOhin3SR9svkTlk0H0uR9Ky3RWyBzKprcDJ8JVaHoM9-zCLBb4tLG_E2eZj9weJBTHGI9KgABss3XZWwtevj1ir0mYOddJmV74r"/>
+</div>
+<!-- Typography Section -->
+<div class="flex flex-col gap-2">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-white tracking-tight animate-wordmark">
+                BuildAcad
+            </h1>
+<p class="font-body-md text-body-md text-slate-custom animate-tagline">
+                Learn. Build. Achieve.
+            </p>
+</div>
+</main>
+<!-- Bottom Progress Section -->
+<footer class="absolute bottom-16 left-0 right-0 px-12 md:px-32 lg:px-64">
+<div class="w-full bg-white/5 rounded-full overflow-hidden">
+<div class="progress-line rounded-full"></div>
+</div>
+<!-- Optional micro-hint -->
+<div class="mt-4 flex justify-center opacity-20">
+<span class="font-label-caps text-label-caps text-white">Initializing Platform</span>
+</div>
+</footer>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Optional: Auto-transition logic after splash
+            const splashDuration = 3200; // Total expected time for full progress
+            
+            setTimeout(() => {
+                // Here you would typically redirect or switch views
+                console.log("Splash sequence complete. Transitioning to main app...");
+            }, splashDuration);
+
+            // Adding a little hover sparkle effect logic for later reuse if needed
+            window.addEventListener('mousemove', (e) => {
+                const glow = document.querySelector('.radial-glow');
+                const x = (e.clientX / window.innerWidth) * 100;
+                const y = (e.clientY / window.innerHeight) * 100;
+                // Subtle follow effect (kept extremely faint per request)
+                glow.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(59, 130, 246, 0.05) 0%, rgba(11, 18, 32, 0) 60%)`;
+            });
+        });
+    </script>
+</body></html>

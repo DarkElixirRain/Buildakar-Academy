@@ -1,128 +1,97 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../constants/colors.dart';
-import '../../providers/theme_provider.dart';
+import 'package:buildacad/constants/colors.dart';
+import 'package:buildacad/theme/app_theme.dart';
 
 class AppCard extends StatelessWidget {
   final Widget child;
-  final VoidCallback? onTap;
   final EdgeInsetsGeometry? padding;
-  final double? maxWidth;
-  final double borderRadius;
-  final EdgeInsetsGeometry? margin;
-  final Color? backgroundColor;
+  final VoidCallback? onTap;
+  final double? width;
 
-  const AppCard({
-    super.key,
-    required this.child,
-    this.onTap,
-    this.padding,
-    this.maxWidth,
-    this.borderRadius = 28,
-    this.margin,
-    this.backgroundColor,
-  });
+  const AppCard({super.key, required this.child, this.padding, this.onTap, this.width});
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-
-    Widget card = Container(
-      width: double.infinity,
-      constraints: maxWidth != null
-          ? BoxConstraints(maxWidth: maxWidth!)
-          : null,
-      padding: padding ?? const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color:
-            backgroundColor ??
-            (isDark
-                ? AppColors.darkBackgroundElement.withValues(alpha: 0.8)
-                : AppColors.lightBackgroundElement.withValues(alpha: 0.8)),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.05),
-          width: 1,
+    final brightness = Theme.of(context).brightness;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: width,
+        padding: padding ?? const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest(brightness),
+          borderRadius: AppRadius.cardAll,
+          border: Border.all(color: AppColors.border(brightness), width: 1),
+          boxShadow: AppShadow.card,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.4)
-                : Colors.grey.withValues(alpha: 0.1),
-            offset: const Offset(0, 8),
-            blurRadius: 30,
-            spreadRadius: 2,
-          ),
-        ],
+        child: child,
       ),
-      child: child,
     );
-
-    if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: card);
-    }
-    return card;
   }
 }
 
 class AppStatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
   final String label;
-  final Color color;
-  final Color? cardColor;
-  final Color? textColor;
-  final Color? textSecondaryColor;
+  final String value;
+  final IconData icon;
+  final Color iconColor;
+  final String? trend;
+  final bool trendUp;
 
   const AppStatCard({
     super.key,
-    required this.icon,
-    required this.value,
     required this.label,
-    required this.color,
-    this.cardColor,
-    this.textColor,
-    this.textSecondaryColor,
+    required this.value,
+    required this.icon,
+    this.iconColor = AppColors.primary,
+    this.trend,
+    this.trendUp = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-
+    final brightness = Theme.of(context).brightness;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      width: 160,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardColor ?? AppColors.getBackgroundElementColor(brightness),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.surfaceContainerLowest(brightness),
+        borderRadius: AppRadius.cardAll,
+        border: Border.all(color: AppColors.border(brightness)),
+        boxShadow: AppShadow.card,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: textColor ?? AppColors.getTextColor(brightness),
-            ),
+          Text(label.toUpperCase(), style: AppTypography.labelCaps.copyWith(
+            color: AppColors.textOnSurfaceVariant(brightness),
+          )),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Text(value, style: AppTypography.numericTabular.copyWith(
+                  fontSize: 20,
+                  color: AppColors.textOnSurface(brightness),
+                )),
+              ),
+              if (trend != null)
+                Icon(
+                  trendUp ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 16,
+                  color: trendUp ? AppColors.primary : AppColors.error,
+                ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color:
-                  textSecondaryColor ??
-                  AppColors.getTextSecondaryColor(brightness),
-            ),
-          ),
+          if (trend != null) ...[
+            const SizedBox(height: 4),
+            Text(trend!, style: AppTypography.bodySm.copyWith(
+              color: trendUp ? AppColors.primary : AppColors.error,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            )),
+          ],
         ],
       ),
     );

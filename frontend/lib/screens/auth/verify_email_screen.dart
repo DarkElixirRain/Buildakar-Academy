@@ -1,406 +1,177 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:buildacad/constants/colors.dart';
-import 'package:buildacad/widgets/splash_logo.dart';
-import 'package:buildacad/services/api_service.dart';
-import 'package:buildacad/providers/auth_provider.dart';
-import 'package:buildacad/providers/theme_provider.dart';
-import 'package:buildacad/core/widgets/app_card.dart';
+import 'package:buildacad/theme/app_theme.dart';
 import 'package:buildacad/core/widgets/app_button.dart';
-import 'package:buildacad/core/widgets/app_error_banner.dart';
-import 'package:buildacad/core/widgets/app_dialog.dart';
-import 'package:provider/provider.dart';
+import 'package:buildacad/services/auth_service.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
-  const VerifyEmailScreen({Key? key, required this.email}) : super(key: key);
-
+  const VerifyEmailScreen({super.key, required this.email});
   @override
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final List<TextEditingController> _codeControllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> _codeFocusNodes = List.generate(6, (_) => FocusNode());
-  final ApiService _apiService = ApiService();
-
-  bool _isVerifying = false;
-  bool _isResending = false;
+  final List<TextEditingController> _ctrls = List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _nodes = List.generate(6, (_) => FocusNode());
+  int _countdown = 60;
+  Timer? _timer;
+  bool _verifying = false;
   String? _error;
-  int _resendCountdown = 30;
-  bool _canResend = false;
 
   @override
   void initState() {
     super.initState();
-    _startResendCountdown();
+    _startCountdown();
   }
 
-  void _startResendCountdown() {
-    _canResend = false;
-    _resendCountdown = 30;
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return false;
-      setState(() {
-        _resendCountdown--;
-        if (_resendCountdown <= 0) {
-          _canResend = true;
-        }
-      });
-      return _resendCountdown > 0;
-    });
-  }
-
-  String get _enteredCode => _codeControllers.map((c) => c.text).join();
-
-  void _onCodeChanged(int index, String value) {
-    setState(() => _error = null);
-    if (value.isNotEmpty && index < 5) {
-      _codeFocusNodes[index + 1].requestFocus();
-    }
-    if (_enteredCode.length == 6) {
-      _verifyEmail();
-    }
-  }
-
-  Future<void> _verifyEmail() async {
-    if (_enteredCode.length != 6) return;
-
-    setState(() {
-      _isVerifying = true;
-      _error = null;
-    });
-
-    try {
-      final response = await _apiService.verifyEmail(
-        widget.email,
-        _enteredCode,
-      );
-      if (!mounted) return;
-
-      if (response.success) {
-        final data = response.data is Map<String, dynamic>
-            ? response.data as Map<String, dynamic>
-            : null;
-
-        if (data != null && data['accessToken'] != null) {
-          if (data['user'] != null) {
-            await _apiService.saveUser(data['user'] as Map<String, dynamic>);
-          }
-          await _apiService.saveToken(data['accessToken'] as String);
-          if (data['refreshToken'] != null) {
-            await _apiService.saveRefreshToken(data['refreshToken'] as String);
-          }
-          if (data['accessTokenExpiresAt'] != null) {
-            await _apiService.saveTokenExpiry(
-              data['accessTokenExpiresAt'] as String,
-            );
-          }
-
-          if (!mounted) return;
-          await Provider.of<AuthProvider>(context, listen: false).loadUser();
-          if (!mounted) return;
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          showAppSuccessDialog(
-            context: context,
-            title: 'Email Verified!',
-            message:
-                'Your email has been verified successfully. Please login to continue.',
-            buttonText: 'Continue to Login',
-            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-          );
-        }
-      } else {
-        setState(() {
-          _error =
-              response.message ??
-              'Invalid verification code. Please try again.';
-        });
-      }
-    } catch (e) {
+  void _startCountdown() {
+    _countdown = 60;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
       setState(() {
-        _error = 'An error occurred. Please try again.';
+        _countdown--;
+        if (_countdown <= 0) t.cancel();
       });
-    } finally {
-      if (mounted) setState(() => _isVerifying = false);
-    }
-  }
-
-  Future<void> _resendCode() async {
-    if (!_canResend || _isResending) return;
-
-    setState(() {
-      _isResending = true;
-      _error = null;
     });
-
-    try {
-      final response = await _apiService.resendVerification(widget.email);
-      if (!mounted) return;
-
-      if (response.success) {
-        for (final c in _codeControllers) {
-          c.clear();
-        }
-        _codeFocusNodes[0].requestFocus();
-        _startResendCountdown();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification code resent!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        setState(() {
-          _error = response.message ?? 'Failed to resend code.';
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'An error occurred. Please try again.';
-      });
-    } finally {
-      if (mounted) setState(() => _isResending = false);
-    }
   }
 
   @override
   void dispose() {
-    for (final c in _codeControllers) {
-      c.dispose();
-    }
-    for (final f in _codeFocusNodes) {
-      f.dispose();
-    }
+    _timer?.cancel();
+    for (final c in _ctrls) c.dispose();
+    for (final n in _nodes) n.dispose();
     super.dispose();
+  }
+
+  String get _code => _ctrls.map((c) => c.text).join();
+
+  Future<void> _verify() async {
+    if (_code.length < 6) return;
+    setState(() { _verifying = true; _error = null; });
+    try {
+      final service = AuthService();
+      final result = await service.verifyEmail(widget.email, _code);
+      if (result.success && mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      } else {
+        setState(() => _error = 'Invalid verification code');
+      }
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _verifying = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    try {
+      final service = AuthService();
+      await service.sendVerificationCode(widget.email);
+      _startCountdown();
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-    final size = MediaQuery.of(context).size.width;
-    final isSmallDevice = size < 375;
-    final isTablet = size >= 768;
-    final cardPadding = isSmallDevice
-        ? 16.0
-        : isTablet
-        ? 32.0
-        : 24.0;
-
+    final brightness = Theme.of(context).brightness;
     return Scaffold(
-      backgroundColor: AppColors.getBackgroundColor(brightness),
-      resizeToAvoidBottomInset: true,
+      backgroundColor: AppColors.background(brightness),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            vertical: isSmallDevice ? 16 : 32,
-            horizontal: 16,
-          ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SplashLogo(),
-              const SizedBox(height: 32),
-              Text(
-                'Verify Your Email',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.getTextColor(brightness),
-                  fontSize: isSmallDevice ? 28 : 34,
-                  letterSpacing: 0.5,
+              const SizedBox(height: 24),
+              Container(
+                width: 64, height: 64,
+                decoration: const BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  shape: BoxShape.circle,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Enter the 6-digit code sent to',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.getTextSecondaryColor(brightness),
-                    fontSize: isSmallDevice ? 14 : 16,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.email,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.getPrimaryColor(brightness),
-                  fontSize: isSmallDevice ? 15 : 17,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 32),
-              AppCard(
-                padding: EdgeInsets.all(cardPadding),
-                maxWidth: 480,
-                borderRadius: 28,
-                child: Column(
-                  children: [
-                    if (_error != null) AppErrorBanner(message: _error!),
-                    Text(
-                      'Verification Code',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.getTextColor(brightness),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(6, (index) {
-                        return SizedBox(
-                          width: 48,
-                          height: 56,
-                          child: TextField(
-                            controller: _codeControllers[index],
-                            focusNode: _codeFocusNodes[index],
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            maxLength: 1,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.getTextColor(brightness),
-                            ),
-                            decoration: InputDecoration(
-                              counterText: '',
-                              filled: true,
-                              fillColor: isDark
-                                  ? AppColors.darkBackgroundElement
-                                  : AppColors.lightBackgroundElement,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: _error != null
-                                      ? const Color(0xFFEF4444)
-                                      : AppColors.getBackgroundSelectedColor(
-                                          brightness,
-                                        ),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppColors.getBackgroundSelectedColor(
-                                    brightness,
-                                  ),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppColors.getPrimaryColor(brightness),
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            onChanged: (value) => _onCodeChanged(index, value),
-                            onEditingComplete: index < 5
-                                ? () =>
-                                      _codeFocusNodes[index + 1].requestFocus()
-                                : null,
-                          ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 24),
-                    AppButton(
-                      title: 'Verify Email',
-                      onPressed: (_isVerifying || _enteredCode.length != 6)
-                          ? null
-                          : _verifyEmail,
-                      isLoading: _isVerifying,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Didn't receive the code? ",
-                          style: TextStyle(
-                            color: AppColors.getTextSecondaryColor(brightness),
-                            fontSize: isSmallDevice ? 13 : 14,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _canResend && !_isResending
-                              ? _resendCode
-                              : null,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: _isResending
-                              ? const SizedBox(
-                                  height: 16,
-                                  width: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  _canResend
-                                      ? 'Resend Code'
-                                      : 'Resend in ${_resendCountdown}s',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: _canResend
-                                        ? AppColors.getPrimaryColor(brightness)
-                                        : AppColors.getTextSecondaryColor(
-                                            brightness,
-                                          ),
-                                    fontSize: isSmallDevice ? 13 : 14,
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                child: const Icon(Icons.mail_outline, color: Colors.white, size: 32),
               ),
               const SizedBox(height: 24),
+              Text('Verify your email', style: AppTypography.headlineMd.copyWith(
+                color: AppColors.textOnSurface(brightness),
+              )),
+              const SizedBox(height: 8),
+              Text('We sent a 6-digit code to', style: AppTypography.bodyMd.copyWith(
+                color: AppColors.textOnSurfaceVariant(brightness),
+              )),
+              Text(widget.email, style: AppTypography.bodyMd.copyWith(
+                color: AppColors.primary, fontWeight: FontWeight.w600,
+              )),
+              const SizedBox(height: 32),
+              // OTP boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Already verified? ',
-                    style: TextStyle(
-                      color: AppColors.getTextSecondaryColor(brightness),
-                      fontSize: isSmallDevice ? 14 : 15,
+                children: List.generate(6, (i) => Container(
+                  width: 44, height: 52,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  child: TextField(
+                    controller: _ctrls[i],
+                    focusNode: _nodes[i],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    style: AppTypography.headlineMd.copyWith(
+                      color: AppColors.textOnSurface(brightness),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () =>
-                        Navigator.pushReplacementNamed(context, '/login'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      'Sign In',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.getPrimaryColor(brightness),
-                        fontSize: isSmallDevice ? 14 : 15,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      counterText: '',
+                      filled: true,
+                      fillColor: AppColors.surfaceContainerLowest(brightness),
+                      contentPadding: EdgeInsets.zero,
+                      border: OutlineInputBorder(
+                        borderRadius: AppRadius.smAll,
+                        borderSide: BorderSide(color: AppColors.border(brightness)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.smAll,
+                        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.smAll,
+                        borderSide: BorderSide(color: AppColors.border(brightness)),
                       ),
                     ),
+                    onChanged: (v) {
+                      if (v.isNotEmpty && i < 5) _nodes[i + 1].requestFocus();
+                      if (v.isEmpty && i > 0) _nodes[i - 1].requestFocus();
+                      if (_code.length == 6) _verify();
+                    },
                   ),
-                ],
+                )),
               ),
-              const SizedBox(height: 20),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: AppTypography.bodySm.copyWith(color: AppColors.error)),
+              ],
+              const SizedBox(height: 24),
+              AppButton(label: 'Verify', loading: _verifying, onPressed: _verify),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: _countdown > 0 ? null : _resend,
+                child: Text(
+                  _countdown > 0 ? 'Resend code in ${_countdown}s' : 'Resend Code',
+                  style: AppTypography.bodySm.copyWith(
+                    color: _countdown > 0 ? AppColors.outline(brightness) : AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

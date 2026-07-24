@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>BuildAcad - Learn. Build. Achieve.</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "secondary": "#a73a00",
+                        "on-secondary-fixed": "#370e00",
+                        "on-primary-fixed": "#001a42",
+                        "surface-light": "#FFFFFF",
+                        "secondary-fixed": "#ffdbce",
+                        "primary-container": "#2170e4",
+                        "on-surface-variant": "#424754",
+                        "on-secondary-container": "#571a00",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#924700",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#d8e2ff",
+                        "on-surface": "#0b1c30",
+                        "surface-dark": "#151E2E",
+                        "background-dark": "#0B1220",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727785",
+                        "text-primary-light": "#0F172A",
+                        "on-error": "#ffffff",
+                        "text-primary-dark": "#F1F5F9",
+                        "secondary-container": "#fd651e",
+                        "on-primary-container": "#fefcff",
+                        "border-dark": "#263349",
+                        "surface-tint": "#005ac2",
+                        "on-tertiary-fixed": "#311400",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "error": "#DC2626",
+                        "surface": "#f8f9ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#f8f9ff",
+                        "border-light": "#E2E8F0",
+                        "background-light": "#F8FAFC",
+                        "secondary-fixed-dim": "#ffb599",
+                        "on-tertiary-container": "#fffbff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "primary": "#0058be",
+                        "tertiary-container": "#b75b00",
+                        "inverse-surface": "#213145",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "outline-variant": "#c2c6d6",
+                        "on-secondary-fixed-variant": "#7f2b00",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-dim": "#cbdbf5",
+                        "on-background": "#0b1c30",
+                        "inverse-primary": "#adc6ff",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "nav-bar-h": "64px",
+                        "margin-screen": "16px",
+                        "base": "4px",
+                        "gutter-grid": "12px",
+                        "target-min": "44px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "numeric-tabular": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Sora"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Sora"]
+                    },
+                    "fontSize": {
+                        "numeric-tabular": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.95); }
+        }
+        .animate-live-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        .bento-card {
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s ease;
+        }
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-border-light flex justify-between items-center px-margin-screen h-nav-bar-h">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a young student in a modern workspace, shot in high-key lighting with a clean light-mode aesthetic. The individual has a friendly, focused expression, reflecting the corporate modern and authoritative brand persona of an educational platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBb_5JC-6WFCANMf8jIx8j9kZYffUFlswvwnN0245MEIOTELAwsPRZEDRDCvpNRCbw16ctSfktHOPtZ4fANoJHve3BaTVHRkTgLJUa_L38nBGr3xRSgrb4PimyQ_Rsngo9IgxWFkvcADZBJoD2JCgOoP07P5Y2QVS8E2ho2E4ot49WmvSyDrBZ17wk_MgmpHLcaDCyJJToda1n6mZF4464Q4bjHGTrjSmYC99-buk4g4MZB5KFKd-AwBZV9OpXXkVyUghmM16HV06Kn"/>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Welcome back,</p>
+<h1 class="font-headline-sm-mobile text-headline-sm-mobile text-primary font-bold tracking-tight">Alex Rivera</h1>
+</div>
+</div>
+<button class="w-target-min h-target-min flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</button>
+</header>
+<main class="pt-20 pb-24 px-margin-screen space-y-section-gap">
+<!-- Search Bar -->
+<section class="mt-4">
+<div class="relative flex items-center group">
+<span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full h-12 pl-12 pr-4 rounded-xl border border-border-light bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-outline text-body-md" placeholder="Search for courses, tools, or mentors" type="text"/>
+</div>
+</section>
+<!-- Section 1: Continue Learning (Bento) -->
+<section>
+<div class="bento-card bg-surface-container-lowest rounded-xl overflow-hidden p-4">
+<div class="flex justify-between items-start mb-4">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Continue Learning</h2>
+<span class="material-symbols-outlined text-outline">more_vert</span>
+</div>
+<div class="flex gap-4 items-center">
+<div class="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A high-tech digital illustration of architectural blueprints merging with glowing 3D structural models. The scene uses a professional color palette of Primary Blue and slate grays, capturing a technical engineering atmosphere suitable for an advanced architectural course." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd5b5zKjzPSI2s7J-lSVDeCnFYRWayE9Q5MXWeiU1iHBJm1eEI5zin4Ho5SQuWrtMh5AnKTd_dyyX_OIEBUZc9enGvOaUL-71hvdUdmVh4jOiLTAQR1afp2SzxdlY8LCCPptOkHyMPqZMke20QOxUuvAObtahMXBkklq3fSv0968OiZaAJo-BPABj3-ET2wmAdR7mBazq1QhIg8yY5FBe0CmVI5qLHkmOFg8xKScYvfx9BUd4o-emUZ-WKjEoOaNEC_FrWlmj2hFOo"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-3xl">play_circle</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<p class="font-label-caps text-label-caps text-primary">MODULE 4: STRUCTURAL ANALYSIS</p>
+<h3 class="font-body-lg text-body-lg font-bold leading-tight">Advanced BIM Integration</h3>
+<div class="flex items-center gap-2 pt-1">
+<div class="flex-1 h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="bg-primary h-full w-3/4 rounded-full"></div>
+</div>
+<span class="font-numeric-tabular text-[12px] text-outline">75%</span>
+</div>
+</div>
+</div>
+<button class="mt-4 w-full h-12 bg-secondary-container text-white rounded-xl font-bold flex items-center justify-center gap-2 active:scale-[0.97] transition-transform">
+<span class="material-symbols-outlined">resume</span>
+                    Resume Learning
+                </button>
+</div>
+</section>
+<!-- Section 2: Categories -->
+<section>
+<div class="flex items-center justify-between mb-3">
+<h2 class="font-headline-sm text-headline-sm">Categories</h2>
+<button class="text-primary font-body-sm">View All</button>
+</div>
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-primary text-white font-body-sm shadow-sm">All Topics</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-surface-container text-on-surface-variant font-body-sm hover:bg-surface-variant transition-colors">Engineering</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-surface-container text-on-surface-variant font-body-sm hover:bg-surface-variant transition-colors">Robotics</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-surface-container text-on-surface-variant font-body-sm hover:bg-surface-variant transition-colors">Design</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-surface-container text-on-surface-variant font-body-sm hover:bg-surface-variant transition-colors">BIM</button>
+<button class="flex-shrink-0 px-5 py-2 rounded-full bg-surface-container text-on-surface-variant font-body-sm hover:bg-surface-variant transition-colors">Business</button>
+</div>
+</section>
+<!-- Section 3: Live Classes Carousel -->
+<section>
+<div class="flex items-center justify-between mb-3">
+<h2 class="font-headline-sm text-headline-sm">Live Classes</h2>
+<div class="flex gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-variant"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-surface-variant"></div>
+</div>
+</div>
+<div class="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+<!-- Live Class Card 1 -->
+<div class="snap-start flex-shrink-0 w-72 bento-card bg-surface-container-lowest rounded-xl overflow-hidden relative group">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover" data-alt="A live workshop setting with a robotics engineer interacting with a mechanical arm in a brightly lit lab. The aesthetic is clean, academic, and energetic, featuring cool blue tones and crisp technical details, perfectly representing a professional robotics live class." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsuO08ZReMSzBfkkfIvGid0-oIfptU8bcjso_MPI1xIZbfsMjb4BHtRSCKEvFdGP2z4KkyvIIWTn4Xg8-tZj_ypIFHRPBlQCsVGcQAozk3DmLVRTsYD7Nol3XHyR1VXrHvZixE8HstzVgIk0feeGl5F4PYxN1JFf09sZ9szzqp9OaqXxBSg8CvvngawStFz1W2TW9mk5YXoXEm6bDW8W0m88yVKpoJR0PcMM6KGzP_6OZk93bISRkwwkVsLF4ZW5jUj1BwoVVXdLbg"/>
+<div class="absolute top-3 left-3 bg-secondary-container text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 animate-live-pulse uppercase">
+<span class="w-1.5 h-1.5 bg-white rounded-full"></span> Live
+                        </div>
+<div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-[14px]">groups</span>
+                            2.4k watching
+                        </div>
+</div>
+<div class="p-3">
+<h3 class="font-body-md font-bold text-on-surface truncate">Collaborative Robotics Lab</h3>
+<p class="text-body-sm text-on-surface-variant mt-1">Dr. Sarah Chen</p>
+</div>
+</div>
+<!-- Live Class Card 2 -->
+<div class="snap-start flex-shrink-0 w-72 bento-card bg-surface-container-lowest rounded-xl overflow-hidden relative group">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover" data-alt="A professional interior design studio featuring sustainable materials and 3D rendering software on large monitors. The lighting is soft and natural, emphasizing a premium engineering and design environment with high-contrast modules." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAes_aVbBVBsI7nJRNmQDDKmNwEnxDiucB9WEC_fTIAJhRmnOZ2avwAWDICQOoitYJM5ABJhYxpKWnYkM_8dPi0kTjLk3k7aLAVfQH3Tp1Ac2gWzHIv3R9q_yusMIMk8_4-OfMslLFvBWSIMvK1DA_Ry3b16S3ZeMhUxH6ML2olfwUbl_DVEz7ARlEO7y5LLuRnkdMKgbt3SBYsovYMk3kzO71Ht67OjGL8yZJck2mQsBs07DMVXfyPkEDnWi-NI1Sv7gW8AEpezJfw"/>
+<div class="absolute top-3 left-3 bg-secondary-container text-white px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 animate-live-pulse uppercase">
+<span class="w-1.5 h-1.5 bg-white rounded-full"></span> Live
+                        </div>
+<div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white px-2 py-1 rounded-lg flex items-center gap-1 text-[11px]">
+<span class="material-symbols-outlined text-[14px]">groups</span>
+                            1.1k watching
+                        </div>
+</div>
+<div class="p-3">
+<h3 class="font-body-md font-bold text-on-surface truncate">Sustainable Urban Design</h3>
+<p class="text-body-sm text-on-surface-variant mt-1">Prof. Julian Vane</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Recommended Courses (Bento Grid) -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-headline-sm text-headline-sm">Recommended</h2>
+<button class="text-primary font-body-sm">Filter</button>
+</div>
+<div class="grid grid-cols-2 gap-gutter-grid">
+<!-- Course Card 1 -->
+<div class="bento-card bg-surface-container-lowest rounded-xl p-2 space-y-2">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A macro shot of a complex 3D printed mechanical joint being assembled. The visual style is precise and authoritative, with a neutral slate background and vibrant Primary Blue accents on the component, emphasizing a technical drawing feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBL2ZOy3NcETD9m1wTnl8i4Il9V0BbLrJlq9NReeeATNjCicgldIoF6c05KWjeV1dGhSACctA6R1qjAvvxacKhlw6mbM0zxgzT0xLSiFlo-bUFrpEuNMFqMYAhnZzdqZ38kAgZnwqaRSAHyxEUs_mQKHWWy_42aZoWw0gTBiGTxWGdS8hLvhEPdE1egzABltyD8Z7wl5XyF7ORta47maN8962RlGKDzzdKwJP6NQFpXKwKjWubGoZaWb1EO4lWBBL0LeBrTnUK5aSBf"/>
+</div>
+<div class="px-1 space-y-1">
+<h3 class="font-headline-sm text-[15px] font-semibold leading-snug line-clamp-2">Additive Manufacturing Fundamentals</h3>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-numeric-tabular text-[12px] font-bold">4.9</span>
+</div>
+<p class="font-display-lg text-primary text-lg">$89.00</p>
+</div>
+</div>
+<!-- Course Card 2 -->
+<div class="bento-card bg-surface-container-lowest rounded-xl p-2 space-y-2">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A sleek digital visualization of a smart city energy grid with glowing lines connecting buildings and solar arrays. The design reflects a Corporate Modern aesthetic with high performance and bespoke technical atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8uPzv2HUmE8LLyHgugLWSNlfQ2AxvsTiuLVPQH__X80eRE__Gm75sC6WSYmiRDVOkGFxKy2DLlvuWxPyb8sFrtbmPbrmTVTddZRa7UJDdE6jxLqFIUUNrunNVE6R37qsgISIYesz40FM-MAvPhv93h7DtB1bBjmUFYqT60n6m06FGgVMIg3WaJu5zxarlJA6CAgW37gjp8n-pNrFF7ZiMTpZBstlRg0BjWxHk-saa6VRqiKsTZRM1te0JCdZ_kvzG9rVL7qCvy-Y0"/>
+</div>
+<div class="px-1 space-y-1">
+<h3 class="font-headline-sm text-[15px] font-semibold leading-snug line-clamp-2">Smart Grid Optimization Systems</h3>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-numeric-tabular text-[12px] font-bold">4.7</span>
+</div>
+<p class="font-display-lg text-primary text-lg">$124.50</p>
+</div>
+</div>
+<!-- Course Card 3 -->
+<div class="bento-card bg-surface-container-lowest rounded-xl p-2 space-y-2">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="An overhead view of an electrical circuit board design being optimized on a digital interface. The palette is dominated by slate and Primary Blue, conveying a professional engineering and academic authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpqCZKQF4Kn9yIhN694PbI2ogKlm_nMhztZo29or0zkrQem8y3jQ3FVsVYZQeqEQYY9rVhrlptEOWIHqsqExa-4qzyLM3AnrYsYVlQT90UcyuoVwf1FcnXIVWPI-WeJ2d3PPnutI7tB12i1MuIoe_Fakq_3Z_aL-gGtvCKnPPXuHRhZ1r7YKHFyWICDGy6EaSP6TzwbjqH3xTlcufWeR5NEGoTi52yqETgVVLT72vstNUxrxlhdL8apcYWA_UynCCGSrf7rzzjdDBY"/>
+</div>
+<div class="px-1 space-y-1">
+<h3 class="font-headline-sm text-[15px] font-semibold leading-snug line-clamp-2">Electronic Circuit Prototyping</h3>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-numeric-tabular text-[12px] font-bold">5.0</span>
+</div>
+<p class="font-display-lg text-primary text-lg">$55.00</p>
+</div>
+</div>
+<!-- Course Card 4 -->
+<div class="bento-card bg-surface-container-lowest rounded-xl p-2 space-y-2">
+<div class="aspect-square rounded-xl overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A high-contrast photo of a robotic hand delicately holding a light bulb, symbolizing innovation. The scene is illuminated by soft white lighting creating a modern light-mode feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_R3WOM4BFq4WAwKKI4kxlmKsMPMpggJNDzDLypePqR2Qv8bxWDfoebg1HX8OvLmoz0p2DV1B8VsLffpZv14048eDpUEI25xRmN3SvAxws1mTbNw_konGXn-q8XG9KGa_HrKyttBLrebZm6-sLUy_IHUtEmj4Vaovd_K1TH4LO2dPTC4y8X6gW_QD7p5TWWIKdJdcvPxdVHEI66ebryKddz4_ef9urEzVz49x7Gn8SKlih8MBDUhYqRt82p-8PL5ywM9oXLwdL5vDB"/>
+</div>
+<div class="px-1 space-y-1">
+<h3 class="font-headline-sm text-[15px] font-semibold leading-snug line-clamp-2">AI Ethics in Industrial Design</h3>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-numeric-tabular text-[12px] font-bold">4.8</span>
+</div>
+<p class="font-display-lg text-primary text-lg">$99.99</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 5: Top Instructors -->
+<section class="pb-8">
+<h2 class="font-headline-sm text-headline-sm mb-4">Top Instructors</h2>
+<div class="flex gap-6 overflow-x-auto no-scrollbar py-2">
+<div class="flex flex-col items-center flex-shrink-0 gap-2">
+<div class="w-16 h-16 rounded-full border-2 border-primary-container p-0.5">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a distinguished male professor in a professional blazer, standing in front of a blurred academic library background. The look is authoritative and precise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTjEr_nxHNbea4xknezgL39PXlngIrgSO7me9Qj9ofdlQ4HY7Bc3CP1t4SVsenFZ00wQPARb7BS7q1jVG7o9eIt4KCsRHIfPJk47oSgwGbo_eFIjaozJZwF-8tJMGmVZjf_TN-8QikfvDB4wKbWUfNAqU_Gi_xAVmte1xbJZhx_vPBTXgBTV9fCLrybjZnpoLdzUjILiDC2DjLFrQK4mWJ1fTMv17Cj_bHiNMhS_fSpB7z-YqaZIpMbNfi72HuvqZ9ku4LXC50NHAk"/>
+</div>
+<span class="text-body-sm font-semibold">Dr. Marcus</span>
+</div>
+<div class="flex flex-col items-center flex-shrink-0 gap-2">
+<div class="w-16 h-16 rounded-full border-2 border-primary-container p-0.5">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a confident female tech leader with glasses, set against a clean minimalist studio backdrop. Her expression is energetic and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFca2j6He4BaYzL_wVAuBBWlRXYuOjiY_Ky5PyYo62j-ciyGqinYD8qWoYSXMqDZ7DDaNlTgD7MZdML7Y16wtldtursOjbgOkWmSnr1iFWjH5pbJPab8nkj8OMqF2EcE801HYk06gDdYZCH0z3n-bdcJi1PKabSL0q80PdgM6_pKYYxeURarBuEQS7GQxPFeYWtJrs5WnrznDOQlnKrqgyWPeNDbaqy0yheOV8IKzwnTdiaffB83-oPY_IfrvDl4AnvXUrICjbdxAz"/>
+</div>
+<span class="text-body-sm font-semibold">Jane Foster</span>
+</div>
+<div class="flex flex-col items-center flex-shrink-0 gap-2">
+<div class="w-16 h-16 rounded-full border-2 border-primary-container p-0.5">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a young male robotics researcher in a lab coat, smiling warmly. The setting is bright and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHSLWTZU908y3zNwR6YpWOWbO3at6tGqFfkWpqwP150n8rQIvmXjvI3Ej_Qyw57E2MAWKGNYAu5locFo4AEmtpmXlaVo5nmtGAws1QFRZdCZ2SDcZcn_0DQvjmvXZuBdMmGtauk6VF7-1BofoIkTa1XerJsg56d_jRBti5eBc_XKiPSFdKqtXYX4iNUDxbmx7yDlDo2IFQ0JuVxmmtSBv9t3XkaUgslXvmRjgl7y9mz2Je-CK8KXlzBQBPBqO_mal8_tIMlIgMRKxX"/>
+</div>
+<span class="text-body-sm font-semibold">L. Peterson</span>
+</div>
+<div class="flex flex-col items-center flex-shrink-0 gap-2">
+<div class="w-16 h-16 rounded-full border-2 border-primary-container p-0.5">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of a senior engineering consultant with gray hair and a sharp suit, in a professional high-key office environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwHJkGVCBeZi_QO_sdHMHKPCqS2vUHzKIUtmXqeqAXuPk_x69-0ICJAtLqR_isqzhYsulczBXhpXTdNIm0Mm9GioelOwW7MhSZrIQwR5A8XbHw04yXoSKJhWbs5-UxiARjpfjhpyC3L-3k7pwGPNP3u-tDqUNENtnBcEep0Gc_LJMCBHGvR66semR49BzNmPYPTFEttyyhWlI4mb1F2WU4cFi2tNmSQHcYL-sa_H7vSDtRE2sJM7ouG28CIlOtu5TtWex9WJz3BkKO"/>
+</div>
+<span class="text-body-sm font-semibold">Arthur Day</span>
+</div>
+<div class="flex flex-col items-center flex-shrink-0 gap-2">
+<div class="w-16 h-16 rounded-full border-2 border-primary-container p-0.5">
+<img class="w-full h-full object-cover rounded-full" data-alt="A portrait of an innovative female product designer in a modern studio space with art supplies in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSIoGgKUhpZK9193LyYBbrFeHAY370r_7K-Co1QzFKP-7BkK6cF9e6R8wOlC2QTZfkBa4t1X4Uo4R5sorfto4DVgZVhhSLZgdXqyEZvmlDf7kV18iNhWAPENTRBFBal7m-iRwxb2DCQgr3-_IItJD-Vy388nZEZIoYIuhM1UXKkvNBHKdpUU2nDDvKQVCXoaGnBh-bE1CS6U1csv6DWhrKgNG-4HY0l-N8VtJQyUGlTuih1VvjWo5yMA1WaUQp2mzgJCYaTxK2yFpX"/>
+</div>
+<span class="text-body-sm font-semibold">Maya Lin</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-bar-h pb-safe bg-surface border-t border-border-light flex justify-around items-center px-4">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1.5 transition-all duration-300 scale-97" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-caps text-label-caps mt-0.5">Home</span>
+</a>
+<!-- Explore -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-label-caps text-label-caps mt-0.5">Explore</span>
+</a>
+<!-- Search -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-label-caps mt-0.5">Search</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-label-caps mt-0.5">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions and subtle effects
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('touchstart', function() {
+                this.classList.add('opacity-80');
+            });
+            el.addEventListener('touchend', function() {
+                this.classList.remove('opacity-80');
+            });
+        });
+    </script>
+</body></html>

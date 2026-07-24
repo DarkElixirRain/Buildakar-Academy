@@ -1,12 +1,12 @@
 // lib/widgets/course/notes_list.dart
 import 'package:flutter/material.dart';
 import '../../models/course_model.dart';
-import '../../theme/app_colors.dart';
+import 'package:buildacad/constants/colors.dart';
 
 class NotesList extends StatefulWidget {
   final List<NoteItem> notes;
   final List<Lesson> lessons;
-  final AppColors colors;
+  final dynamic colors;
   final void Function(NoteItem note) onAdd;
   final void Function(NoteItem note) onUpdate;
   final void Function(String noteId) onDelete;

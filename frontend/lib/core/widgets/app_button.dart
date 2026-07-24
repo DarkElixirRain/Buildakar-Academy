@@ -1,129 +1,128 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../constants/colors.dart';
-import '../../providers/theme_provider.dart';
+import 'package:buildacad/constants/colors.dart';
+import 'package:buildacad/theme/app_theme.dart';
+
+enum AppButtonType { primary, secondary, outlined, ghost }
 
 class AppButton extends StatelessWidget {
-  final String title;
+  final String label;
   final VoidCallback? onPressed;
-  final bool isLoading;
-  final double? width;
-  final double? height;
+  final AppButtonType type;
+  final bool fullWidth;
+  final IconData? icon;
+  final bool loading;
 
   const AppButton({
     super.key,
-    required this.title,
-    required this.onPressed,
-    this.isLoading = false,
-    this.width,
-    this.height,
+    required this.label,
+    this.onPressed,
+    this.type = AppButtonType.primary,
+    this.fullWidth = true,
+    this.icon,
+    this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-    final isEnabled = !isLoading && onPressed != null;
-    final primaryColor = AppColors.getPrimaryColor(brightness);
+    final brightness = Theme.of(context).brightness;
 
-    return SizedBox(
-      width: width ?? double.infinity,
-      height: height,
-      child: ElevatedButton(
-        onPressed: isEnabled ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isEnabled
-              ? primaryColor
-              : AppColors.getTextSecondaryColor(brightness),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+    Widget child = loading
+        ? const SizedBox(
+            width: 20, height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20),
+                const SizedBox(width: 8),
+              ],
+              Text(label, style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600)),
+            ],
+          );
+
+    Widget button;
+    switch (type) {
+      case AppButtonType.primary:
+        button = ElevatedButton(
+          onPressed: loading ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.onPrimary,
+            minimumSize: Size.fromHeight(AppSpacing.targetMin),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
           ),
-          elevation: isEnabled ? 4 : 0,
-          shadowColor: isEnabled
-              ? primaryColor.withValues(alpha: 0.3)
-              : Colors.transparent,
-        ),
-        child: isLoading
-            ? const SizedBox(
-                height: 22,
-                width: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  letterSpacing: 0.5,
-                ),
-              ),
-      ),
-    );
+          child: child,
+        );
+        break;
+      case AppButtonType.secondary:
+        button = ElevatedButton(
+          onPressed: loading ? null : onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.secondaryContainer,
+            foregroundColor: Colors.white,
+            minimumSize: Size.fromHeight(AppSpacing.targetMin),
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
+          ),
+          child: child,
+        );
+        break;
+      case AppButtonType.outlined:
+        button = OutlinedButton(
+          onPressed: loading ? null : onPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            minimumSize: Size.fromHeight(AppSpacing.targetMin),
+            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
+          ),
+          child: child,
+        );
+        break;
+      case AppButtonType.ghost:
+        button = TextButton(
+          onPressed: loading ? null : onPressed,
+          child: child,
+        );
+        break;
+    }
+
+    if (fullWidth) {
+      return SizedBox(width: double.infinity, child: button);
+    }
+    return button;
   }
 }
 
 class AppSocialButton extends StatelessWidget {
-  final IconData icon;
   final String label;
-  final Color iconColor;
-  final Color? backgroundColor;
-  final VoidCallback onPressed;
-  final bool isSmallDevice;
+  final VoidCallback? onPressed;
+  final Widget icon;
 
   const AppSocialButton({
     super.key,
-    required this.icon,
     required this.label,
-    required this.iconColor,
-    this.backgroundColor,
-    required this.onPressed,
-    this.isSmallDevice = false,
+    this.onPressed,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton(
+      height: AppSpacing.targetMin,
+      child: OutlinedButton.icon(
         onPressed: onPressed,
+        icon: icon,
+        label: Text(label, style: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600)),
         style: OutlinedButton.styleFrom(
-          backgroundColor:
-              backgroundColor ??
-              AppColors.getBackgroundElementColor(brightness),
-          foregroundColor: AppColors.getTextColor(brightness),
-          padding: EdgeInsets.symmetric(vertical: isSmallDevice ? 12 : 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          side: BorderSide(
-            color: AppColors.getBackgroundSelectedColor(brightness),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: isSmallDevice ? 20 : 22, color: iconColor),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: isSmallDevice ? 13 : 15,
-                color: AppColors.getTextColor(brightness),
-              ),
-            ),
-          ],
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
         ),
       ),
     );

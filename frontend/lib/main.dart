@@ -1,11 +1,10 @@
-// lib/main.dart
-
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'constants/colors.dart';
@@ -17,289 +16,277 @@ import 'providers/live_class_provider.dart';
 import 'providers/instructor_dashboard_provider.dart';
 import 'providers/instructor_course_provider.dart';
 import 'routes/app_routes.dart';
+import 'theme/app_theme.dart';
 
-/// Background message handler
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  debugPrint("📩 Background Notification");
-  debugPrint("Title: ${message.notification?.title}");
-  debugPrint("Body : ${message.notification?.body}");
-  debugPrint("Data : ${message.data}");
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 Future<void> main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     try {
-      /// Initialize Firebase
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-
-      debugPrint("✅ Firebase initialized");
-
-      /// Only initialize Firebase Messaging for non-web platforms
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       if (!kIsWeb) {
-        /// Register background handler
-        FirebaseMessaging.onBackgroundMessage(
-          firebaseMessagingBackgroundHandler,
-        );
-
-        /// Request notification permission
-        final settings = await FirebaseMessaging.instance.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-        debugPrint(
-          "🔔 Notification Permission: ${settings.authorizationStatus}",
-        );
-
-        /// Get FCM Token
-        final token = await FirebaseMessaging.instance.getToken();
-
-        debugPrint("=================================");
-        debugPrint("📱 FCM TOKEN");
-        debugPrint(token);
-        debugPrint("=================================");
-
-        /// Listen for token refresh
-        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
-          debugPrint("🔄 New FCM Token:");
-          debugPrint(newToken);
-
-          /// TODO:
-          /// Upload the new token to your backend
-        });
-      } else {
-        debugPrint("🌐 Running on Web - Firebase Messaging skipped");
+        FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+        await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
       }
-    } catch (e, stackTrace) {
-      debugPrint("❌ Firebase Initialization Error");
-      debugPrint(e.toString());
-      debugPrint(stackTrace.toString());
+    } catch (e) {
+      debugPrint('Firebase init error: $e');
     }
-
-    runApp(const LearnHubApp());
+    runApp(const BuildAcadApp());
   }, (error, stackTrace) {
     debugPrint('Unhandled zone error: $error');
-    debugPrint(stackTrace.toString());
   });
 }
 
-class LearnHubApp extends StatelessWidget {
-  const LearnHubApp({super.key});
+class BuildAcadApp extends StatelessWidget {
+  const BuildAcadApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ThemeProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProxyProvider<AuthProvider, LiveClassProvider>(
-          create: (context) => LiveClassProvider(
-            authProvider: context.read<AuthProvider>(),
-          ),
-          update: (context, authProvider, previous) =>
-              previous ??
-              LiveClassProvider(
-                authProvider: authProvider,
-              ),
+          create: (ctx) => LiveClassProvider(authProvider: ctx.read<AuthProvider>()),
+          update: (_, auth, prev) => prev ?? LiveClassProvider(authProvider: auth),
         ),
         ChangeNotifierProxyProvider<AuthProvider, SearchProvider>(
-          create: (context) => SearchProvider(
-            authProvider: context.read<AuthProvider>(),
-          ),
-          update: (context, authProvider, previous) =>
-              previous ??
-              SearchProvider(
-                authProvider: authProvider,
-              ),
+          create: (ctx) => SearchProvider(authProvider: ctx.read<AuthProvider>()),
+          update: (_, auth, prev) => prev ?? SearchProvider(authProvider: auth),
         ),
         ChangeNotifierProxyProvider<AuthProvider, InstructorDashboardProvider>(
-          create: (context) => InstructorDashboardProvider(),
-          update: (context, authProvider, previous) =>
-              previous ?? InstructorDashboardProvider(),
+          create: (_) => InstructorDashboardProvider(),
+          update: (_, __, prev) => prev ?? InstructorDashboardProvider(),
         ),
         ChangeNotifierProxyProvider<AuthProvider, InstructorCourseProvider>(
-          create: (context) => InstructorCourseProvider(),
-          update: (context, authProvider, previous) =>
-              previous ?? InstructorCourseProvider(),
+          create: (_) => InstructorCourseProvider(),
+          update: (_, __, prev) => prev ?? InstructorCourseProvider(),
         ),
       ],
-      child: const MyApp(),
+      child: const _BuildAcadMaterialApp(),
     );
   }
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
+class _BuildAcadMaterialApp extends StatefulWidget {
+  const _BuildAcadMaterialApp();
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<_BuildAcadMaterialApp> createState() => _BuildAcadMaterialAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _BuildAcadMaterialAppState extends State<_BuildAcadMaterialApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool _lastKnownAuthState = false;
 
   @override
   void initState() {
     super.initState();
-
-    /// Only initialize Firebase Messaging for non-web platforms
     if (!kIsWeb) {
-      /// Foreground notification
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint("📩 Foreground Notification");
-
-        debugPrint("Title: ${message.notification?.title}");
-        debugPrint("Body : ${message.notification?.body}");
-        debugPrint("Data : ${message.data}");
-
-        /// Later we'll show a local notification here.
-      });
-
-      /// User tapped notification while app was in background
-      FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        debugPrint("👆 Notification Clicked");
-
-        debugPrint(message.data.toString());
-
-        /// TODO:
-        /// Navigate to a specific screen
-      });
-
-      /// App opened from terminated state
-      FirebaseMessaging.instance.getInitialMessage().then((message) {
-        if (message != null) {
-          debugPrint("🚀 App Opened From Notification");
-
-          debugPrint(message.data.toString());
-
-          /// TODO:
-          /// Navigate to the correct page
-        }
-      });
+      FirebaseMessaging.onMessage.listen((m) => debugPrint('FG: ${m.notification?.title}'));
+      FirebaseMessaging.onMessageOpenedApp.listen((m) => debugPrint('BG tap: ${m.data}'));
     }
-
-    /// Listen to auth state changes and redirect to login when logged out
-    /// or session expires from any page.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.addListener(_onAuthChanged);
+      final ap = Provider.of<AuthProvider>(context, listen: false);
+      ap.addListener(_onAuthChanged);
     });
   }
 
   void _onAuthChanged() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final isAuth = authProvider.isAuthenticated;
-
-    if (_lastKnownAuthState && !isAuth) {
-      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/login',
-        (route) => false,
-      );
+    final ap = Provider.of<AuthProvider>(context, listen: false);
+    if (_lastKnownAuthState && !ap.isAuthenticated) {
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (_) => false);
     }
-
-    _lastKnownAuthState = isAuth;
+    _lastKnownAuthState = ap.isAuthenticated;
   }
 
   @override
   void dispose() {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.removeListener(_onAuthChanged);
+      Provider.of<AuthProvider>(context, listen: false).removeListener(_onAuthChanged);
     } catch (_) {}
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Use Consumer to listen to ThemeProvider changes
     return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        final isDarkMode = themeProvider.isDarkMode;
-        final brightness = isDarkMode ? Brightness.dark : Brightness.light;
+      builder: (ctx, themeProvider, _) {
+        final isDark = themeProvider.isDarkMode;
+        final brightness = isDark ? Brightness.dark : Brightness.light;
+
+        final colorScheme = ColorScheme(
+          brightness: brightness,
+          primary: AppColors.primary,
+          onPrimary: AppColors.onPrimary,
+          primaryContainer: AppColors.primaryContainer,
+          onPrimaryContainer: AppColors.onPrimaryContainer,
+          secondary: AppColors.secondary,
+          onSecondary: AppColors.onSecondary,
+          secondaryContainer: AppColors.secondaryContainer,
+          onSecondaryContainer: AppColors.onSecondaryContainer,
+          tertiary: AppColors.tertiary,
+          onTertiary: AppColors.onTertiary,
+          tertiaryContainer: AppColors.tertiaryContainer,
+          error: AppColors.error,
+          onError: AppColors.onError,
+          errorContainer: AppColors.errorContainer,
+          surface: AppColors.surface(brightness),
+          onSurface: AppColors.textOnSurface(brightness),
+          surfaceContainerLowest: AppColors.surfaceContainerLowest(brightness),
+          surfaceContainerLow: AppColors.surfaceContainerLow(brightness),
+          surfaceContainer: AppColors.surfaceContainer(brightness),
+          surfaceContainerHigh: isDark ? const Color(0xFF1E293B) : const Color(0xFFDCE9FF),
+          surfaceContainerHighest: isDark ? const Color(0xFF263349) : const Color(0xFFD3E4FE),
+          surfaceVariant: AppColors.surfaceVariant(brightness),
+          onSurfaceVariant: AppColors.textOnSurfaceVariant(brightness),
+          outline: AppColors.outline(brightness),
+          outlineVariant: AppColors.outlineVariant(brightness),
+          inverseSurface: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF213145),
+          onInverseSurface: isDark ? const Color(0xFF0B1220) : const Color(0xFFEAF1FF),
+          shadow: const Color(0xFF0F172A),
+          surfaceTint: AppColors.primary,
+        );
+
+        final textTheme = TextTheme(
+          displayLarge: AppTypography.displayLg.copyWith(color: colorScheme.onSurface),
+          displayMedium: AppTypography.displayLgMobile.copyWith(color: colorScheme.onSurface),
+          headlineMedium: AppTypography.headlineMd.copyWith(color: colorScheme.onSurface),
+          headlineSmall: AppTypography.headlineSm.copyWith(color: colorScheme.onSurface),
+          titleMedium: AppTypography.headlineSmMobile.copyWith(color: colorScheme.onSurface),
+          bodyLarge: AppTypography.bodyLg.copyWith(color: colorScheme.onSurface),
+          bodyMedium: AppTypography.bodyMd.copyWith(color: colorScheme.onSurface),
+          bodySmall: AppTypography.bodySm.copyWith(color: colorScheme.onSurfaceVariant),
+          labelLarge: AppTypography.labelCaps.copyWith(color: colorScheme.onSurfaceVariant),
+          labelSmall: AppTypography.labelCaps.copyWith(color: colorScheme.outline),
+        );
 
         return MaterialApp(
-          title: 'LearnHub',
+          title: 'BuildAcad',
           debugShowCheckedModeBanner: false,
           navigatorKey: _navigatorKey,
-
           theme: ThemeData(
+            useMaterial3: true,
             brightness: brightness,
-            primaryColor: AppColors.getPrimaryColor(brightness),
-            scaffoldBackgroundColor: AppColors.getBackgroundColor(brightness),
-            colorScheme: ColorScheme(
-              brightness: brightness,
-              primary: AppColors.getPrimaryColor(brightness),
-              onPrimary: Colors.white,
-              secondary: AppColors.getPrimaryLightColor(brightness),
-              onSecondary: Colors.white,
-              error: AppColors.getErrorColor(brightness),
-              onError: Colors.white,
-              surface: AppColors.getBackgroundElementColor(brightness),
-              onSurface: AppColors.getTextColor(brightness),
-            ),
-            fontFamily: 'Inter',
+            colorScheme: colorScheme,
+            scaffoldBackgroundColor: AppColors.background(brightness),
+            textTheme: textTheme,
+            fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
             appBarTheme: AppBarTheme(
-              backgroundColor: AppColors.getBackgroundElementColor(brightness),
-              foregroundColor: AppColors.getTextColor(brightness),
+              backgroundColor: AppColors.surface(brightness),
+              foregroundColor: colorScheme.onSurface,
               elevation: 0,
+              scrolledUnderElevation: 0,
+              surfaceTintColor: Colors.transparent,
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.getPrimaryColor(brightness),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                elevation: 0,
+                minimumSize: Size.fromHeight(AppSpacing.targetMin),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
+                textStyle: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                minimumSize: Size.fromHeight(AppSpacing.targetMin),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                textStyle: AppTypography.bodyMd.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                textStyle: AppTypography.bodySm.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             cardTheme: CardThemeData(
-              color: AppColors.getBackgroundElementColor(brightness),
-              elevation: 2,
+              color: AppColors.surfaceContainerLowest(brightness),
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.cardAll,
+                side: BorderSide(color: AppColors.border(brightness), width: 1),
+              ),
             ),
-            dialogTheme: DialogThemeData(
-              backgroundColor: AppColors.getBackgroundElementColor(brightness),
-              titleTextStyle: TextStyle(
-                color: AppColors.getTextColor(brightness),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: AppColors.surfaceContainerLowest(brightness),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: AppRadius.inputAll,
+                borderSide: BorderSide(color: AppColors.border(brightness)),
               ),
-              contentTextStyle: TextStyle(
-                color: AppColors.getTextColor(brightness),
-                fontSize: 16,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: AppRadius.inputAll,
+                borderSide: BorderSide(color: AppColors.border(brightness)),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: AppRadius.inputAll,
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: AppRadius.inputAll,
+                borderSide: const BorderSide(color: AppColors.error),
+              ),
+              labelStyle: AppTypography.bodySm.copyWith(color: AppColors.outline(brightness)),
+              hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline(brightness)),
+            ),
+            chipTheme: ChipThemeData(
+              backgroundColor: AppColors.surfaceContainer(brightness),
+              labelStyle: AppTypography.bodySm.copyWith(color: colorScheme.onSurfaceVariant),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.chipAll,
+                side: BorderSide.none,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
             dividerTheme: DividerThemeData(
-              color: AppColors.getBackgroundSelectedColor(brightness),
+              color: AppColors.border(brightness),
               thickness: 1,
+              space: 0,
             ),
             switchTheme: SwitchThemeData(
               thumbColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.getPrimaryColor(brightness);
-                }
-                return Colors.grey.shade400;
+                if (states.contains(WidgetState.selected)) return AppColors.primary;
+                return AppColors.outline(brightness);
               }),
               trackColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppColors.getPrimaryColor(brightness).withValues(alpha: 0.5);
+                  return AppColors.primary.withValues(alpha: 0.4);
                 }
-                return Colors.grey.shade300;
+                return AppColors.outlineVariant(brightness);
               }),
             ),
+            bottomNavigationBarTheme: BottomNavigationBarThemeData(
+              backgroundColor: AppColors.surface(brightness),
+              selectedItemColor: AppColors.primary,
+              unselectedItemColor: AppColors.outline(brightness),
+              type: BottomNavigationBarType.fixed,
+              elevation: 0,
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: AppColors.surfaceContainerLowest(brightness),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.sheetAll),
+            ),
+            bottomSheetTheme: BottomSheetThemeData(
+              backgroundColor: AppColors.surfaceContainerLowest(brightness),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+            ),
           ),
-
-          themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
           initialRoute: AppRoutes.splash,
           onGenerateRoute: AppRoutes.generateRoute,
         );

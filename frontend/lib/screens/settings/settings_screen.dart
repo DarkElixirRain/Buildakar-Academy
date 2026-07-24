@@ -1,70 +1,21 @@
-// lib/screens/settings/settings_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../constants/colors.dart';
-import '../../core/widgets/app_card.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/theme_provider.dart';
-
-// Types
-enum SettingItemType {
-  toggle,
-  button,
-  link,
-  navigation,
-}
-
-class SettingItem {
-  final String id;
-  final IconData icon;
-  final String label;
-  final dynamic value;
-  final SettingItemType type;
-  final VoidCallback? onPress;
-  final ValueChanged<bool>? onToggle;
-  final bool destructive;
-  final String? badge;
-
-  SettingItem({
-    required this.id,
-    required this.icon,
-    required this.label,
-    this.value,
-    required this.type,
-    this.onPress,
-    this.onToggle,
-    this.destructive = false,
-    this.badge,
-  });
-}
-
-class SettingsSection {
-  final String id;
-  final String title;
-  final List<SettingItem> items;
-
-  SettingsSection({
-    required this.id,
-    required this.title,
-    required this.items,
-  });
-}
+import 'package:buildacad/constants/colors.dart';
+import 'package:buildacad/theme/app_theme.dart';
+import 'package:buildacad/providers/auth_provider.dart';
+import 'package:buildacad/providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
-
+  const SettingsScreen({super.key});
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // State variables
   bool _notifications = true;
   bool _soundEnabled = true;
   bool _autoPlay = false;
@@ -97,9 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveLanguage(String language) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('language', language);
-    setState(() {
-      _language = language;
-    });
+    setState(() => _language = language);
   }
 
   Future<void> _toggleTheme(bool value) async {
@@ -107,1072 +56,661 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await themeProvider.setTheme(value);
   }
 
-  // Helper to check if running on web
   bool _isWeb() {
-    return identical(0, 0.0) || 
-           Platform.isWindows || 
-           Platform.isLinux || 
-           Platform.isMacOS ||
-           const bool.fromEnvironment('dart.library.js_util') ||
-           const bool.fromEnvironment('dart.library.js');
+    return identical(0, 0.0) ||
+        Platform.isWindows ||
+        Platform.isLinux ||
+        Platform.isMacOS ||
+        const bool.fromEnvironment('dart.library.js_util') ||
+        const bool.fromEnvironment('dart.library.js');
   }
 
-  // Helper to check if running on iOS
-  bool _isIOS() {
-    return Platform.isIOS;
-  }
+  bool _isIOS() => Platform.isIOS;
 
-  // Clear localStorage for web
-  Future<void> _clearWebCache() async {
-    const isWeb = identical(0, 0.0);
-    if (!isWeb) return;
-    
-    try {
-      // ignore: undefined_prefixed_name
-      final html = await _getHtmlLibrary();
-      if (html != null) {
-        // ignore: avoid_dynamic_calls
-        final localStorage = html.window.localStorage;
-        if (localStorage != null) {
-          // ignore: avoid_dynamic_calls
-          localStorage.clear();
-          debugPrint('✅ Web localStorage cleared');
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Error clearing web localStorage: $e');
-    }
-  }
-
-  // Helper to dynamically get html library
-  Future<dynamic> _getHtmlLibrary() async {
-    if (!identical(0, 0.0)) return null;
-    
-    try {
-      final html = await Future.delayed(const Duration(milliseconds: 1), () {
-        return null;
-      });
-      return html;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Logout handler
   Future<void> _handleLogout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    if (_isWeb()) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('Logout'),
-            ),
-          ],
-        ),
-      );
-      
-      if (confirm != true) return;
-      
-      setState(() => _isLoggingOut = true);
-      await authProvider.logout();
-      setState(() => _isLoggingOut = false);
-      return;
-    }
-
-    // Native platforms
-    showDialog(
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+        title: Text('Logout', style: AppTypography.headlineSmMobile),
+        content: Text('Are you sure you want to logout?',
+            style: AppTypography.bodyMd.copyWith(
+                color: AppColors.textOnSurface(Theme.of(ctx).brightness))),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTypography.labelCaps.copyWith(
+              color: AppColors.outline(Theme.of(ctx).brightness),
+            )),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              setState(() => _isLoggingOut = true);
-              await authProvider.logout();
-              setState(() => _isLoggingOut = false);
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Logout'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Logout', style: AppTypography.labelCaps.copyWith(
+              color: AppColors.brandRed, fontWeight: FontWeight.w700,
+            )),
           ),
         ],
       ),
     );
+    if (confirm != true) return;
+    setState(() => _isLoggingOut = true);
+    await authProvider.logout();
+    setState(() => _isLoggingOut = false);
   }
 
-  // Clear cache handler
   Future<void> _handleClearCache(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Cache'),
-        content: const Text('This will clear all cached data. Are you sure?'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+        title: Text('Clear Cache', style: AppTypography.headlineSmMobile),
+        content: Text('This will clear all cached data. Are you sure?',
+            style: AppTypography.bodyMd.copyWith(
+                color: AppColors.textOnSurface(Theme.of(ctx).brightness))),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: AppTypography.labelCaps.copyWith(
+              color: AppColors.outline(Theme.of(ctx).brightness),
+            )),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Clear'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Clear', style: AppTypography.labelCaps.copyWith(
+              color: AppColors.brandRed, fontWeight: FontWeight.w700,
+            )),
           ),
         ],
       ),
     );
-
     if (confirm != true) return;
-
     try {
-      if (_isWeb()) {
-        await _clearWebCache();
-      } else {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.clear();
-      }
-      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cache cleared successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Cache cleared successfully', style: AppTypography.bodySm.copyWith(color: Colors.white)),
+          backgroundColor: AppColors.brandGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+        ));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear cache: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to clear cache', style: AppTypography.bodySm.copyWith(color: Colors.white)),
+          backgroundColor: AppColors.brandRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+        ));
       }
     }
   }
 
-  // Share app handler
   Future<void> _handleShareApp() async {
     try {
       await Share.share(
-        'Check out this amazing learning platform! 🚀\n\n'
-        'Download now and start learning: [App Link]',
-        subject: 'Share Learning Platform',
+        'Check out BuildAcad - Learn. Build. Achieve.\n\nDownload now and start learning!',
+        subject: 'Share BuildAcad',
       );
-    } catch (e) {
-      debugPrint('Error sharing app: $e');
-    }
+    } catch (_) {}
   }
 
-  // Rate app handler
   Future<void> _handleRateApp() async {
     final url = _isWeb()
-        ? 'https://your-website.com'
+        ? 'https://buildacad.com'
         : _isIOS()
             ? 'https://apps.apple.com/app/id123456789'
-            : 'market://details?id=com.yourapp.learning';
-    
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+            : 'market://details?id=com.buildacad.app';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  // Privacy policy handler
   Future<void> _handlePrivacyPolicy() async {
-    final Uri url = Uri.parse('https://your-website.com/privacy');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
+    final url = Uri.parse('https://buildacad.com/privacy');
+    if (await canLaunchUrl(url)) await launchUrl(url);
   }
 
-  // Terms of service handler
   Future<void> _handleTermsOfService() async {
-    final Uri url = Uri.parse('https://your-website.com/terms');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
+    final url = Uri.parse('https://buildacad.com/terms');
+    if (await canLaunchUrl(url)) await launchUrl(url);
   }
 
-  // Cookie policy handler
-  Future<void> _handleCookiePolicy() async {
-    final Uri url = Uri.parse('https://your-website.com/cookies');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
-  }
-
-  // Help & support handler
   void _handleHelpSupport() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Help & Support'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('📧 Email: support@buildacad.com'),
-            SizedBox(height: 8),
-            Text('📱 Phone: +1 (555) 123-4567'),
-            SizedBox(height: 8),
-            Text('🕐 Hours: 9:00 AM - 6:00 PM (EST)'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder: (ctx) {
+        final b = Theme.of(ctx).brightness;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+          title: Text('Help & Support', style: AppTypography.headlineSmMobile),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _helpRow(Icons.email_outlined, 'support@buildacad.com', b),
+              const SizedBox(height: 12),
+              _helpRow(Icons.phone_outlined, '+1 (555) 123-4567', b),
+              const SizedBox(height: 12),
+              _helpRow(Icons.schedule_outlined, '9:00 AM - 6:00 PM (EST)', b),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  // About handler
-  void _handleAbout() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('About LearnHub'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(Icons.school, size: 48, color: Colors.blue),
-            SizedBox(height: 12),
-            Text(
-              'LearnHub',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text('Version 1.0.0'),
-            SizedBox(height: 8),
-            Text(
-              'Your gateway to quality education',
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Built with ❤️',
-              style: TextStyle(fontSize: 12),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Close', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.primary,
+              )),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // Language selection handler
-  Future<void> _handleLanguageSelect() async {
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Language'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLanguageOption('English'),
-            _buildLanguageOption('Spanish'),
-            _buildLanguageOption('French'),
-            _buildLanguageOption('German'),
-            _buildLanguageOption('Chinese'),
-            _buildLanguageOption('Hindi'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-
-    if (selected != null) {
-      await _saveLanguage(selected);
-    }
-  }
-
-  Widget _buildLanguageOption(String language) {
-    return ListTile(
-      title: Text(language),
-      trailing: _language == language ? const Icon(Icons.check, color: Colors.green) : null,
-      onTap: () => Navigator.pop(context, language),
-    );
-  }
-
-  // Check updates handler
-  Future<void> _handleCheckUpdates(BuildContext context) async {
-    if (_isWeb()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Updates are available automatically on web'),
-        ),
-      );
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('You are using the latest version'),
-      ),
-    );
-  }
-
-  // Delete account handler
-  Future<void> _handleDeleteAccount(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to delete your account? '
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _isLoggingOut = true);
-      await Future.delayed(const Duration(seconds: 2));
-      setState(() => _isLoggingOut = false);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account deleted successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-  }
-
-  // Build settings sections with isDarkMode parameter
-  List<SettingsSection> _buildSections(BuildContext context, bool isDarkMode) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
-    final isAuthenticated = authProvider.isAuthenticated;
-
-    return [
-      SettingsSection(
-        id: 'preferences',
-        title: 'Preferences',
-        items: [
-          SettingItem(
-            id: 'theme',
-            icon: isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
-            label: 'Dark Mode',
-            type: SettingItemType.toggle,
-            value: isDarkMode,
-            onToggle: _toggleTheme,
-          ),
-          SettingItem(
-            id: 'language',
-            icon: Icons.language,
-            label: 'Language',
-            value: _language,
-            type: SettingItemType.button,
-            onPress: _handleLanguageSelect,
-          ),
-          SettingItem(
-            id: 'notifications',
-            icon: Icons.notifications,
-            label: 'Push Notifications',
-            type: SettingItemType.toggle,
-            value: _notifications,
-            onToggle: (value) {
-              setState(() => _notifications = value);
-              _savePreference('notifications', value);
-            },
-          ),
-          SettingItem(
-            id: 'sound',
-            icon: Icons.volume_up,
-            label: 'Sound Effects',
-            type: SettingItemType.toggle,
-            value: _soundEnabled,
-            onToggle: (value) {
-              setState(() => _soundEnabled = value);
-              _savePreference('sound_enabled', value);
-            },
-          ),
-          SettingItem(
-            id: 'autoplay',
-            icon: Icons.play_circle,
-            label: 'Auto-Play Videos',
-            type: SettingItemType.toggle,
-            value: _autoPlay,
-            onToggle: (value) {
-              setState(() => _autoPlay = value);
-              _savePreference('autoplay', value);
-            },
-          ),
-          SettingItem(
-            id: 'offline',
-            icon: Icons.cloud_download,
-            label: 'Offline Mode',
-            type: SettingItemType.toggle,
-            value: _offlineMode,
-            onToggle: (value) {
-              setState(() => _offlineMode = value);
-              _savePreference('offline_mode', value);
-            },
-          ),
-        ],
-      ),
-      SettingsSection(
-        id: 'account',
-        title: 'Account',
-        items: [
-          SettingItem(
-            id: 'profile',
-            icon: Icons.person,
-            label: 'Edit Profile',
-            type: SettingItemType.navigation,
-            onPress: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit Profile coming soon!')),
-              );
-            },
-          ),
-          SettingItem(
-            id: 'security',
-            icon: Icons.shield,
-            label: 'Privacy & Security',
-            type: SettingItemType.navigation,
-            onPress: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Privacy & Security coming soon!')),
-              );
-            },
-          ),
-          SettingItem(
-            id: 'notifications_settings',
-            icon: Icons.notifications_active,
-            label: 'Notification Settings',
-            type: SettingItemType.navigation,
-            onPress: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notification Settings coming soon!')),
-              );
-            },
-          ),
-          SettingItem(
-            id: 'change_password',
-            icon: Icons.key,
-            label: 'Change Password',
-            type: SettingItemType.navigation,
-            onPress: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Change Password coming soon!')),
-              );
-            },
-          ),
-        ],
-      ),
-      SettingsSection(
-        id: 'support',
-        title: 'Support',
-        items: [
-          SettingItem(
-            id: 'help',
-            icon: Icons.help,
-            label: 'Help & Support',
-            type: SettingItemType.navigation,
-            onPress: _handleHelpSupport,
-          ),
-          SettingItem(
-            id: 'feedback',
-            icon: Icons.chat_bubble,
-            label: 'Send Feedback',
-            type: SettingItemType.navigation,
-            onPress: _showFeedbackDialog,
-          ),
-          SettingItem(
-            id: 'report',
-            icon: Icons.flag,
-            label: 'Report a Problem',
-            type: SettingItemType.navigation,
-            onPress: _showReportProblemDialog,
-          ),
-          SettingItem(
-            id: 'faq',
-            icon: Icons.info,
-            label: 'FAQ',
-            type: SettingItemType.navigation,
-            onPress: _showFAQDialog,
-          ),
-        ],
-      ),
-      SettingsSection(
-        id: 'app',
-        title: 'App',
-        items: [
-          SettingItem(
-            id: 'cache',
-            icon: Icons.delete,
-            label: 'Clear Cache',
-            type: SettingItemType.button,
-            onPress: () => _handleClearCache(context),
-            destructive: true,
-          ),
-          SettingItem(
-            id: 'updates',
-            icon: Icons.cloud_upload,
-            label: 'Check for Updates',
-            type: SettingItemType.button,
-            onPress: () => _handleCheckUpdates(context),
-          ),
-          SettingItem(
-            id: 'rate',
-            icon: Icons.star,
-            label: 'Rate App',
-            type: SettingItemType.button,
-            onPress: _handleRateApp,
-          ),
-          SettingItem(
-            id: 'share',
-            icon: Icons.share,
-            label: 'Share App',
-            type: SettingItemType.button,
-            onPress: _handleShareApp,
-          ),
-          SettingItem(
-            id: 'about',
-            icon: Icons.info_outline,
-            label: 'About',
-            type: SettingItemType.navigation,
-            onPress: _handleAbout,
-          ),
-        ],
-      ),
-      SettingsSection(
-        id: 'legal',
-        title: 'Legal',
-        items: [
-          SettingItem(
-            id: 'privacy',
-            icon: Icons.description,
-            label: 'Privacy Policy',
-            type: SettingItemType.link,
-            onPress: _handlePrivacyPolicy,
-          ),
-          SettingItem(
-            id: 'terms',
-            icon: Icons.article,
-            label: 'Terms of Service',
-            type: SettingItemType.link,
-            onPress: _handleTermsOfService,
-          ),
-          SettingItem(
-            id: 'cookies',
-            icon: Icons.description_outlined,
-            label: 'Cookie Policy',
-            type: SettingItemType.link,
-            onPress: _handleCookiePolicy,
-          ),
-        ],
-      ),
-    ];
+  Widget _helpRow(IconData icon, String text, Brightness b) {
+    return Row(children: [
+      Icon(icon, size: 18, color: AppColors.primary),
+      const SizedBox(width: 8),
+      Text(text, style: AppTypography.bodySm.copyWith(
+        color: AppColors.textOnSurfaceVariant(b),
+      )),
+    ]);
   }
 
   void _showFeedbackDialog() {
-    final TextEditingController feedbackController = TextEditingController();
-    
+    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Send Feedback'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('We value your feedback!'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: feedbackController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Write your feedback here...',
-                border: OutlineInputBorder(),
+      builder: (ctx) {
+        final b = Theme.of(ctx).brightness;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+          title: Text('Send Feedback', style: AppTypography.headlineSmMobile),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('We value your feedback!', style: AppTypography.bodySm.copyWith(
+                color: AppColors.textOnSurfaceVariant(b),
+              )),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant(b),
+                  borderRadius: AppRadius.mdAll,
+                  border: Border.all(color: AppColors.border(b)),
+                ),
+                child: TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Write your feedback here...',
+                    hintStyle: AppTypography.bodySm.copyWith(color: AppColors.outline(b)),
+                    border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                  style: AppTypography.bodyMd.copyWith(color: AppColors.textOnSurface(b)),
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.outline(b),
+              )),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Thank you for your feedback!',
+                      style: AppTypography.bodySm.copyWith(color: Colors.white)),
+                  backgroundColor: AppColors.brandGreen,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+                ));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
+              ),
+              child: Text('Submit', style: AppTypography.labelCaps.copyWith(
+                color: Colors.white, fontWeight: FontWeight.w700,
+              )),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Thank you for your feedback!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   void _showReportProblemDialog() {
-    final TextEditingController reportController = TextEditingController();
-    
+    final controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report a Problem'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Describe the problem you encountered:'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: reportController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Describe the issue...',
-                border: OutlineInputBorder(),
+      builder: (ctx) {
+        final b = Theme.of(ctx).brightness;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+          title: Text('Report a Problem', style: AppTypography.headlineSmMobile),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Describe the problem you encountered:', style: AppTypography.bodySm.copyWith(
+                color: AppColors.textOnSurfaceVariant(b),
+              )),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant(b),
+                  borderRadius: AppRadius.mdAll,
+                  border: Border.all(color: AppColors.border(b)),
+                ),
+                child: TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Describe the issue...',
+                    hintStyle: AppTypography.bodySm.copyWith(color: AppColors.outline(b)),
+                    border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                  style: AppTypography.bodyMd.copyWith(color: AppColors.textOnSurface(b)),
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.outline(b),
+              )),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Problem reported successfully!',
+                      style: AppTypography.bodySm.copyWith(color: Colors.white)),
+                  backgroundColor: AppColors.brandGreen,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+                ));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
+              ),
+              child: Text('Submit', style: AppTypography.labelCaps.copyWith(
+                color: Colors.white, fontWeight: FontWeight.w700,
+              )),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Problem reported successfully!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   void _showFAQDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Frequently Asked Questions'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Q: How do I enroll in a course?',
-              style: TextStyle(fontWeight: FontWeight.bold),
+      builder: (ctx) {
+        final b = Theme.of(ctx).brightness;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+          title: Text('FAQ', style: AppTypography.headlineSmMobile),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _faqItem('Q: How do I enroll in a course?',
+                    'A: Browse courses and click the "Enroll Now" button.'),
+                const SizedBox(height: 12),
+                _faqItem('Q: Can I access courses offline?',
+                    'A: Yes, download courses for offline viewing in My Learning.'),
+                const SizedBox(height: 12),
+                _faqItem('Q: How do I get a certificate?',
+                    'A: Complete all course requirements and pass the final exam.'),
+                const SizedBox(height: 12),
+                _faqItem('Q: What payment methods are accepted?',
+                    'A: We accept credit cards, PayPal, and local payment methods.'),
+              ],
             ),
-            Text('A: Browse courses and click the "Enroll" button.'),
-            SizedBox(height: 12),
-            Text(
-              'Q: Can I access courses offline?',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('A: Yes, download courses for offline viewing.'),
-            SizedBox(height: 12),
-            Text(
-              'Q: How do I get a certificate?',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('A: Complete all course requirements and pass the final exam.'),
-            SizedBox(height: 12),
-            Text(
-              'Q: What payment methods are accepted?',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text('A: We accept credit cards, PayPal, and more.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Close', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.primary,
+              )),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  Widget _faqItem(String q, String a) {
+    final b = Theme.of(context).brightness;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(q, style: AppTypography.bodyMd.copyWith(
+          fontWeight: FontWeight.w600, color: AppColors.textOnSurface(b),
+        )),
+        const SizedBox(height: 2),
+        Text(a, style: AppTypography.bodySm.copyWith(
+          color: AppColors.textOnSurfaceVariant(b),
+        )),
+      ],
+    );
+  }
+
+  Future<void> _handleLanguageSelect() async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final b = Theme.of(ctx).brightness;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+          title: Text('Select Language', style: AppTypography.headlineSmMobile),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ['English', 'Spanish', 'French', 'German', 'Chinese', 'Hindi'].map((lang) =>
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                title: Text(lang, style: AppTypography.bodyMd.copyWith(
+                  color: AppColors.textOnSurface(b),
+                )),
+                trailing: _language == lang
+                    ? const Icon(Icons.check_circle, color: AppColors.primary, size: 20)
+                    : null,
+                onTap: () => Navigator.pop(ctx, lang),
+              ),
+            ).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.outline(b),
+              )),
+            ),
+          ],
+        );
+      },
+    );
+    if (selected != null) await _saveLanguage(selected);
+  }
+
+  Future<void> _handleDeleteAccount(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final b = Theme.of(ctx).brightness;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+          title: Text('Delete Account', style: AppTypography.headlineSmMobile),
+          content: Text(
+            'Are you sure you want to delete your account? This action cannot be undone.',
+            style: AppTypography.bodyMd.copyWith(
+              color: AppColors.textOnSurfaceVariant(b),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancel', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.outline(b),
+              )),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Delete', style: AppTypography.labelCaps.copyWith(
+                color: AppColors.brandRed, fontWeight: FontWeight.w700,
+              )),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirm == true) {
+      setState(() => _isLoggingOut = true);
+      await Future.delayed(const Duration(seconds: 2));
+      setState(() => _isLoggingOut = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Account deleted successfully',
+              style: AppTypography.bodySm.copyWith(color: Colors.white)),
+          backgroundColor: AppColors.brandGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+        ));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final authProvider = context.watch<AuthProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final isDarkMode = themeProvider.isDarkMode;
     final user = authProvider.user;
-    final isAuthenticated = authProvider.isAuthenticated;
     final displayName = user?.displayName ?? 'User';
+    final email = user?.email ?? 'user@email.com';
     final initials = user?.initials ?? 'U';
-    final sections = _buildSections(context, isDarkMode);
     final brightness = isDarkMode ? Brightness.dark : Brightness.light;
 
-    // Get colors using existing AppColors methods
-    final backgroundColor = AppColors.getBackgroundColor(brightness);
-    final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
-    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
-    final textColor = AppColors.getTextColor(brightness);
-    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
-    final primaryColor = AppColors.getPrimaryColor(brightness);
-
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: AppColors.background(brightness),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async {
-            // Refresh settings data
-          },
-          color: primaryColor,
+          onRefresh: () async {},
+          color: AppColors.primary,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Settings Title
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16, top: 8),
-                  child: Text(
-                    'Settings',
-                    style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
+                // Title
+                Text('Settings', style: AppTypography.headlineMdMobile.copyWith(
+                  color: AppColors.textOnSurface(brightness),
+                  fontWeight: FontWeight.w700,
+                )),
+                const SizedBox(height: 24),
+                // Profile card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest(brightness),
+                    borderRadius: AppRadius.cardAll,
+                    border: Border.all(color: AppColors.border(brightness)),
+                    boxShadow: AppShadow.card,
                   ),
-                ),
-
-                // User Profile Section
-                AppCard(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  borderRadius: 16,
-                  backgroundColor: backgroundElementColor,
                   child: Row(
                     children: [
-                      // Avatar
-                      GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Edit Profile coming soon!')),
-                          );
-                        },
-                        child: Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: backgroundElementColor,
-                            border: Border.all(
-                              color: primaryColor.withValues(alpha: 0.3),
-                              width: 2,
-                            ),
-                          ),
-                          child: user?.profileImageUrl != null
-                              ? ClipOval(
-                                  child: Image.network(
-                                    user!.profileImageUrl!,
-                                    width: 64,
-                                    height: 64,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Center(
-                                        child: Text(
-                                          initials,
-                                          style: TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: textColor,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                )
-                              : Center(
-                                  child: Text(
-                                    initials,
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: textColor,
-                                    ),
-                                  ),
+                      CircleAvatar(
+                        radius: 32,
+                        backgroundColor: AppColors.surfaceVariant(brightness),
+                        child: user?.profileImageUrl != null
+                            ? ClipOval(
+                                child: Image.network(
+                                  user!.profileImageUrl!,
+                                  width: 64, height: 64, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Text(initials,
+                                      style: AppTypography.headlineMdMobile.copyWith(
+                                        color: AppColors.primary, fontWeight: FontWeight.w700,
+                                      )),
                                 ),
-                        ),
+                              )
+                            : Text(initials, style: AppTypography.headlineMdMobile.copyWith(
+                                color: AppColors.primary, fontWeight: FontWeight.w700,
+                              )),
                       ),
-                      
                       const SizedBox(width: 16),
-                      
-                      // User Info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              displayName,
-                              style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
-                              ),
-                            ),
-                            Text(
-                              user?.email ?? 'user@email.com',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: textSecondaryColor,
-                              ),
-                            ),
-                            if (user?.role != null && user!.role.isNotEmpty)
+                            Text(displayName, style: AppTypography.headlineSmMobile.copyWith(
+                              color: AppColors.textOnSurface(brightness),
+                              fontWeight: FontWeight.w700,
+                            )),
+                            const SizedBox(height: 2),
+                            Text(email, style: AppTypography.bodySm.copyWith(
+                              color: AppColors.outline(brightness),
+                            )),
+                            if (user?.role != null && user!.role.isNotEmpty) ...[
+                              const SizedBox(height: 4),
                               Container(
-                                margin: const EdgeInsets.only(top: 4),
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: const BorderRadius.all(Radius.circular(4)),
                                 ),
-                                child: Text(
-                                  user.displayRole,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: primaryColor,
-                                  ),
-                                ),
+                                child: Text(user!.displayRole, style: AppTypography.labelCaps.copyWith(
+                                  color: AppColors.primary, fontSize: 10,
+                                )),
                               ),
+                            ],
                           ],
                         ),
                       ),
-                      
-                      // Edit Button
-                      ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Edit Profile coming soon!')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: backgroundElementColor,
-                          foregroundColor: textColor,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: backgroundSelectedColor,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          'Edit',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
-
-                // Settings Sections
-                ...sections.map((section) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              section.title.toUpperCase(),
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                                color: textSecondaryColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          AppCard(
-                            padding: EdgeInsets.zero,
-                            borderRadius: 16,
-                            backgroundColor: backgroundElementColor,
-                            child: Column(
-                              children: section.items.asMap().entries.map((entry) {
-                                final index = entry.key;
-                                final item = entry.value;
-                                final isLast = index == section.items.length - 1;
-                                return _buildSettingsItem(
-                                  item,
-                                  isLast,
-                                  brightness,
-                                  context,
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
-
-                // Version Info
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Version 1.0.0',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: textSecondaryColor,
-                        ),
-                      ),
-                      Text(
-                        'Built with ❤️',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: textSecondaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Logout Button
+                const SizedBox(height: 24),
+                // Preferences
+                _sectionHeader('PREFERENCES', brightness),
+                const SizedBox(height: 8),
+                _settingsGroup(brightness, [
+                  _toggleItem(Icons.dark_mode_rounded, 'Dark Mode', isDarkMode, _toggleTheme, brightness),
+                  _navItem(Icons.language_rounded, 'Language', subtitle: _language,
+                      onTap: _handleLanguageSelect, brightness: brightness),
+                  _toggleItem(Icons.notifications_rounded, 'Push Notifications', _notifications,
+                      (v) { setState(() => _notifications = v); _savePreference('notifications', v); }, brightness),
+                  _toggleItem(Icons.volume_up_rounded, 'Sound Effects', _soundEnabled,
+                      (v) { setState(() => _soundEnabled = v); _savePreference('sound_enabled', v); }, brightness),
+                  _toggleItem(Icons.play_circle_rounded, 'Auto-Play Videos', _autoPlay,
+                      (v) { setState(() => _autoPlay = v); _savePreference('autoplay', v); }, brightness),
+                  _toggleItem(Icons.cloud_download_rounded, 'Offline Mode', _offlineMode,
+                      (v) { setState(() => _offlineMode = v); _savePreference('offline_mode', v); }, brightness),
+                ]),
+                const SizedBox(height: 20),
+                // Account
+                _sectionHeader('ACCOUNT', brightness),
+                const SizedBox(height: 8),
+                _settingsGroup(brightness, [
+                  _navItem(Icons.person_outline_rounded, 'Edit Profile', brightness: brightness,
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Edit Profile coming soon!')),
+                      )),
+                  _navItem(Icons.lock_outline_rounded, 'Change Password', brightness: brightness,
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Change Password coming soon!')),
+                      )),
+                  _navItem(Icons.payment_rounded, 'Payment Methods', brightness: brightness,
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Payment Methods coming soon!')),
+                      )),
+                  _navItem(Icons.shield_outlined, 'Privacy & Security', brightness: brightness,
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Privacy & Security coming soon!')),
+                      )),
+                ]),
+                const SizedBox(height: 20),
+                // Support
+                _sectionHeader('SUPPORT', brightness),
+                const SizedBox(height: 8),
+                _settingsGroup(brightness, [
+                  _navItem(Icons.help_outline_rounded, 'Help & Support', brightness: brightness,
+                      onTap: _handleHelpSupport),
+                  _navItem(Icons.chat_bubble_outline_rounded, 'Send Feedback', brightness: brightness,
+                      onTap: _showFeedbackDialog),
+                  _navItem(Icons.flag_outlined, 'Report a Problem', brightness: brightness,
+                      onTap: _showReportProblemDialog),
+                  _navItem(Icons.info_outline_rounded, 'FAQ', brightness: brightness,
+                      onTap: _showFAQDialog),
+                ]),
+                const SizedBox(height: 20),
+                // App
+                _sectionHeader('APP', brightness),
+                const SizedBox(height: 8),
+                _settingsGroup(brightness, [
+                  _navItem(Icons.delete_outline_rounded, 'Clear Cache', brightness: brightness,
+                      onTap: () => _handleClearCache(context), destructive: true),
+                  _navItem(Icons.share_outlined, 'Share App', brightness: brightness,
+                      onTap: _handleShareApp),
+                  _navItem(Icons.star_outline_rounded, 'Rate App', brightness: brightness,
+                      onTap: _handleRateApp),
+                  _navItem(Icons.info_outline_rounded, 'About', brightness: brightness,
+                      onTap: () => _handleAbout(brightness)),
+                ]),
+                const SizedBox(height: 20),
+                // Legal
+                _sectionHeader('LEGAL', brightness),
+                const SizedBox(height: 8),
+                _settingsGroup(brightness, [
+                  _navItem(Icons.description_outlined, 'Privacy Policy', brightness: brightness,
+                      onTap: _handlePrivacyPolicy),
+                  _navItem(Icons.article_outlined, 'Terms of Service', brightness: brightness,
+                      onTap: _handleTermsOfService),
+                ]),
+                const SizedBox(height: 24),
+                // Logout
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: OutlinedButton(
                     onPressed: _isLoggingOut ? null : () => _handleLogout(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade50,
-                      foregroundColor: Colors.red.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.red.shade300),
-                      ),
-                      elevation: 0,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: Size.fromHeight(48),
+                      side: const BorderSide(color: AppColors.brandRed, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonAll),
                     ),
                     child: _isLoggingOut
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.red,
-                                ),
+                                width: 18, height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandRed),
                               ),
                               const SizedBox(width: 8),
-                              Text(
-                                'Logging out...',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              Text('Logging out...', style: AppTypography.labelCaps.copyWith(
+                                color: AppColors.brandRed, fontWeight: FontWeight.w700,
+                              )),
                             ],
                           )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.logout),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Logout',
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                        : Text('Log Out', style: AppTypography.labelCaps.copyWith(
+                            color: AppColors.brandRed, fontWeight: FontWeight.w700,
+                          )),
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Delete Account Button
-                SizedBox(
-                  width: double.infinity,
+                const SizedBox(height: 12),
+                // Delete account
+                Center(
                   child: TextButton(
                     onPressed: () => _handleDeleteAccount(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red.shade400,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(
-                      'Delete Account',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: Text('Delete Account', style: AppTypography.bodySm.copyWith(
+                      color: AppColors.outline(brightness),
+                      decoration: TextDecoration.underline,
+                    )),
                   ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text('Version 1.0.0', style: AppTypography.bodySm.copyWith(
+                    color: AppColors.outline(brightness),
+                  )),
                 ),
               ],
             ),
@@ -1182,122 +720,126 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSettingsItem(
-    SettingItem item,
-    bool isLast,
-    Brightness brightness,
-    BuildContext context,
-  ) {
-    final textColor = AppColors.getTextColor(brightness);
-    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
-    final backgroundColor = AppColors.getBackgroundColor(brightness);
-    final primaryColor = AppColors.getPrimaryColor(brightness);
-    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
+  Widget _sectionHeader(String title, Brightness b) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(title, style: AppTypography.labelCaps.copyWith(
+        color: AppColors.outline(b), fontWeight: FontWeight.w700,
+      )),
+    );
+  }
 
+  Widget _settingsGroup(Brightness b, List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest(b),
+        borderRadius: AppRadius.cardAll,
+        border: Border.all(color: AppColors.border(b)),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _toggleItem(IconData icon, String label, bool value, ValueChanged<bool> onChanged, Brightness brightness) {
+    final b = brightness;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border(b), width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 22),
+          const SizedBox(width: 16),
+          Expanded(child: Text(label, style: AppTypography.bodyMd.copyWith(
+            color: AppColors.textOnSurface(b),
+          ))),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Colors.white,
+            activeTrackColor: AppColors.primary,
+            inactiveThumbColor: Colors.white,
+            inactiveTrackColor: AppColors.outline(b),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _navItem(IconData icon, String label, {String? subtitle, VoidCallback? onTap,
+    required Brightness brightness, bool destructive = false}) {
+    final b = brightness;
     return GestureDetector(
-      onTap: item.type != SettingItemType.toggle ? item.onPress : null,
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: isLast
-              ? null
-              : Border(
-                  bottom: BorderSide(
-                    color: backgroundSelectedColor,
-                  ),
-                ),
+          border: Border(bottom: BorderSide(color: AppColors.border(b), width: 0.5)),
         ),
         child: Row(
           children: [
-            // Icon
-            SizedBox(
-              width: 32,
-              child: Icon(
-                item.icon,
-                size: 22,
-                color: item.destructive ? Colors.red.shade400 : textSecondaryColor,
-              ),
-            ),
-            
-            // Label
-            Expanded(
-              child: Text(
-                item.label,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: item.destructive ? Colors.red.shade400 : textColor,
-                ),
-              ),
-            ),
-            
-            // Right Side Content
-            Row(
+            Icon(icon, color: destructive ? AppColors.brandRed : AppColors.primary, size: 22),
+            const SizedBox(width: 16),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Badge
-                if (item.badge != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: textColor,
-                    ),
-                    child: Text(
-                      item.badge!,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: backgroundColor,
-                      ),
-                    ),
-                  ),
-                ],
-                
-                // Value (for button type)
-                if (item.value != null && item.type == SettingItemType.button) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                      item.value.toString(),
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: textSecondaryColor,
-                      ),
-                    ),
-                  ),
-                ],
-                
-                // Toggle - Fixed to show properly
-                if (item.type == SettingItemType.toggle) ...[
-                  Transform.scale(
-                    scale: 0.8,
-                    child: Switch(
-                      value: item.value as bool,
-                      onChanged: item.onToggle,
-                      activeThumbColor: primaryColor,
-                      activeTrackColor: primaryColor.withValues(alpha: 0.5),
-                      inactiveThumbColor: Colors.grey.shade400,
-                      inactiveTrackColor: Colors.grey.shade300,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
-                ],
-                
-                // Navigation/Button/Link arrow
-                if (item.type == SettingItemType.button ||
-                    item.type == SettingItemType.link ||
-                    item.type == SettingItemType.navigation) ...[
-                  Icon(
-                    item.type == SettingItemType.link
-                        ? Icons.open_in_new
-                        : Icons.chevron_right,
-                    size: 20,
-                    color: textSecondaryColor,
-                  ),
-                ],
+                Text(label, style: AppTypography.bodyMd.copyWith(
+                  color: destructive ? AppColors.brandRed : AppColors.textOnSurface(b),
+                )),
+                if (subtitle != null) Text(subtitle, style: AppTypography.bodySm.copyWith(
+                  color: AppColors.outline(b), fontSize: 12,
+                )),
               ],
-            ),
+            )),
+            Icon(Icons.chevron_right_rounded,
+              color: AppColors.outline(b), size: 22),
           ],
         ),
+      ),
+    );
+  }
+
+  void _handleAbout(Brightness b) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.dialogAll),
+        title: Text('About BuildAcad', style: AppTypography.headlineSmMobile),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: AppRadius.mdAll,
+              ),
+              child: const Icon(Icons.school_rounded, color: AppColors.primary, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text('BuildAcad', style: AppTypography.headlineMdMobile.copyWith(
+              fontWeight: FontWeight.w700,
+            )),
+            const SizedBox(height: 4),
+            Text('Learn. Build. Achieve.', style: AppTypography.bodySm.copyWith(
+              color: AppColors.outline(b),
+            )),
+            const SizedBox(height: 8),
+            Text('Version 1.0.0', style: AppTypography.bodySm.copyWith(
+              color: AppColors.outline(b),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Close', style: AppTypography.labelCaps.copyWith(
+              color: AppColors.primary,
+            )),
+          ),
+        ],
       ),
     );
   }

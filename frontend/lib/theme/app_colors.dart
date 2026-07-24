@@ -1,21 +1,53 @@
 import 'package:flutter/material.dart';
+import '../constants/colors.dart';
 
-/// Small stand-in for the RN `useTheme()` context.
-/// Wire this up to your real theme/provider (e.g. Provider, Riverpod, ThemeMode)
-/// — for now it just takes a bool so the screen is drop-in runnable.
-class AppColors {
-  final bool isDark;
-  const AppColors(this.isDark);
+/// Instance-based theme accessor — delegates to the consolidated AppColors.
+/// Use this in widgets that take a BuildContext and want `theme.primary` style access.
+class AppTheme {
+  final Brightness brightness;
+  const AppTheme(this.brightness);
 
-  Color get background => isDark ? const Color(0xFF0F172A) : const Color(0xFFFFFFFF);
-  Color get backgroundElement => isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
-  Color get backgroundSelected => isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-  Color get text => isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-  Color get textSecondary => isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-  Color get primary => const Color(0xFF2563EB);
+  bool get isDark => brightness == Brightness.dark;
+
+  Color get background => AppColors.background(brightness);
+  Color get surface => AppColors.surface(brightness);
+  Color get surfaceContainer => AppColors.surfaceContainer(brightness);
+  Color get surfaceContainerLow => AppColors.surfaceContainerLow(brightness);
+  Color get surfaceContainerLowest => AppColors.surfaceContainerLowest(brightness);
+  Color get surfaceVariant => AppColors.surfaceVariant(brightness);
+  Color get text => AppColors.textOnSurface(brightness);
+  Color get textSecondary => AppColors.textSecondary(brightness);
+  Color get textOnSurfaceVariant => AppColors.textOnSurfaceVariant(brightness);
+  Color get outline => AppColors.outline(brightness);
+  Color get outlineVariant => AppColors.outlineVariant(brightness);
+  Color get border => AppColors.border(brightness);
+  Color get primary => AppColors.primary;
+  Color get primaryContainer => AppColors.primaryContainer;
+  Color get secondary => AppColors.secondary;
+  Color get secondaryContainer => AppColors.secondaryContainer;
+  Color get error => AppColors.error;
   Color get success => const Color(0xFF16A34A);
   Color get warning => const Color(0xFFF59E0B);
-  Color get danger => const Color(0xFFDC2626);
-  Color get skeleton => isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+
+  static AppTheme of(BuildContext context) {
+    return AppTheme(Theme.of(context).brightness);
+  }
+}
+
+/// Backward-compat alias used by notes_list, study_material_list, course_reviews
+class AppColorsCompat {
+  final bool isDark;
+  const AppColorsCompat(this.isDark);
+
+  Color get background => isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+  Color get backgroundElement => isDark ? AppColors.surfaceDark : AppColors.surfaceContainerLowestLight;
+  Color get backgroundSelected => isDark ? AppColors.borderDark : AppColors.borderLight;
+  Color get text => isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
+  Color get textSecondary => isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+  Color get primary => AppColors.primary;
+  Color get success => const Color(0xFF16A34A);
+  Color get warning => const Color(0xFFF59E0B);
+  Color get danger => AppColors.error;
+  Color get skeleton => isDark ? AppColors.surfaceDark : AppColors.borderLight;
   Color get badgeBg => isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF);
 }

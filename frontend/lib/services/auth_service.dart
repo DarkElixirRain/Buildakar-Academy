@@ -254,6 +254,25 @@ class AuthApiService extends BaseApiService {
     }
   }
 
+  // Alias used by auth screens
+  Future<void> sendVerificationCode(String email) async {
+    await resendVerification(email);
+  }
+
+  // Reset password with code
+  Future<void> resetPassword(String email, String code, String newPassword) async {
+    try {
+      await post(
+        '/auth/reset-password',
+        data: {'email': email, 'code': code, 'newPassword': newPassword},
+        requireAuth: false,
+      );
+    } catch (e) {
+      print('❌ AuthApiService: resetPassword error: $e');
+      rethrow;
+    }
+  }
+
   // Check if authenticated
   Future<bool> isAuthenticated() async {
     try {
@@ -514,6 +533,21 @@ class AuthService {
     print('✅ AuthService: Session cleared');
   }
   
+  /// Send verification code
+  Future<void> sendVerificationCode(String email) async {
+    await _authApiService.sendVerificationCode(email);
+  }
+
+  /// Verify email with code
+  Future<ApiResponse> verifyEmail(String email, String code) async {
+    return await _authApiService.verifyEmail(email, code);
+  }
+
+  /// Reset password
+  Future<void> resetPassword(String email, String code, String newPassword) async {
+    await _authApiService.resetPassword(email, code, newPassword);
+  }
+
   /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
     final token = await _storage.read(key: _keyToken);

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-container": "#fffbff",
+                    "tertiary-fixed": "#ffdcc6",
+                    "on-background": "#0b1c30",
+                    "text-primary-dark": "#F1F5F9",
+                    "on-surface-variant": "#424754",
+                    "surface-dark": "#151E2E",
+                    "secondary": "#a73a00",
+                    "on-tertiary-fixed": "#311400",
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#dce9ff",
+                    "primary-container": "#2170e4",
+                    "secondary-container": "#fd651e",
+                    "outline": "#727785",
+                    "on-secondary-container": "#571a00",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "border-light": "#E2E8F0",
+                    "surface-light": "#FFFFFF",
+                    "primary-fixed-dim": "#adc6ff",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "on-secondary-fixed-variant": "#7f2b00",
+                    "on-surface": "#0b1c30",
+                    "surface-bright": "#f8f9ff",
+                    "secondary-fixed-dim": "#ffb599",
+                    "secondary-fixed": "#ffdbce",
+                    "text-primary-light": "#0F172A",
+                    "surface-variant": "#d3e4fe",
+                    "inverse-on-surface": "#eaf1ff",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary": "#924700",
+                    "error": "#DC2626",
+                    "on-secondary-fixed": "#370e00",
+                    "on-tertiary": "#ffffff",
+                    "border-dark": "#263349",
+                    "on-error": "#ffffff",
+                    "background-dark": "#0B1220",
+                    "primary": "#0058be",
+                    "surface-tint": "#005ac2",
+                    "primary-fixed": "#d8e2ff",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed": "#001a42",
+                    "tertiary-container": "#b75b00",
+                    "background-light": "#F8FAFC",
+                    "surface-dim": "#cbdbf5",
+                    "outline-variant": "#c2c6d6",
+                    "on-primary-fixed-variant": "#004395",
+                    "surface": "#f8f9ff",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#213145",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container": "#e5eeff",
+                    "inverse-primary": "#adc6ff",
+                    "on-primary-container": "#fefcff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "section-gap": "24px",
+                    "base": "4px",
+                    "target-min": "44px",
+                    "nav-bar-h": "64px",
+                    "margin-screen": "16px",
+                    "gutter-grid": "12px"
+            },
+            "fontFamily": {
+                    "numeric-tabular": ["Plus Jakarta Sans"],
+                    "label-caps": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "body-sm": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Sora"],
+                    "display-lg-mobile": ["Sora"],
+                    "headline-sm": ["Sora"],
+                    "display-lg": ["Sora"]
+            },
+            "fontSize": {
+                    "numeric-tabular": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        @keyframes pulse-live {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-pulse-live {
+            animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .glass-blur {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .bottom-sheet-transition {
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .participants-drawer-transition {
+            transition: transform 0.3s ease-out;
+        }
+        body {
+            overflow: hidden;
+            background-color: #0b1220;
+            touch-action: manipulation;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- Immersive Video Canvas -->
+<main class="fixed inset-0 w-full h-full z-0">
+<div class="relative w-full h-full">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A professional engineering instructor in a modern laboratory environment, surrounded by high-tech equipment, circuits, and soft glowing blue monitors. The lighting is crisp and professional, utilizing a high-performance corporate aesthetic. The instructor is speaking directly into the camera, creating an authoritative yet engaging educational atmosphere. The color palette is dominated by deep blues, slate grays, and subtle amber highlights, maintaining the BuildAcad brand identity." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCTOg5mdF7zBe5F4TOL38RWVBR3r3xZjMYo0gZVGylLGOaoqm3idjH_8UrfyfxlhOTQIA61xmibZYxqCX0F2QZdbrkdrYlKh8x8KVIV2bLFrViG3yv1NN1hUPbCcrzO2lqXYY1NGLFPCowQjiHqg6S868_UtAu2x9YHMnNFtjxUi-ePtAOPIq34l49551ltZmI1RuTCJ4bUUHNn-ARvPZnRiltfNFtUxWb0BKSUO0yLKOn3z6urC_h322k5poRYuYY4_LSorYZvM3aq')"></div>
+<!-- Video Overlay Gradients -->
+<div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent"></div>
+<div class="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/80 to-transparent"></div>
+</div>
+</main>
+<!-- Top Left: Status Badges -->
+<div class="fixed top-6 left-margin-screen z-40 flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="bg-gradient-to-r from-secondary-container to-tertiary-container text-white px-3 py-1 rounded-full flex items-center gap-2 animate-pulse-live shadow-lg">
+<span class="w-2 h-2 bg-white rounded-full"></span>
+<span class="font-label-caps text-label-caps tracking-widest">ON AIR</span>
+</div>
+<div class="glass-blur px-3 py-1 rounded-full text-white/90 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">group</span>
+<span class="font-numeric-tabular text-body-sm">1,284</span>
+</div>
+</div>
+<div class="mt-2">
+<h1 class="font-headline-sm-mobile text-headline-sm-mobile text-white drop-shadow-md">Advanced Robotics: Sensor Fusion</h1>
+<p class="font-body-sm text-white/70">Module 4 • Prof. Elias Thorne</p>
+</div>
+</div>
+<!-- Top Right: Action Buttons -->
+<div class="fixed top-6 right-margin-screen z-40 flex gap-3">
+<button class="w-11 h-11 flex items-center justify-center glass-blur rounded-xl text-white active:scale-95 transition-transform" onclick="toggleParticipants()">
+<span class="material-symbols-outlined">group</span>
+</button>
+<button class="w-11 h-11 flex items-center justify-center glass-blur rounded-xl text-white active:scale-95 transition-transform">
+<span class="material-symbols-outlined">fullscreen</span>
+</button>
+</div>
+<!-- Participant Thumbnail Strip (Collapsible) -->
+<aside class="fixed right-4 top-24 bottom-32 z-40 w-20 flex flex-col gap-3 translate-x-[120%] participants-drawer-transition" id="participantsDrawer">
+<div class="w-16 h-16 rounded-xl overflow-hidden border-2 border-primary shadow-lg ring-4 ring-primary/20">
+<img class="w-full h-full object-cover" data-alt="A close-up portrait of a student attendee in a bright workspace, soft natural lighting, high-quality digital photography, corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3kIEznxzzU8hPGMjshY1TU0IKfSZPLtChqiOi1tOXSWIY4pnmqtQtEeYgapE-LANz9BOW6Oy71WsDDLKmKWudiY7kmiJQuAxQxltVpNDeI6oVmbMug7SIdQX49Ga_d66FNupGaLlZiiJb0Zczonasjq0vBSmeVi_JN2iX5MQ9zo3d8KlmCHNOgbUXJOcgpGD3xlKCOKQSA45DHDg_UAs8Yt1zbfyC1Xzi3HRwFYV0nXuMp0JPJspmtS4pXekzD0syeDonNkq1EYnd"/>
+</div>
+<div class="w-16 h-16 rounded-xl overflow-hidden border-2 border-white/20">
+<img class="w-full h-full object-cover" data-alt="A diverse engineering student participating in a live digital classroom, focused expression, background showing a tidy home office with technical books, soft lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP5MG-uhJsvfZ3Qo8GitIPZT74901XPlionzVneIBJXeaMWSMwTkxJNuk5J2lpo_fiPRzS9nYCPB3_xB-WK0UiS7Tadcn-mjdh0YjpYE7sWiIGiG-sA1eoSr5bg2Bz5D6wsOCYFEX7K0wPHHqK3d1Dc07WLC7TdupUEM215FP9cynWpj_SJG89AmaJuzOKT5qsT1cq6p6yUdvwjFls0f6KwCCoNzB5m2uxK0qmA4ci9xGhethURAtz6RmN5cvUXgceYmskYHkO8J2S"/>
+</div>
+<div class="w-16 h-16 rounded-xl overflow-hidden border-2 border-white/20">
+<img class="w-full h-full object-cover" data-alt="Profile photo of a young professional in a tech-focused environment, high-key lighting, modern minimalist background, clean lines, professional atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl0O8Z9SN4WL8BR_tCBqs9ysW8kZ9wHFafayM5V-wDMBY2vzSvjG_P9wNDkNmv5l2aBmAz2q2sY8b90e1Ap_SnXBwanefWVKmU0eEnZOVh-H23LgkHD8Ld7vzIh3cW5q42mHKX0ecYq2593ciiD2erE7GuWhhH5phoSVrMQQam5gBqTIX4WLxS1-uRqms9Sg2zgL3VE4Eyxg6G4PeQNXQDKGJzHnwWG5xQ9kPu_GbDTaHgeJDXOqMvuzjwQNpD6rLD5VM4HGHaM_Fg"/>
+</div>
+<div class="w-16 h-16 glass-blur rounded-xl flex items-center justify-center text-white/80 font-numeric-tabular text-body-sm">
+            +42
+        </div>
+</aside>
+<!-- Floating Glass Control Dock -->
+<nav class="fixed bottom-margin-screen inset-x-margin-screen flex justify-center z-50">
+<div class="glass-blur rounded-[24px] px-6 py-4 flex items-center gap-6 shadow-2xl">
+<button class="group flex flex-col items-center gap-1">
+<div class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 group-active:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-white">mic</span>
+</div>
+<span class="font-label-caps text-[9px] text-white/60">MUTE</span>
+</button>
+<button class="group flex flex-col items-center gap-1">
+<div class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 group-active:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-white">videocam</span>
+</div>
+<span class="font-label-caps text-[9px] text-white/60">CAMERA</span>
+</button>
+<button class="group flex flex-col items-center gap-1" onclick="toggleChat()">
+<div class="w-12 h-12 flex items-center justify-center rounded-full bg-primary group-active:scale-95 transition-all" id="chatTrigger">
+<span class="material-symbols-outlined text-white">chat_bubble</span>
+</div>
+<span class="font-label-caps text-[9px] text-white/60">CHAT</span>
+</button>
+<button class="group flex flex-col items-center gap-1">
+<div class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 group-active:bg-white/20 transition-all">
+<span class="material-symbols-outlined text-white">present_to_all</span>
+</div>
+<span class="font-label-caps text-[9px] text-white/60">SHARE</span>
+</button>
+<div class="h-10 w-[1px] bg-white/20 mx-1"></div>
+<button class="group flex flex-col items-center gap-1">
+<div class="w-14 h-12 flex items-center justify-center rounded-[14px] bg-[#E11D48] text-white group-active:scale-95 transition-all shadow-lg shadow-rose-900/40">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">call_end</span>
+</div>
+<span class="font-label-caps text-[9px] text-rose-300">LEAVE</span>
+</button>
+</div>
+</nav>
+<!-- Chat Bottom Sheet -->
+<div class="fixed inset-x-0 bottom-0 z-[60] bg-white rounded-t-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.3)] h-[618px] translate-y-full bottom-sheet-transition flex flex-col" id="chatSheet">
+<!-- Handle -->
+<div class="w-full flex justify-center py-4 cursor-pointer" onclick="toggleChat()">
+<div class="w-10 h-1 bg-slate-200 rounded-full"></div>
+</div>
+<!-- Header -->
+<div class="px-margin-screen pb-4 border-b border-slate-100 flex justify-between items-center">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Live Chat</h2>
+<p class="font-body-sm text-outline">Keep it professional and academic</p>
+</div>
+<button class="text-outline hover:text-on-surface" onclick="toggleChat()">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+<!-- Chat Content -->
+<div class="flex-1 overflow-y-auto p-margin-screen flex flex-col gap-6">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-100 shrink-0">
+<img class="w-full h-full rounded-full object-cover" data-alt="Student profile avatar, minimalist and clean design, neutral background, modern UI style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPv8QMqSyzKzCutkLHXjEIVYPZKR5aNgT53L1EPv3r8fFGr77TI98Tf-czWoYIiUGucMUTUxerDlhihuL-1wBh4Wd1bIgnLe_4gV3LkYZh_-jhj9GjdnxU9uO7jiYtygCj-NLM2SjPkRz6zFNVPmTeZIBEbCAKHm2WP1ZYUDsmGL7UCMsHPlu9jdyRYMtwdV3dpFQTOJXipNxh_SKEPohUjqSt_AKiATenmD6nnIuI60qnDuLkSuv27MwLXH3bscOeAbTpZdoAZcwy"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-baseline gap-2">
+<span class="font-label-caps text-[12px] text-primary">MARCUS R.</span>
+<span class="text-[10px] text-outline">10:42 AM</span>
+</div>
+<div class="bg-slate-50 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-slate-100 max-w-[85%]">
+<p class="font-body-sm text-on-surface">Can you explain the Kalman filter application in this specific robotics assembly?</p>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-100 shrink-0">
+<img class="w-full h-full rounded-full object-cover" data-alt="Professional avatar for a teaching assistant, clear and focused, tech-oriented look, high-key lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDv08pJCUB9nMHr4jICAvWVmSLPbRdyeJ6ITFVljPmq0PchaBlUjRfIsvadxWwEXzRfKPYItnFwbZ8SLRT-2MqDkVPdXZgonr6Qx1i2p2vO2pXyhovY7Vf9_mHk_kHuuytCLb7D38_pS9ox36kZiWaLJQxW2H1Q4jJ-wxPSOkVhmxxNWmXcw6vNgudtfYJUEieztllkpS3yMz3GgBirxZM3zYVH6NfEfv8wz_X_68R-tgJhHkEeGCuYHe0kBKYmSd21GR3ESeBcKXWp"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-baseline gap-2">
+<span class="font-label-caps text-[12px] text-secondary">SARAH W. (TA)</span>
+<span class="text-[10px] text-outline">10:43 AM</span>
+</div>
+<div class="bg-secondary-container/10 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-secondary-container/20 max-w-[85%]">
+<p class="font-body-sm text-on-surface">Great question! Prof. Elias will dive into sensor noise reduction in about 5 minutes.</p>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-100 shrink-0">
+<img class="w-full h-full rounded-full object-cover" data-alt="Student avatar for a collaborative learning environment, modern digital look, vibrant accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBscIDo0-fguhaOJxCLbsKH-EgQShP2d6yU9d55m93qP1ZI97omFWfC-HyMnagyzkopSHcVngICF5UVvHfHCB7bBVLf1ysr7ywryuVQFmxoyYDIEypux3Cl-5fzEl0133qhnD7kQZDs4qy8w4-tPkXoBa28Iwugm56ic82yIalPIC17tbKD9-Q-_UdvetQ0fP4vTfvTvsjHpAn9gdxdF3KY66SlaNAM00FEGpV8306Osxd-qJ7jLJc3CznvWbzPPyaP4MsE8mzz1phL"/>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-baseline gap-2">
+<span class="font-label-caps text-[12px] text-primary">JINA L.</span>
+<span class="text-[10px] text-outline">10:45 AM</span>
+</div>
+<div class="bg-slate-50 p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl border border-slate-100 max-w-[85%]">
+<p class="font-body-sm text-on-surface">The visualization on the lab screen really helps. Thanks for the demo!</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-4 bg-white border-t border-slate-100 pb-10">
+<div class="relative">
+<input class="w-full h-12 bg-slate-50 border-slate-200 rounded-xl px-4 pr-12 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="Type a message..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Micro-interactions JavaScript -->
+<script>
+        let chatOpen = false;
+        let participantsOpen = false;
+
+        function toggleChat() {
+            const sheet = document.getElementById('chatSheet');
+            const trigger = document.getElementById('chatTrigger');
+            chatOpen = !chatOpen;
+            
+            if (chatOpen) {
+                sheet.style.transform = 'translateY(0)';
+                trigger.classList.add('bg-white');
+                trigger.classList.add('text-primary');
+                trigger.querySelector('span').style.color = '#0058be';
+            } else {
+                sheet.style.transform = 'translateY(100%)';
+                trigger.classList.remove('bg-white');
+                trigger.querySelector('span').style.color = 'white';
+            }
+        }
+
+        function toggleParticipants() {
+            const drawer = document.getElementById('participantsDrawer');
+            participantsOpen = !participantsOpen;
+            
+            if (participantsOpen) {
+                drawer.style.transform = 'translateX(0)';
+            } else {
+                drawer.style.transform = 'translateX(120%)';
+            }
+        }
+
+        // Close chat on click outside
+        window.addEventListener('click', (e) => {
+            const sheet = document.getElementById('chatSheet');
+            const trigger = document.getElementById('chatTrigger');
+            if (chatOpen && !sheet.contains(e.target) && !trigger.contains(e.target)) {
+                toggleChat();
+            }
+        });
+
+        // Simple haptic feedback simulation
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(10);
+                }
+            });
+        });
+    </script>
+</body></html>

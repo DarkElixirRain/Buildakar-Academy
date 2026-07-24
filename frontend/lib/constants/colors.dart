@@ -1,63 +1,135 @@
 import 'package:flutter/material.dart';
 
+/// Stitch Elite Design System — Consolidated Color Tokens
+/// Single source of truth for all colors in the app.
+/// Light mode: #F8FAFC background, #FFFFFF surfaces
+/// Dark mode: #0B1220 background, #151E2E surfaces
 class AppColors {
-  // Light theme colors
-  static const Color lightText = Color(0xFF000000);
-  static const Color lightBackground = Color(0xFFFFFFFF);
-  static const Color lightBackgroundElement = Color(0xFFF0F0F3);
-  static const Color lightBackgroundSelected = Color(0xFFE0E1E6);
-  static const Color lightTextSecondary = Color(0xFF60646C);
-  static const Color lightPrimary = Color(0xFF2563EB);
-  static const Color lightPrimaryLight = Color(0xFF60A5FA);
-  static const Color lightError = Color(0xFFEF4444);
-  static const Color lightSuccess = Color(0xFF22C55E);
-  static const Color lightWarning = Color(0xFFF59E0B);
-  static const Color lightInfo = Color(0xFF3B82F6);
+  AppColors._();
 
-  // Dark theme colors
-  static const Color darkText = Color(0xFFFFFFFF);
-  static const Color darkBackground = Color(0xFF000000);
-  static const Color darkBackgroundElement = Color(0xFF212225);
-  static const Color darkBackgroundSelected = Color(0xFF2E3135);
-  static const Color darkTextSecondary = Color(0xFFB0B4BA);
-  static const Color darkPrimary = Color(0xFF60A5FA);
-  static const Color darkPrimaryLight = Color(0xFF93C5FD);
-  static const Color darkError = Color(0xFFF87171);
-  static const Color darkSuccess = Color(0xFF34D399);
-  static const Color darkWarning = Color(0xFFFBBF24);
-  static const Color darkInfo = Color(0xFF60A5FA);
+  // ─── Semantic Primary: Electric Blue ───
+  static const Color primary = Color(0xFF0058BE);
+  static const Color primaryContainer = Color(0xFF2170E4);
+  static const Color onPrimary = Color(0xFFFFFFFF);
+  static const Color onPrimaryContainer = Color(0xFFFEFCFF);
+  static const Color primaryFixed = Color(0xFFD8E2FF);
+  static const Color primaryFixedDim = Color(0xFFADC6FF);
 
-  // Theme getters
-  static Color getTextColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightText : darkText;
+  // ─── Semantic Secondary: Burnt Orange ───
+  static const Color secondary = Color(0xFFA73A00);
+  static const Color secondaryContainer = Color(0xFFFD651E);
+  static const Color onSecondary = Color(0xFFFFFFFF);
+  static const Color onSecondaryContainer = Color(0xFF571A00);
 
-  static Color getBackgroundColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightBackground : darkBackground;
+  // ─── Semantic Tertiary: Deep Amber ───
+  static const Color tertiary = Color(0xFF924700);
+  static const Color tertiaryContainer = Color(0xFFB75B00);
+  static const Color onTertiary = Color(0xFFFFFFFF);
 
-  static Color getBackgroundElementColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightBackgroundElement : darkBackgroundElement;
+  // ─── Error ───
+  static const Color error = Color(0xFFDC2626);
+  static const Color onError = Color(0xFFFFFFFF);
+  static const Color errorContainer = Color(0xFFFFDAD6);
 
-  static Color getBackgroundSelectedColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightBackgroundSelected : darkBackgroundSelected;
+  // ─── Light Mode ───
+  static const Color backgroundLight = Color(0xFFF8FAFC);
+  static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color surfaceDimLight = Color(0xFFCBDBF5);
+  static const Color surfaceVariantLight = Color(0xFFD3E4FE);
+  static const Color surfaceContainerLowestLight = Color(0xFFFFFFFF);
+  static const Color surfaceContainerLowLight = Color(0xFFEFF4FF);
+  static const Color surfaceContainerLight = Color(0xFFE5EEFF);
+  static const Color surfaceContainerHighLight = Color(0xFFDCE9FF);
+  static const Color textPrimaryLight = Color(0xFF0F172A);
+  static const Color textOnSurfaceLight = Color(0xFF0B1C30);
+  static const Color textSecondaryLight = Color(0xFF64748B);
+  static const Color textOnSurfaceVariantLight = Color(0xFF424754);
+  static const Color outlineLight = Color(0xFF727785);
+  static const Color outlineVariantLight = Color(0xFFC2C6D6);
+  static const Color borderLight = Color(0xFFE2E8F0);
 
-  static Color getTextSecondaryColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightTextSecondary : darkTextSecondary;
+  // ─── Dark Mode ───
+  static const Color backgroundDark = Color(0xFF0B1220);
+  static const Color surfaceDark = Color(0xFF151E2E);
+  static const Color surfaceVariantDark = Color(0xFF263349);
+  static const Color textPrimaryDark = Color(0xFFF1F5F9);
+  static const Color textOnSurfaceDark = Color(0xFFF1F5F9);
+  static const Color textSecondaryDark = Color(0xFF94A3B8);
+  static const Color textOnSurfaceVariantDark = Color(0xFF94A3B8);
+  static const Color outlineDark = Color(0xFF727785);
+  static const Color outlineVariantDark = Color(0xFF263349);
+  static const Color borderDark = Color(0xFF263349);
+  static const Color surfaceContainerDark = Color(0xFF1E293B);
 
-  static Color getPrimaryColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightPrimary : darkPrimary;
+  // ─── Brand Constants (always same regardless of theme) ───
+  static const Color brandNavy = Color(0xFF0B1220);
+  static const Color brandBlue = Color(0xFF3B82F6);
+  static const Color brandOrange = Color(0xFFEA580C);
+  static const Color brandRed = Color(0xFFDC2626);
+  static const Color brandGreen = Color(0xFF16A34A);
+  static const Color brandAmber = Color(0xFFF59E0B);
+  static const Color brandViolet = Color(0xFF7C3AED);
+  static const Color brandTeal = Color(0xFF0D9488);
+  static const Color deepAmber = Color(0xFFD16900);
+  static const Color slateCustom = Color(0xFF64748B);
+  static const Color primaryLight = Color(0xFF60A5FA);
+  static const Color primaryDark = Color(0xFF003D82);
+  static const Color liveGradientStart = Color(0xFFFD651E);
+  static const Color liveGradientEnd = Color(0xFFD16900);
 
-  static Color getPrimaryLightColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightPrimaryLight : darkPrimaryLight;
+  // ─── Semantic Gradient (orange→amber, 135deg) ───
+  static const LinearGradient premiumGradient = LinearGradient(
+    colors: [Color(0xFFEA580C), Color(0xFFD16900)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
-  static Color getErrorColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightError : darkError;
+  // ─── Theme-aware getters ───
+  static Color background(Brightness b) =>
+      b == Brightness.light ? backgroundLight : backgroundDark;
+  static Color surface(Brightness b) =>
+      b == Brightness.light ? surfaceLight : surfaceDark;
+  static Color surfaceContainer(Brightness b) =>
+      b == Brightness.light ? surfaceContainerLight : surfaceContainerDark;
+  static Color surfaceContainerLow(Brightness b) =>
+      b == Brightness.light ? surfaceContainerLowLight : surfaceContainerDark;
+  static Color surfaceContainerLowest(Brightness b) =>
+      b == Brightness.light ? surfaceContainerLowestLight : surfaceDark;
+  static Color surfaceVariant(Brightness b) =>
+      b == Brightness.light ? surfaceVariantLight : surfaceVariantDark;
+  static Color textPrimary(Brightness b) =>
+      b == Brightness.light ? textPrimaryLight : textPrimaryDark;
+  static Color textOnSurface(Brightness b) =>
+      b == Brightness.light ? textOnSurfaceLight : textOnSurfaceDark;
+  static Color textSecondary(Brightness b) =>
+      b == Brightness.light ? textSecondaryLight : textSecondaryDark;
+  static Color textOnSurfaceVariant(Brightness b) =>
+      b == Brightness.light ? textOnSurfaceVariantLight : textOnSurfaceVariantDark;
+  static Color outline(Brightness b) =>
+      b == Brightness.light ? outlineLight : outlineDark;
+  static Color outlineVariant(Brightness b) =>
+      b == Brightness.light ? outlineVariantLight : outlineVariantDark;
+  static Color border(Brightness b) =>
+      b == Brightness.light ? borderLight : borderDark;
 
-  static Color getSuccessColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightSuccess : darkSuccess;
+  // ─── Backward-compat aliases for legacy gradient / field backgrounds ───
+  static const Color darkBackground = brandNavy;
+  static const Color darkBackgroundElement = surfaceContainerDark;
+  static const Color darkBackgroundSelected = borderDark;
+  static const Color lightBackground = backgroundLight;
+  static const Color lightBackgroundElement = surfaceContainerLowLight;
+  static const Color lightBackgroundSelected = borderLight;
 
-  static Color getWarningColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightWarning : darkWarning;
-
-  static Color getInfoColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightInfo : darkInfo;
+  // Backward compat shims (used by existing providers/services)
+  static Color getTextColor(Brightness b) => textOnSurface(b);
+  static Color getBackgroundColor(Brightness b) => background(b);
+  static Color getBackgroundElementColor(Brightness b) => surfaceContainerLowest(b);
+  static Color getBackgroundSelectedColor(Brightness b) => border(b);
+  static Color getTextSecondaryColor(Brightness b) => textSecondary(b);
+  static Color getPrimaryColor(Brightness b) => primary;
+  static Color getPrimaryLightColor(Brightness b) => primaryContainer;
+  static Color getErrorColor(Brightness b) => error;
+  static Color getSuccessColor(Brightness b) => const Color(0xFF16A34A);
+  static Color getWarningColor(Brightness b) => const Color(0xFFF59E0B);
+  static Color getInfoColor(Brightness b) => primary;
 }

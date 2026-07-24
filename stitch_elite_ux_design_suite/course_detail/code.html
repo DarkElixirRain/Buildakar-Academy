@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>BuildAcad - Course Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&family=Sora:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "secondary": "#a73a00",
+                        "on-secondary-fixed": "#370e00",
+                        "on-primary-fixed": "#001a42",
+                        "surface-light": "#FFFFFF",
+                        "secondary-fixed": "#ffdbce",
+                        "primary-container": "#2170e4",
+                        "on-surface-variant": "#424754",
+                        "on-secondary-container": "#571a00",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#924700",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#d8e2ff",
+                        "on-surface": "#0b1c30",
+                        "surface-dark": "#151E2E",
+                        "background-dark": "#0B1220",
+                        "surface-bright": "#f8f9ff",
+                        "outline": "#727785",
+                        "text-primary-light": "#0F172A",
+                        "on-error": "#ffffff",
+                        "text-primary-dark": "#F1F5F9",
+                        "secondary-container": "#fd651e",
+                        "on-primary-container": "#fefcff",
+                        "border-dark": "#263349",
+                        "surface-tint": "#005ac2",
+                        "on-tertiary-fixed": "#311400",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "error": "#DC2626",
+                        "surface": "#f8f9ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#f8f9ff",
+                        "border-light": "#E2E8F0",
+                        "background-light": "#F8FAFC",
+                        "secondary-fixed-dim": "#ffb599",
+                        "on-tertiary-container": "#fffbff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "primary": "#0058be",
+                        "tertiary-container": "#b75b00",
+                        "inverse-surface": "#213145",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "outline-variant": "#c2c6d6",
+                        "on-secondary-fixed-variant": "#7f2b00",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-dim": "#cbdbf5",
+                        "on-background": "#0b1c30",
+                        "inverse-primary": "#adc6ff",
+                        "surface-container-lowest": "#ffffff",
+                        "brand-orange": "#EA580C"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "nav-bar-h": "64px",
+                        "margin-screen": "16px",
+                        "base": "4px",
+                        "gutter-grid": "12px",
+                        "target-min": "44px",
+                        "section-gap": "24px"
+                    },
+                    "fontFamily": {
+                        "numeric-tabular": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Sora"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Sora"]
+                    },
+                    "fontSize": {
+                        "numeric-tabular": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab {
+            border-bottom: 2px solid #0058be;
+            color: #0058be;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+        .bento-card {
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            transition: all 200ms ease-out;
+        }
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased overflow-x-hidden pb-32">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-border-light flex justify-between items-center px-margin-screen h-nav-bar-h">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors" onclick="window.history.back()">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-sm-mobile text-headline-sm-mobile text-primary font-bold tracking-tight">BuildAcad</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">share</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</button>
+</div>
+</header>
+<main class="mt-nav-bar-h max-w-4xl mx-auto">
+<!-- Hero Section -->
+<section class="relative w-full aspect-video">
+<img class="w-full h-full object-cover" data-alt="A professional high-definition 16:9 thumbnail for a robotics engineering course. The image features a futuristic sleek white robot arm precisely assembling a circuit board on a clean industrial workspace. The lighting is bright and technical with cool blue tones and vibrant orange highlights, reflecting the BuildAcad brand identity. High contrast, sharp focus, cinematic corporate engineering aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-FzudcJAsobyq-RWNXHuGD6o852Q36Gm2IpoWfOizNtuzPSHNXQ2SEXCKg01smenFM0wDEg0A6fJus9bYvMRHk_9z5AltZh6Cl-NOleDToH1aeTKyq7JKPEkFWf6dpgEwXgCrDYzqZ4fE4fmrYOrRohsTKibj_2CQJpz7ZjAaYKW11DgrEMXRqGiNpPzV9sJmdTyJ1hP5OW0NiXolmY6NVDfnm-gYlTUNjta020oCRrCrzNab5tYDclMLZ3Q7061UTRnk9FthGMz6"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/60 to-transparent flex items-end p-margin-screen">
+<div class="flex gap-2">
+<span class="bg-brand-orange text-white px-3 py-1 rounded-full text-label-caps font-label-caps flex items-center gap-1">
+<span class="w-2 h-2 bg-white rounded-full animate-pulse"></span> LIVE
+                    </span>
+<span class="bg-surface/90 backdrop-blur-md text-primary px-3 py-1 rounded-full text-label-caps font-label-caps">
+                        BESTSELLER
+                    </span>
+</div>
+</div>
+</section>
+<!-- Course Header Info -->
+<section class="px-margin-screen py-6 space-y-4">
+<h2 class="font-display-lg-mobile text-display-lg-mobile text-on-surface leading-tight font-bold">
+                Advanced Autonomous Robotics: Building the Future of Mechatronics
+            </h2>
+<!-- Instructor Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-primary p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A professional headshot of a female robotics professor in her 40s with a confident smile. She has dark hair and wears elegant glasses and a professional navy blazer. The background is a blurred high-tech lab with glowing computer monitors and equipment. High-key lighting, bright and modern aesthetic consistent with BuildAcad style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBruDJuxtweSSGUUlrNIu7PgLl4SlvT9eOMjfS7hOdhg1FDwak_1viMz_qYbew95J0Mc8kEp3sumLFbdVC9vIH0fBl7OwYcLUPBzIkCIn5pEuIjm5By4ILtKwJsDN3JYk8EvUmeXS3n7Aoh3RClyUxVQ1-6FscWkxM3uDZze0Ev32URwdwqrlf2z-V7g4rcPZcxFvZxxvDPHhl2htaq6irrj4tcguRAd2ZYy9Qg-dstE5QISMJgEkYvyyebC7MFzL0p8y2r040VYYZz"/>
+</div>
+<div>
+<p class="font-body-md text-on-surface font-semibold">Dr. Elena Volkov</p>
+<p class="font-body-sm text-outline">Lead Robotics Engineer, BuildAcad</p>
+</div>
+</div>
+<button class="px-4 py-1.5 border-1.5 border-primary text-primary rounded-xl font-label-caps text-label-caps hover:bg-primary/5 transition-all active:scale-95">
+                    FOLLOW
+                </button>
+</div>
+<!-- Metadata Row -->
+<div class="flex items-center gap-6 py-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-numeric-tabular text-numeric-tabular text-on-surface">4.9</span>
+<span class="font-body-sm text-outline">(12.4k reviews)</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-outline text-[20px]">group</span>
+<span class="font-numeric-tabular text-numeric-tabular text-on-surface">85,230</span>
+<span class="font-body-sm text-outline">students</span>
+</div>
+</div>
+</section>
+<!-- Underline Tabs -->
+<nav class="flex border-b border-border-light px-margin-screen sticky top-nav-bar-h bg-surface z-40">
+<button class="flex-1 py-4 text-center font-label-caps text-label-caps active-tab transition-all" id="tab-overview" onclick="switchTab('overview')">OVERVIEW</button>
+<button class="flex-1 py-4 text-center font-label-caps text-label-caps text-outline hover:text-primary transition-all" id="tab-curriculum" onclick="switchTab('curriculum')">CURRICULUM</button>
+<button class="flex-1 py-4 text-center font-label-caps text-label-caps text-outline hover:text-primary transition-all" id="tab-reviews" onclick="switchTab('reviews')">REVIEWS</button>
+</nav>
+<!-- Tab Content: Overview -->
+<div class="p-margin-screen space-y-section-gap" id="content-overview">
+<!-- Level Chips -->
+<div class="flex gap-2">
+<span class="px-4 py-2 bg-surface-variant text-on-primary-fixed-variant rounded-lg font-body-sm text-body-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bar_chart</span> Intermediate
+                </span>
+<span class="px-4 py-2 bg-surface-container text-primary rounded-lg font-body-sm text-body-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">schedule</span> 42 Hours
+                </span>
+</div>
+<!-- What you'll learn -->
+<div class="bento-card p-6 rounded-xl bg-surface-light">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">What you'll learn</h3>
+<ul class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="font-body-sm text-on-surface-variant">Design PID control loops for complex motion systems.</p>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="font-body-sm text-on-surface-variant">Integrate computer vision for object recognition.</p>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="font-body-sm text-on-surface-variant">Implement SLAM algorithms for autonomous navigation.</p>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="font-body-sm text-on-surface-variant">Optimize firmware for low-latency actuator response.</p>
+</li>
+</ul>
+</div>
+<!-- Prerequisites -->
+<div class="space-y-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Prerequisites</h3>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-4 rounded-xl border border-border-light">
+<div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">code</span>
+</div>
+<p class="font-body-sm text-on-surface-variant">Intermediate proficiency in C++ or Python</p>
+</div>
+<div class="flex items-center gap-3 p-4 rounded-xl border border-border-light">
+<div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">functions</span>
+</div>
+<p class="font-body-sm text-on-surface-variant">Basic understanding of Linear Algebra & Calculus</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Tab Content: Curriculum -->
+<div class="hidden p-margin-screen space-y-4" id="content-curriculum">
+<div class="flex justify-between items-center mb-2">
+<p class="font-body-sm text-outline">12 Sections • 84 Lessons</p>
+<button class="text-primary font-label-caps text-label-caps">EXPAND ALL</button>
+</div>
+<!-- Section Accordion -->
+<div class="space-y-3">
+<!-- Section 1 -->
+<div class="border border-border-light rounded-xl overflow-hidden bg-white">
+<div class="p-4 flex justify-between items-center bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+<span class="font-body-md font-semibold text-on-surface">Section 1: Fundamentals of Mechatronics</span>
+</div>
+<span class="font-body-sm text-outline">4 Lessons • 2h 15m</span>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex items-center justify-between opacity-60">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">play_circle</span>
+<p class="font-body-sm text-on-surface">1.1 Introduction to the Course</p>
+</div>
+<span class="material-symbols-outlined text-outline">lock</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">play_circle</span>
+<p class="font-body-sm text-on-surface">1.2 Setting up your Workspace</p>
+</div>
+<span class="text-primary font-label-caps text-label-caps">PREVIEW</span>
+</div>
+<div class="flex items-center justify-between opacity-60">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">description</span>
+<p class="font-body-sm text-on-surface">1.3 Hardware Component Guide</p>
+</div>
+<span class="material-symbols-outlined text-outline">lock</span>
+</div>
+</div>
+</div>
+<!-- Section 2 -->
+<div class="border border-border-light rounded-xl overflow-hidden bg-white">
+<div class="p-4 flex justify-between items-center bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+<span class="font-body-md font-semibold text-on-surface">Section 2: Sensor Fusion & Data Processing</span>
+</div>
+<span class="font-body-sm text-outline">8 Lessons • 5h 45m</span>
+</div>
+</div>
+<!-- Section 3 -->
+<div class="border border-border-light rounded-xl overflow-hidden bg-white">
+<div class="p-4 flex justify-between items-center bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+<span class="font-body-md font-semibold text-on-surface">Section 3: Kinematics & Motion Planning</span>
+</div>
+<span class="font-body-sm text-outline">12 Lessons • 8h 10m</span>
+</div>
+</div>
+<!-- Quiz Example -->
+<div class="border border-border-light rounded-xl overflow-hidden bg-white">
+<div class="p-4 flex justify-between items-center bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+<span class="font-body-md font-semibold text-on-surface">Final Module Quiz</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">quiz</span>
+<span class="font-body-sm text-outline">20 Questions</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Tab Content: Reviews -->
+<div class="hidden p-margin-screen" id="content-reviews">
+<div class="flex flex-col items-center py-12 text-center opacity-40">
+<span class="material-symbols-outlined text-[64px] mb-4">forum</span>
+<p class="font-body-lg">Reviews Loading...</p>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Bar -->
+<div class="fixed bottom-[nav-bar-h] left-0 w-full bg-surface border-t border-border-light p-4 z-50 flex items-center justify-between h-20 safe-area-inset-bottom">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-outline">TOTAL PRICE</span>
+<div class="flex items-baseline gap-2">
+<p class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight">$49.99</p>
+<p class="font-body-sm text-outline line-through">$129.99</p>
+</div>
+</div>
+<button class="bg-brand-orange text-white px-8 h-12 rounded-xl font-headline-sm text-headline-sm flex items-center justify-center hover:bg-[#c2410c] transition-all active:scale-95 shadow-lg shadow-brand-orange/20">
+            Enroll Now
+        </button>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-bar-h pb-safe bg-surface border-t border-border-light flex justify-around items-center px-4">
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 transition-all duration-300">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1.5 transition-all duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-label-caps text-label-caps">Explore</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 transition-all duration-300">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-label-caps">Search</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1.5 transition-all duration-300">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</div>
+</nav>
+<script>
+        function switchTab(tabName) {
+            // Hide all contents
+            document.getElementById('content-overview').classList.add('hidden');
+            document.getElementById('content-curriculum').classList.add('hidden');
+            document.getElementById('content-reviews').classList.add('hidden');
+
+            // Reset tab styles
+            const tabs = ['overview', 'curriculum', 'reviews'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                btn.classList.remove('active-tab');
+                btn.classList.add('text-outline');
+            });
+
+            // Show active content & style active tab
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-' + tabName);
+            activeBtn.classList.add('active-tab');
+            activeBtn.classList.remove('text-outline');
+
+            // Scroll to tab bar for better mobile UX
+            const rect = activeBtn.getBoundingClientRect();
+            if (rect.top < 64) {
+                 window.scrollTo({
+                    top: window.pageYOffset + rect.top - 64,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Accordion micro-interaction simulation
+        document.querySelectorAll('.cursor-pointer').forEach(header => {
+            header.addEventListener('click', () => {
+                const icon = header.querySelector('.material-symbols-outlined');
+                if (icon.innerText === 'expand_more') {
+                    icon.innerText = 'chevron_right';
+                    header.nextElementSibling.classList.add('hidden');
+                } else if (icon.innerText === 'chevron_right') {
+                    icon.innerText = 'expand_more';
+                    header.nextElementSibling.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body></html>

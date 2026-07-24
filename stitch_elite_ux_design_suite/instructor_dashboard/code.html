@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Instructor Dashboard | BuildAcad</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&family=Sora:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .sparkline-container {
+            height: 32px;
+            width: 64px;
+        }
+        
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-container": "#fffbff",
+                    "tertiary-fixed": "#ffdcc6",
+                    "on-background": "#0b1c30",
+                    "text-primary-dark": "#F1F5F9",
+                    "on-surface-variant": "#424754",
+                    "surface-dark": "#151E2E",
+                    "secondary": "#a73a00",
+                    "on-tertiary-fixed": "#311400",
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#dce9ff",
+                    "primary-container": "#2170e4",
+                    "secondary-container": "#fd651e",
+                    "outline": "#727785",
+                    "on-secondary-container": "#571a00",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "border-light": "#E2E8F0",
+                    "surface-light": "#FFFFFF",
+                    "primary-fixed-dim": "#adc6ff",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "on-secondary-fixed-variant": "#7f2b00",
+                    "on-surface": "#0b1c30",
+                    "surface-bright": "#f8f9ff",
+                    "secondary-fixed-dim": "#ffb599",
+                    "secondary-fixed": "#ffdbce",
+                    "text-primary-light": "#0F172A",
+                    "surface-variant": "#d3e4fe",
+                    "inverse-on-surface": "#eaf1ff",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary": "#924700",
+                    "error": "#DC2626",
+                    "on-secondary-fixed": "#370e00",
+                    "on-tertiary": "#ffffff",
+                    "border-dark": "#263349",
+                    "on-error": "#ffffff",
+                    "background-dark": "#0B1220",
+                    "primary": "#0058be",
+                    "surface-tint": "#005ac2",
+                    "primary-fixed": "#d8e2ff",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed": "#001a42",
+                    "tertiary-container": "#b75b00",
+                    "background-light": "#F8FAFC",
+                    "surface-dim": "#cbdbf5",
+                    "outline-variant": "#c2c6d6",
+                    "on-primary-fixed-variant": "#004395",
+                    "surface": "#f8f9ff",
+                    "on-error-container": "#93000a",
+                    "inverse-surface": "#213145",
+                    "surface-container-highest": "#d3e4fe",
+                    "surface-container": "#e5eeff",
+                    "inverse-primary": "#adc6ff",
+                    "on-primary-container": "#fefcff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "section-gap": "24px",
+                    "base": "4px",
+                    "target-min": "44px",
+                    "nav-bar-h": "64px",
+                    "margin-screen": "16px",
+                    "gutter-grid": "12px"
+            },
+            "fontFamily": {
+                    "numeric-tabular": ["Plus Jakarta Sans"],
+                    "label-caps": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "body-sm": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Sora"],
+                    "display-lg-mobile": ["Sora"],
+                    "headline-sm": ["Sora"],
+                    "display-lg": ["Sora"]
+            },
+            "fontSize": {
+                    "numeric-tabular": ["16px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-border-light">
+<div class="flex justify-between items-center px-margin-screen h-nav-bar-h w-full max-w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-border-light bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a South Asian instructor in a modern workspace. The lighting is bright and clean with soft blue tones in the background, matching a corporate modern aesthetic. High-quality digital photography style with shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjRoIfxylBluGbfUet5z_p8sp20wF07LRXIMcxuoqeLkDD0XvCqEAuRiuTBek9OySWW6F_l0oxFpNhFkB-S4RPPEZ-BMwUtomQceKvb3w9mvb4r0J6tw1TIVukVFjnxZYfzZy6MeHo3ziikfkRyFOt6KTwPxQitOHfrZbcB8m1D40SNoWxCZNF6nWIHm6VhUaIPvrMaDk0l2qyyi4UklZfJsAUlEl86dtnas-IshMTzvMttFTxeuNvoXZKWwyRTRba53npoE2nY_CJ"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm-mobile text-headline-sm-mobile text-primary font-bold tracking-tight">BuildAcad</span>
+<span class="font-label-caps text-label-caps text-outline uppercase">Instructor Mode</span>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-20 pb-24 px-margin-screen max-w-lg mx-auto">
+<!-- Welcome Header -->
+<section class="mb-6">
+<h1 class="font-headline-md text-headline-md text-on-surface">Dashboard</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Welcome back, Prof. Adhikari</p>
+</section>
+<!-- Stat-card row (Horizontal Scroll) -->
+<section class="mb-section-gap">
+<div class="flex gap-gutter-grid overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
+<!-- Total Students -->
+<div class="flex-shrink-0 w-[160px] bg-surface-container-lowest p-4 rounded-xl border border-border-light shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+<span class="font-label-caps text-label-caps text-outline block mb-1">TOTAL STUDENTS</span>
+<div class="flex items-baseline gap-1">
+<span class="font-numeric-tabular text-numeric-tabular text-on-surface text-xl">1,284</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="arrow_upward">arrow_upward</span>
+</div>
+<div class="mt-3 flex justify-between items-end">
+<span class="text-[10px] text-primary font-medium">+12%</span>
+<div class="sparkline-container relative">
+<svg class="w-full h-full" viewbox="0 0 64 32">
+<path d="M0,28 L8,24 L16,26 L24,18 L32,20 L40,10 L48,12 L56,4 L64,6" fill="none" stroke="#0058be" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Total Revenue -->
+<div class="flex-shrink-0 w-[180px] bg-surface-container-lowest p-4 rounded-xl border border-border-light shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+<span class="font-label-caps text-label-caps text-outline block mb-1">TOTAL REVENUE</span>
+<div class="flex items-baseline gap-1">
+<span class="font-numeric-tabular text-numeric-tabular text-on-surface text-xl">रु 42,450</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="arrow_upward">arrow_upward</span>
+</div>
+<div class="mt-3 flex justify-between items-end">
+<span class="text-[10px] text-primary font-medium">+8.4%</span>
+<div class="sparkline-container relative">
+<svg class="w-full h-full" viewbox="0 0 64 32">
+<path d="M0,26 L10,22 L20,28 L30,15 L40,18 L50,8 L64,12" fill="none" stroke="#0058be" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Avg Rating -->
+<div class="flex-shrink-0 w-[160px] bg-surface-container-lowest p-4 rounded-xl border border-border-light shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+<span class="font-label-caps text-label-caps text-outline block mb-1">AVG RATING</span>
+<div class="flex items-baseline gap-1">
+<span class="font-numeric-tabular text-numeric-tabular text-on-surface text-xl">4.8</span>
+<span class="material-symbols-outlined text-error text-sm" data-icon="arrow_downward">arrow_downward</span>
+</div>
+<div class="mt-3 flex justify-between items-end">
+<span class="text-[10px] text-error font-medium">-0.1</span>
+<div class="sparkline-container relative">
+<svg class="w-full h-full" viewbox="0 0 64 32">
+<path d="M0,4 L16,8 L32,12 L48,24 L64,28" fill="none" stroke="#DC2626" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Active Courses -->
+<div class="flex-shrink-0 w-[160px] bg-surface-container-lowest p-4 rounded-xl border border-border-light shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+<span class="font-label-caps text-label-caps text-outline block mb-1">ACTIVE COURSES</span>
+<div class="flex items-baseline gap-1">
+<span class="font-numeric-tabular text-numeric-tabular text-on-surface text-xl">12</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="horizontal_rule">horizontal_rule</span>
+</div>
+<div class="mt-3 flex justify-between items-end">
+<span class="text-[10px] text-outline font-medium">Stable</span>
+<div class="sparkline-container relative">
+<svg class="w-full h-full" viewbox="0 0 64 32">
+<path d="M0,16 L64,16" fill="none" stroke="#727785" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick-action row -->
+<section class="mb-section-gap grid grid-cols-2 gap-4">
+<button class="h-12 flex items-center justify-center gap-2 bg-primary text-on-primary rounded-xl font-body-md font-semibold active:scale-95 transition-transform duration-200 shadow-[0_2px_8px_rgba(0,88,190,0.2)]">
+<span class="material-symbols-outlined text-xl" data-icon="add_circle">add_circle</span>
+<span>Create Course</span>
+</button>
+<button class="h-12 flex items-center justify-center gap-2 bg-secondary text-on-secondary rounded-xl font-body-md font-semibold active:scale-95 transition-transform duration-200 shadow-[0_2px_8px_rgba(167,58,0,0.2)]">
+<span class="material-symbols-outlined text-xl" data-icon="live_tv">live_tv</span>
+<span>Go Live</span>
+</button>
+</section>
+<!-- Recent Activity Feed -->
+<section class="mb-section-gap">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Recent Activity</h2>
+<button class="text-primary font-label-caps text-label-caps font-bold">VIEW ALL</button>
+</div>
+<div class="space-y-3">
+<!-- Enrollment Row -->
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-border-light flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="person_add">person_add</span>
+</div>
+<div class="flex-grow">
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">New Enrollment</p>
+<p class="text-[12px] text-on-surface-variant">Aayush Shrestha joined 'Advanced Structural AI'</p>
+</div>
+<div class="text-right">
+<span class="font-numeric-tabular text-[12px] text-outline">2m ago</span>
+</div>
+</div>
+<!-- Review Row -->
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-border-light flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="grade">grade</span>
+</div>
+<div class="flex-grow">
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">5-Star Review</p>
+<p class="text-[12px] text-on-surface-variant">"Best architectural guide in Nepal!" - Binod K.</p>
+</div>
+<div class="text-right">
+<span class="font-numeric-tabular text-[12px] text-outline">1h ago</span>
+</div>
+</div>
+<!-- Live Signup Row -->
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-border-light flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="event_upcoming">event_upcoming</span>
+</div>
+<div class="flex-grow">
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">Live Session Signup</p>
+<p class="text-[12px] text-on-surface-variant">15 students registered for tomorrow's Q&A</p>
+</div>
+<div class="text-right">
+<span class="font-numeric-tabular text-[12px] text-outline">4h ago</span>
+</div>
+</div>
+<!-- Withdrawal Row -->
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-border-light flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="flex-grow">
+<p class="font-body-sm text-body-sm text-on-surface font-semibold">Payout Completed</p>
+<p class="text-[12px] text-on-surface-variant">रु 25,000 transferred to your bank account</p>
+</div>
+<div class="text-right">
+<span class="font-numeric-tabular text-[12px] text-outline">Yesterday</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Current Performance Card (Bento Style) -->
+<section class="grid grid-cols-1 gap-4 mb-section-gap">
+<div class="relative overflow-hidden rounded-2xl bg-surface-dark p-6 text-surface-light border border-border-dark">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full -mr-16 -mt-16"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="font-headline-sm text-headline-sm mb-1">Live Now</h3>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-secondary-fixed-dim">SESSION ACTIVE</span>
+</div>
+</div>
+<div class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[12px] font-bold">
+                            248 VIEWERS
+                        </div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex -space-x-3">
+<img class="w-8 h-8 rounded-full border-2 border-surface-dark" data-alt="Close up of a student avatar with a cheerful expression, clean modern clothing, soft studio lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7mghCWQGbS7T0DCmCYBOCXLulwTOFr_GotGmUiPsfyLhYWNBtf4WJWd-hwgv2hwBZOGwXLFZ5e7QW9a8lhkTt7-v_W5gW69yUYNHaAeDmvp3-GgtmlD2nctQ-a7r103Wnv6irg-6nira_5LbsealdmfTlOioyWlR0fKBz1Y0e6fPm-QpSi0U90yITY0ZyO44LYxWuuFIBI-8He3oHa6_o3PyRO-IqKkVk23IW8-fGDbsianCmIaJ2nf4_tiL76T8hiRUd6lrgWB7W"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-dark" data-alt="Close up of a student avatar with glasses, focused and looking at the screen, clean modern aesthetics." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-TOqAZdoBXqMz442iXv46BrajHiDjdq8jcOI5YnKa2s3FfTL1_YUFJJPOaU7e9wedjFM5er7XNjZyJ7ZVarA2JrY7VEF1eUdUU_8o_9ns1aGNLReCMbFXm3JW8eQVu67_dRUYHyHqkVHJyQVGouQr1XwYGfp23c6saElgZHLT2FhGMGxeFYtUJKEBjX5Q2Cevu3MdbmgbtgiKlFF1Gu6GuUFdoUy4q0martVKuu3s0NvbY4MOJSxW8x3mpeXR4PDLyYUozXJ6iJJQ"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-dark" data-alt="Close up of a student avatar with a hijab, smiling, professional lighting, soft background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6DmBSD_9OT0KExIJbdad1ow2fuUXRm5fhyrpxfyaUVWtiE9SvcF5zzyhSkzPpHsDS_wkVJa9tU74LXA-rpcVHAGiR1SJZ7dYYDBwKSRu5jAGjOAQAstb4876-uyo9sHhPdXmnCxK2kQ6gfxxkrqpf-SW_cu71nIX-F3Sy3JkOr8dvXrhfKyt9qUtRaMq6XmNwUUP-UMokKfZb_qVqCY9eK8tUhluPzQjvv2ZQN0n2p-kgCIb5Gy_UGn5s0gO--8kV--TF9eaK7P-g"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-dark bg-outline flex items-center justify-center text-[10px] font-bold">+245</div>
+</div>
+<p class="text-[12px] text-outline-variant italic">Peak engagement reached 2 minutes ago</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-nav-bar-h pb-safe bg-surface border-t border-border-light flex justify-around items-center px-4">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1.5 transition-all duration-300 scale-97" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-4 py-1.5" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="font-label-caps text-label-caps">Explore</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-4 py-1.5" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-caps text-label-caps">Search</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors px-4 py-1.5" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for stat cards
+        document.querySelectorAll('.flex-shrink-0.bg-surface-container-lowest').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.transform = 'scale(0.98)';
+                card.style.transition = 'transform 0.1s ease';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple animation for the sparklines on load
+        window.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('svg path').forEach(path => {
+                const length = path.getTotalLength();
+                path.style.strokeDasharray = length;
+                path.style.strokeDashoffset = length;
+                path.style.transition = 'stroke-dashoffset 1.5s ease-in-out';
+                setTimeout(() => {
+                    path.style.strokeDashoffset = '0';
+                }, 200);
+            });
+        });
+    </script>
+</body></html>

@@ -1,57 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../constants/colors.dart';
-import '../../providers/theme_provider.dart';
+import 'package:buildacad/constants/colors.dart';
+import 'package:buildacad/theme/app_theme.dart';
 
 class AppBottomAuthLink extends StatelessWidget {
-  final String text;
-  final String linkText;
-  final VoidCallback onLinkTap;
+  final String label;
+  final String actionText;
+  final VoidCallback onTap;
 
   const AppBottomAuthLink({
     super.key,
-    required this.text,
-    required this.linkText,
-    required this.onLinkTap,
+    required this.label,
+    required this.actionText,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final brightness = isDark ? Brightness.dark : Brightness.light;
-    final size = MediaQuery.of(context).size.width;
-    final isSmallDevice = size < 375;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 28),
+    final brightness = Theme.of(context).brightness;
+    return GestureDetector(
+      onTap: onTap,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            text,
-            style: TextStyle(
-              color: AppColors.getTextSecondaryColor(brightness),
-              fontSize: isSmallDevice ? 14 : 15,
-            ),
-          ),
+          Text(label, style: AppTypography.bodySm.copyWith(
+            color: AppColors.textOnSurfaceVariant(brightness),
+          )),
           const SizedBox(width: 4),
-          TextButton(
-            onPressed: onLinkTap,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              linkText,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.getPrimaryColor(brightness),
-                fontSize: isSmallDevice ? 14 : 15,
-              ),
-            ),
-          ),
+          Text(actionText, style: AppTypography.bodySm.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w600,
+          )),
         ],
       ),
     );
