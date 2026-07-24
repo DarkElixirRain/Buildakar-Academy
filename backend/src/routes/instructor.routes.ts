@@ -106,6 +106,14 @@ router.get(
   instructorController.getFollowers
 );
 
+// POST /api/instructors/:instructorId/reviews - Create instructor review
+router.post(
+  '/:instructorId/reviews',
+  authenticate,
+  validate(schemas.instructorId, 'params'),
+  instructorController.createReview
+);
+
 // GET /api/instructors/:instructorId/reviews - Get instructor's reviews
 router.get(
   '/:instructorId/reviews',

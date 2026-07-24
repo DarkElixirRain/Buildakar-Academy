@@ -44,6 +44,8 @@ model User {
   followers         InstructorFollow[]    @relation("Following")
   following         InstructorFollow[]    @relation("Followers")
   reviews           Review[]
+  instructorReviewsWritten   InstructorReview[] @relation("InstructorReviewWriter")
+  instructorReviewsReceived  InstructorReview[] @relation("InstructorReviewTarget")
   recentSearches    RecentSearch[]
 
   // Payment relations
@@ -213,6 +215,22 @@ model Review {
 
   @@unique([userId, courseId])
   @@index([courseId])
+  @@index([userId])
+}
+
+model InstructorReview {
+  id           String   @id @default(cuid())
+  userId       String
+  instructorId String
+  rating       Int
+  comment      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  instructor   User     @relation("InstructorReviewTarget", fields: [instructorId], references: [id])
+  user         User     @relation("InstructorReviewWriter", fields: [userId], references: [id])
+
+  @@unique([userId, instructorId])
+  @@index([instructorId])
   @@index([userId])
 }
 

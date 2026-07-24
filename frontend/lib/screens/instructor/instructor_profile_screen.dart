@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/instructor_service.dart';
 import '../../services/course_service.dart';
@@ -39,6 +40,12 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   double _instructorAvgRating = 0.0;
 
   final ApiService _apiService = ApiService();
+
+  int _instructorRating = 0;
+  final TextEditingController _instructorReviewController = TextEditingController();
+  bool _isSubmittingInstructorReview = false;
+  String? _instructorReviewError;
+  bool _hasReviewedInstructor = false;
 
   late final TabController _tabController;
 
@@ -180,11 +187,16 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
             ?.map((e) => e as Map<String, dynamic>)
             .toList() ?? [];
         final meta = data['meta'] as Map<String, dynamic>?;
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final currentUserId = authProvider.user?.id;
+        final hasReviewed = currentUserId != null && reviewsList.any((r) =>
+            r['userId'] == currentUserId && r['source'] == 'instructor');
         setState(() {
           _instructorReviews = reviewsList;
           _totalReviews = meta?['total'] as int? ?? 0;
           _instructorAvgRating = (meta?['averageRating'] as num?)?.toDouble() ?? 0.0;
           _isLoadingReviews = false;
+          _hasReviewedInstructor = hasReviewed;
         });
       } else {
         setState(() => _isLoadingReviews = false);
@@ -195,11 +207,69 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
     }
   }
 
+  Future<void> _submitInstructorReview() async {
+    if (_instructorRating == 0) {
+      setState(() => _instructorReviewError = 'Please select a rating');
+      return;
+    }
+
+    setState(() {
+      _isSubmittingInstructorReview = true;
+      _instructorReviewError = null;
+    });
+
+    try {
+      final instructorId = _instructorData != null
+          ? _getInstructorId(_instructorData!)
+          : widget.instructorId;
+      final response = await _apiService.createInstructorReview(
+        instructorId: instructorId,
+        rating: _instructorRating,
+        comment: _instructorReviewController.text.trim().isEmpty
+            ? null
+            : _instructorReviewController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      if (response.success) {
+        setState(() {
+          _isSubmittingInstructorReview = false;
+          _instructorRating = 0;
+          _instructorReviewController.clear();
+          _hasReviewedInstructor = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Instructor review submitted successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        _loadInstructorReviews();
+      } else {
+        setState(() {
+          _isSubmittingInstructorReview = false;
+          _instructorReviewError =
+              response.error ?? 'Failed to submit review';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmittingInstructorReview = false;
+        _instructorReviewError = 'Error: $e';
+      });
+    }
+  }
+
   @override
   void dispose() {
     print('🔍 InstructorProfileScreen: dispose called');
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    _instructorReviewController.dispose();
     super.dispose();
   }
 
@@ -631,47 +701,183 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_instructorReviews.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.star_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No reviews yet',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Reviews from students will appear here',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final reviews = _instructorReviews
-        .map((r) => Review.fromJson(r))
-        .toList();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isLoggedIn = authProvider.user != null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: CourseReviews(
-        rating: _instructorAvgRating,
-        reviews: reviews,
-        brightness: brightness,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isLoggedIn && !_hasReviewedInstructor) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.grey.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Rate this instructor',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: List.generate(5, (i) {
+                      final filled = i < _instructorRating;
+                      return IconButton(
+                        onPressed: () => setState(() => _instructorRating = i + 1),
+                        icon: Icon(
+                          filled ? Icons.star : Icons.star_border,
+                          color: const Color(0xFFF59E0B),
+                          size: 28,
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _instructorReviewController,
+                    maxLines: 3,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 14,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Share your experience with this instructor...',
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.grey.withValues(alpha: 0.1),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: _isSubmittingInstructorReview
+                          ? null
+                          : _submitInstructorReview,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isSubmittingInstructorReview
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Submit Review',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (_instructorReviewError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _instructorReviewError!,
+                      style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+          if (_hasReviewedInstructor)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.grey.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green.shade600, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'You have reviewed this instructor',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (_instructorReviews.isEmpty && !_hasReviewedInstructor)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.star_outline,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No reviews yet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Reviews from students will appear here',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (_instructorReviews.isNotEmpty)
+            CourseReviews(
+              rating: _instructorAvgRating,
+              reviews: _instructorReviews.map((r) => Review.fromJson(r)).toList(),
+              brightness: brightness,
+            ),
+        ],
       ),
     );
   }

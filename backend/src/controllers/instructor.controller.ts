@@ -5,7 +5,7 @@ import { instructorService } from '../services/instructor.service';
 import { schemas } from '../utils/validation';
 import { AppError } from '../utils/AppError';
 import { prisma } from '../lib/prisma';
-import { getInstructorReviews } from '../services/review.service';
+import { getInstructorReviews, createInstructorReview } from '../services/review.service';
 
 export const instructorController = {
   // Get top instructors for homepage
@@ -186,6 +186,29 @@ export const instructorController = {
           averageRating: result.averageRating,
           ratingBreakdown: result.ratingBreakdown,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Create instructor review
+  async createReview(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { instructorId } = req.params;
+      const userId = req.user!.id;
+      const { rating, comment } = req.body;
+
+      if (!rating || rating < 1 || rating > 5) {
+        throw new AppError('Rating must be between 1 and 5', 400);
+      }
+
+      const review = await createInstructorReview(userId, instructorId, rating, comment);
+
+      res.status(201).json({
+        success: true,
+        message: 'Instructor review created successfully',
+        data: review,
       });
     } catch (error) {
       next(error);

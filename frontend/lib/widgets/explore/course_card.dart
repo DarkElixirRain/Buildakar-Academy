@@ -137,7 +137,7 @@ class _GridCard extends StatelessWidget {
             ),
             // ---- Details ----
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -166,7 +166,7 @@ class _GridCard extends StatelessWidget {
                       height: 1.25,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     _getInstructorName(course),
                     maxLines: 1,
@@ -176,7 +176,7 @@ class _GridCard extends StatelessWidget {
                       color: textSecondaryColor,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       if (course['rating'] != null) ...[

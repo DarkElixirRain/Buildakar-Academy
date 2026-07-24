@@ -115,6 +115,31 @@ class ReviewApiService extends BaseApiService {
     }
   }
 
+  Future<ApiResponse<Map<String, dynamic>>> createInstructorReview({
+    required String instructorId,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      final response = await sendAuthenticatedRequest(
+        method: 'POST',
+        endpoint: '/instructors/$instructorId/reviews',
+        body: {
+          'rating': rating,
+          if (comment != null && comment.isNotEmpty) 'comment': comment,
+        },
+      );
+      final data = jsonDecode(response.body);
+
+      if ((response.statusCode == 201 || response.statusCode == 200) && data['success'] == true) {
+        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to create instructor review');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
+    }
+  }
+
   Future<ApiResponse<Map<String, dynamic>>> getInstructorReviews({
     required String instructorId,
     int page = 1,

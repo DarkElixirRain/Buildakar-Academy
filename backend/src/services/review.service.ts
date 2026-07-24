@@ -240,14 +240,52 @@ export async  function  getMyReview(
     return review as ReviewWithUser | null;
   }
 
+export async function createInstructorReview(
+  userId: string,
+  instructorId: string,
+  rating: number,
+  comment?: string
+) {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw createError('Rating must be an integer between 1 and 5', 400);
+  }
+
+  const instructor = await prisma.user.findUnique({
+    where: { id: instructorId, role: 'INSTRUCTOR', isActive: true },
+  });
+  if (!instructor) {
+    throw createError('Instructor not found', 404);
+  }
+
+  const existing = await prisma.instructorReview.findUnique({
+    where: { userId_instructorId: { userId, instructorId } },
+  });
+  if (existing) {
+    throw createError('You have already reviewed this instructor', 400);
+  }
+
+  const review = await prisma.$transaction(async (tx) => {
+    const created = await tx.instructorReview.create({
+      data: { userId, instructorId, rating, comment },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, photo: true } },
+      },
+    });
+    await recalculateInstructorRating(tx, instructorId);
+    return created;
+  });
+
+  return review;
+}
+
 export async function getInstructorReviews(
     instructorId: string,
     page: number = 1,
     limit: number = 10
-  ): Promise<PaginatedReviews> {
+  ): Promise<Omit<PaginatedReviews, 'data'> & { data: any[] }> {
     const skip = (page - 1) * limit;
 
-    const [reviews, total, aggregate, breakdown] = await Promise.all([
+    const [courseReviews, instructorDirectReviews, courseTotal, instructorTotal, courseAggregate, instructorAggregate, courseBreakdown, instructorBreakdown] = await Promise.all([
       prisma.review.findMany({
         where: {
           course: { instructorId },
@@ -265,12 +303,33 @@ export async function getInstructorReviews(
         take: limit,
       }),
 
+      prisma.instructorReview.findMany({
+        where: { instructorId },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, photo: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+
       prisma.review.count({
         where: { course: { instructorId } },
       }),
 
+      prisma.instructorReview.count({
+        where: { instructorId },
+      }),
+
       prisma.review.aggregate({
         where: { course: { instructorId } },
+        _avg: { rating: true },
+      }),
+
+      prisma.instructorReview.aggregate({
+        where: { instructorId },
         _avg: { rating: true },
       }),
 
@@ -279,19 +338,59 @@ export async function getInstructorReviews(
         where: { course: { instructorId } },
         _count: { rating: true },
       }),
+
+      prisma.instructorReview.groupBy({
+        by: ["rating"],
+        where: { instructorId },
+        _count: { rating: true },
+      }),
     ]);
 
+    const total = courseTotal + instructorTotal;
+
+    const allRatings = [...courseBreakdown, ...instructorBreakdown];
     const ratingBreakdown: RatingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    for (const row of breakdown) {
-      ratingBreakdown[row.rating as keyof RatingBreakdown] = row._count.rating;
+    for (const row of allRatings) {
+      ratingBreakdown[row.rating as keyof RatingBreakdown] += row._count.rating;
     }
 
+    const courseAvg = courseAggregate._avg.rating ?? 0;
+    const instructorAvg = instructorAggregate._avg.rating ?? 0;
+    const combinedAvg = total > 0
+      ? Math.round(((courseAvg * courseTotal + instructorAvg * instructorTotal) / total) * 10) / 10
+      : 0;
+
+    const merged = [
+      ...courseReviews.map(r => ({
+        ...r,
+        source: 'course' as const,
+        courseTitle: (r as any).course?.title,
+        courseId: (r as any).course?.id,
+      })),
+      ...instructorDirectReviews.map(r => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        userId: r.userId,
+        user: r.user,
+        source: 'instructor' as const,
+        courseTitle: null,
+        courseId: null,
+      })),
+    ];
+
+    merged.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const paginated = merged.slice(skip, skip + limit);
+
     return {
-      data: reviews as any,
+      data: paginated,
       total,
       page,
       limit,
-      averageRating: Math.round((aggregate._avg.rating ?? 0) * 10) / 10,
+      averageRating: combinedAvg,
       ratingBreakdown,
     };
   }
