@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/theme_provider.dart';
 
 class ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
+  final String? title;
+  final IconData? icon;
 
   const ErrorState({
-    Key? key,
+    super.key,
     required this.message,
     required this.onRetry,
-  }) : super(key: key);
+    this.title,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     return Center(
       child: Padding(
@@ -22,19 +29,30 @@ class ErrorState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.getErrorColor(brightness),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.getErrorColor(
+                  brightness,
+                ).withValues(alpha: 0.1),
+              ),
+              child: Icon(
+                icon ?? Icons.error_outline_rounded,
+                size: 40,
+                color: AppColors.getErrorColor(brightness),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Oops! Something went wrong',
+              title ?? 'Oops! Something went wrong',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.getTextColor(brightness),
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
@@ -46,23 +64,21 @@ class ErrorState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: onRetry,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.getPrimaryColor(brightness),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Try Again',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+              icon: const Icon(Icons.refresh_rounded, size: 20),
+              label: const Text('Try Again'),
             ),
           ],
         ),

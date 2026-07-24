@@ -66,12 +66,12 @@ class InstructorApiService extends BaseApiService {
     }
   }
 
-  // GET /instructors/:id - Get instructor by ID
-  Future<ApiResponse<Map<String, dynamic>>> getInstructorById(String id) async {
+  // GET /instructors/:instructorId - Get instructor by ID
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorById(String instructorId) async {
     try {
       final response = await sendAuthenticatedRequest(
         method: 'GET',
-        endpoint: '/instructors/$id',
+        endpoint: '/instructors/$instructorId',
       );
       final data = jsonDecode(response.body);
 

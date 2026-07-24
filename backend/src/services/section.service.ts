@@ -151,8 +151,7 @@ export class SectionService {
           const storageService = createStorageService();
           await storageService.deleteFile(lesson.videoPublicId);
         } catch (error) {
-          console.error('Error deleting video from Cloudinary:', error);
-        }
+          }
       }
       if (lesson.progress.length > 0) {
         await prisma.lessonProgress.deleteMany({

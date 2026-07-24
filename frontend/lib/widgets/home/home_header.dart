@@ -8,7 +8,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/search_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/api_service.dart';
-import '../../screens/notifications/notification_screen.dart';
 import '../search/search_suggestions_dropdown.dart';
 
 class HomeHeader extends StatefulWidget {
@@ -322,15 +321,6 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
   }
 
   void _handleNotificationPress() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const NotificationScreen(),
-      ),
-    ).then((_) {
-      // Refresh notification count when coming back from notification screen
-      _refreshNotificationCount();
-    });
     widget.onNotificationPress();
   }
 

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
 import '../../widgets/common/error_state.dart';
+import '../../core/widgets/app_card.dart';
 
 class InstructorsScreen extends StatefulWidget {
   const InstructorsScreen({Key? key}) : super(key: key);
@@ -472,15 +473,9 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
   Widget _buildSkeletonCard(BuildContext context, bool isDark) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
     
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.getBackgroundElementColor(brightness),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.getBackgroundSelectedColor(brightness),
-          width: 1,
-        ),
-      ),
+    return AppCard(
+      padding: EdgeInsets.zero,
+      borderRadius: 12,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -650,22 +645,11 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
     final fontSizeRating = screenWidth > 600 ? 13.0 : 12.0;
     final buttonWidth = screenWidth > 600 ? 120.0 : 100.0;
 
-    return GestureDetector(
-      onTap: () {
-        if (id.isNotEmpty) {
-          _handleInstructorPress(id);
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.getBackgroundElementColor(brightness),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.getBackgroundSelectedColor(brightness),
-            width: 1,
-          ),
-        ),
-        child: Column(
+    return AppCard(
+      onTap: id.isNotEmpty ? () => _handleInstructorPress(id) : null,
+      padding: EdgeInsets.zero,
+      borderRadius: 12,
+      child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Profile Image
@@ -822,9 +806,8 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
                 ),
               ),
             ),
-          ],
+                    ],
         ),
-      ),
     );
   }
 }

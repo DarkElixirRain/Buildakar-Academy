@@ -252,7 +252,7 @@ class _ThumbnailSection extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.school_rounded, size: 10, color: Colors.white),
+                    const Icon(Icons.school_rounded, size: 10, color: Colors.white),
                     const SizedBox(width: 2),
                     Text('Your Class', style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w600, color: Colors.white)),
                   ],

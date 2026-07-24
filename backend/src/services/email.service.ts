@@ -24,6 +24,4 @@ export async function sendVerificationEmail(
 
     });
 
-    console.log(res)
-
-}
+    }

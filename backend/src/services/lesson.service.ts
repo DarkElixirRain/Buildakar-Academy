@@ -143,8 +143,7 @@ export class LessonService {
         const storageService = createStorageService();
         await storageService.deleteFile(lesson.videoPublicId);
       } catch (error) {
-        console.error('Error deleting video from Cloudinary:', error);
-      }
+        }
     }
 
     await prisma.lesson.delete({
@@ -231,7 +230,6 @@ export class LessonService {
         const storageService = createStorageService();
         await storageService.deleteFile(lesson.videoPublicId);
       } catch (error) {
-        console.error('Error deleting existing video:', error);
         // Continue with upload even if delete fails
       }
     }

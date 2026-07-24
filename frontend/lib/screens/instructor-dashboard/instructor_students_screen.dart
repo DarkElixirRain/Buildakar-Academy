@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/instructor_dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
 
@@ -103,9 +104,11 @@ class _InstructorStudentsScreenState extends State<InstructorStudentsScreen> {
                           final avatar = u['avatar'];
                           final progress = (student['progress'] as num?)?.toDouble() ?? 0.0;
 
-                          return Container(
+                          return AppCard(
                             margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                            padding: EdgeInsets.zero,
+                            borderRadius: 12,
+                            backgroundColor: cardColor,
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundImage: avatar != null ? NetworkImage(avatar) : null,

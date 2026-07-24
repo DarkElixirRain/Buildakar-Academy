@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
@@ -30,7 +29,7 @@ class NotificationApiService extends BaseApiService {
   Future<ApiResponse<dynamic>> markNotificationAsRead(String id) async {
     try {
       final response = await sendAuthenticatedRequest(
-        method: 'PUT',
+        method: 'PATCH',
         endpoint: '/notifications/$id/read',
       );
       final data = jsonDecode(response.body);
@@ -47,7 +46,7 @@ class NotificationApiService extends BaseApiService {
   Future<ApiResponse<dynamic>> markAllNotificationsAsRead() async {
     try {
       final response = await sendAuthenticatedRequest(
-        method: 'PUT',
+        method: 'PATCH',
         endpoint: '/notifications/read-all',
       );
       final data = jsonDecode(response.body);

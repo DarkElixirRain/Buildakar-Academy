@@ -1,6 +1,7 @@
 // lib/services/auth_service.dart
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/auth_model.dart';
@@ -96,13 +97,19 @@ class AuthApiService extends BaseApiService {
   Future<AuthResponse> signInWithGoogle() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      GoogleSignInAccount account;
+
+      if (kIsWeb) {
+        throw Exception('Google Sign-In is not supported on web. Please sign in with email and password.');
+      }
+
       await googleSignIn.initialize(
         clientId: AppConfig.googleAndroidClientId,
         serverClientId: AppConfig.googleWebClientId,
       );
+      account = await googleSignIn.authenticate();
 
-      final GoogleSignInAccount account = await googleSignIn.authenticate();
-      final GoogleSignInAuthentication auth = account.authentication;
+      final GoogleSignInAuthentication auth = await account.authentication;
 
       if (auth.idToken == null) {
         throw Exception('Failed to get Google ID token');

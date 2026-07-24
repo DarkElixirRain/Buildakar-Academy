@@ -29,10 +29,8 @@ export function verifyEsewaSignature(data:Record<string,string>,secretKey:string
 try {
       const signedFieldNames = data.signed_field_names;
     if (!signedFieldNames) {
-      console.error('[eSewa] No signed_field_names in response');
       return false;
     }
-    console.log(signedFieldNames)
     const fields = signedFieldNames.split(',')
     const message = fields.map((field)=>`${field}=${data[field] ?? ""}`).join(",")
 
@@ -47,23 +45,16 @@ try {
     const expected = Buffer.from(expectedSignature);
     const received = Buffer.from(receivedSignature ?? '');
   if (expected.length !== received.length) {
-      console.error('[eSewa] Signature length mismatch');
       return false;
     }
  
     const isValid = crypto.timingSafeEqual(expected, received);
  
     if (!isValid) {
-      console.error('[eSewa] Signature mismatch', {
-        expected: expectedSignature,
-        received: receivedSignature,
-        message,
-      });
-    }
+      }
  
     return isValid;
   } catch (error) {
-    console.error('[eSewa] Signature verification error:', error);
     return false;
  
 }
@@ -166,8 +157,6 @@ export async function verifyEsewaPayment(params: {
   url.searchParams.set('total_amount', String(totalAmount));
   url.searchParams.set('transaction_uuid', transactionUuid);
  
-  console.log('[eSewa] Verifying payment:', url.toString());
- 
   const response = await fetch(url.toString(), {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
@@ -180,8 +169,6 @@ export async function verifyEsewaPayment(params: {
   }
  
   const data = await response.json();
- 
-  console.log('[eSewa] Status API response:', data);
  
   return data as EsewaStatusResponse;
 }

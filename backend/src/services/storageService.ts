@@ -92,13 +92,6 @@ export class CloudinaryStorageService implements StorageService {
     const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9_-]/g, '_');
     const publicId = `${sanitizedBaseName}-${Date.now()}`;
 
-    console.log('[Cloudinary] Uploading video:', {
-      fileName,
-      folder,
-      publicId,
-      bufferSize: buffer.length,
-    });
-
     const attempts = 3;
     let lastError: unknown;
 
@@ -116,7 +109,6 @@ export class CloudinaryStorageService implements StorageService {
             },
             (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
               if (error) {
-                console.error(`[Cloudinary] Upload error (attempt ${attempt}/${attempts}):`, error);
                 return reject(error);
               }
               if (!result) {
@@ -128,13 +120,6 @@ export class CloudinaryStorageService implements StorageService {
           );
 
           streamifier.createReadStream(buffer).pipe(uploadStream);
-        });
-
-        console.log('[Cloudinary] Upload successful:', {
-          publicId: result.public_id,
-          url: result.secure_url,
-          bytes: result.bytes,
-          duration: result.duration,
         });
 
         const duration = result.duration
@@ -154,7 +139,6 @@ export class CloudinaryStorageService implements StorageService {
 
         if (attempt < attempts && this.isRetryableCloudinaryError(error)) {
           const delayMs = attempt * 2000;
-          console.warn(`[Cloudinary] Retrying upload in ${delayMs}ms due to:`, error);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;
         }
@@ -167,14 +151,10 @@ export class CloudinaryStorageService implements StorageService {
   }
 
   async deleteFile(fileId: string): Promise<void> {
-    console.log('[Cloudinary] Deleting file:', fileId);
-    
     const result = await cloudinary.uploader.destroy(fileId, {
       resource_type: 'video',
       invalidate: true,
     });
-
-    console.log('[Cloudinary] Delete result:', result);
 
     if (result.result !== 'ok' && result.result !== 'not found') {
       throw new Error(`Failed to delete video from Cloudinary: ${result.result}`);
@@ -182,8 +162,6 @@ export class CloudinaryStorageService implements StorageService {
   }
 
   async getSignedUrl(fileId: string, expiresIn: number = 3600): Promise<string> {
-    console.log('[Cloudinary] Generating signed URL for:', fileId);
-    
     const url = cloudinary.url(fileId, {
       resource_type: 'video',
       type: 'upload',

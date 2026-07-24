@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/instructor_dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../instructor/course_creation_screen.dart';
@@ -223,13 +224,13 @@ class _DashboardMenuSection extends StatelessWidget {
     final cardColor = AppColors.getBackgroundElementColor(brightness);
 
     final items = [
-      _MenuItem(icon: Icons.video_library, label: 'My Courses', subtitle: 'Manage your courses', route: 'courses', color: Colors.blue),
-      _MenuItem(icon: Icons.people, label: 'Students', subtitle: 'View enrolled students', route: 'students', color: Colors.orange),
-      _MenuItem(icon: Icons.analytics, label: 'Analytics', subtitle: 'Course performance data', route: 'analytics', color: Colors.purple),
-      _MenuItem(icon: Icons.account_balance_wallet, label: 'Earnings', subtitle: 'Revenue and payouts', route: 'earnings', color: Colors.teal),
-      _MenuItem(icon: Icons.videocam, label: 'Live Classes', subtitle: 'Manage live sessions', route: 'live', color: Colors.red),
-      _MenuItem(icon: Icons.rate_review, label: 'Reviews', subtitle: 'Student feedback', route: 'reviews', color: Colors.amber),
-      _MenuItem(icon: Icons.person, label: 'Profile', subtitle: 'Update your profile', route: 'profile', color: Colors.green),
+      const _MenuItem(icon: Icons.video_library, label: 'My Courses', subtitle: 'Manage your courses', route: 'courses', color: Colors.blue),
+      const _MenuItem(icon: Icons.people, label: 'Students', subtitle: 'View enrolled students', route: 'students', color: Colors.orange),
+      const _MenuItem(icon: Icons.analytics, label: 'Analytics', subtitle: 'Course performance data', route: 'analytics', color: Colors.purple),
+      const _MenuItem(icon: Icons.account_balance_wallet, label: 'Earnings', subtitle: 'Revenue and payouts', route: 'earnings', color: Colors.teal),
+      const _MenuItem(icon: Icons.videocam, label: 'Live Classes', subtitle: 'Manage live sessions', route: 'live', color: Colors.red),
+      const _MenuItem(icon: Icons.rate_review, label: 'Reviews', subtitle: 'Student feedback', route: 'reviews', color: Colors.amber),
+      const _MenuItem(icon: Icons.person, label: 'Profile', subtitle: 'Update your profile', route: 'profile', color: Colors.green),
     ];
 
     return Column(
@@ -237,9 +238,11 @@ class _DashboardMenuSection extends StatelessWidget {
       children: [
         Text('Dashboard Sections', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
         const SizedBox(height: 12),
-        ...items.map((item) => Container(
+        ...items.map((item) => AppCard(
           margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+          padding: EdgeInsets.zero,
+          borderRadius: 12,
+          backgroundColor: cardColor,
           child: ListTile(
             leading: Container(
               padding: const EdgeInsets.all(8),

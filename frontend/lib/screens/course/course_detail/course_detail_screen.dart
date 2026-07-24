@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 
 import '../../../models/course_model.dart';
 import '../../../constants/colors.dart';
+import '../../../core/widgets/app_card.dart';
 
 enum CourseTab { overview, curriculum, reviews }
 
@@ -1131,21 +1132,10 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
   }
 
   Widget _buildCard({required Widget child, EdgeInsetsGeometry? padding}) {
-    return Container(
+    return AppCard(
       padding: padding ??
           EdgeInsets.all(_isSmallScreen ? 12 : (_isMediumScreen ? 16 : 20)),
-      decoration: BoxDecoration(
-        color: _backgroundElementColor,
-        borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: _textSecondaryColor.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: _textSecondaryColor.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: _cardRadius,
       child: child,
     );
   }

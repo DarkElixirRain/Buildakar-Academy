@@ -39,7 +39,7 @@ class _ExploreContentState extends State<ExploreScreen>
 
   String _searchQuery = '';
   String _selectedCategoryId = 'all';
-  String _sort = 'Most Popular';
+  String _sort = 'Newest';
   Set<String> _levelFilters = {};
   RangeValues _priceRange = const RangeValues(0, 200);
 

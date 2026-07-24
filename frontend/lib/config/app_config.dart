@@ -7,7 +7,7 @@ class AppConfig {
   // --- API base URL ---
   static String get _host {
     if (kIsWeb) {
-      return '192.168.1.10';
+      return 'localhost';
     }
     if (Platform.isAndroid) {
       return '192.168.1.10';

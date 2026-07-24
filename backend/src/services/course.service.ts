@@ -400,9 +400,7 @@ export class CourseService {
         title: '✅ Course Approved',
         body: `Your course "${course.title}" has been approved. You can now add sections and lessons.`,
         data: { courseId: course.id, type: 'COURSE_APPROVED' },
-      }).catch((err) =>
-        console.error("⚠️ [Notification] Course approval error:", err)
-      );
+      }).catch(() => {});
     }
 
     // UNDER_REVIEW → PUBLISHED: admin approved
@@ -411,14 +409,10 @@ export class CourseService {
       newStatus === CourseStatus.PUBLISHED
     ) {
       notifyCoursePublished(course.instructorId, course.title, course.id)
-        .catch((err) =>
-          console.error("⚠️ [Notification] Course published error:", err)
-        );
+        .catch(() => {});
 
       notifyCourseApproved(course.instructorId, course.title, course.id, true)
-        .catch((err) =>
-          console.error("⚠️ [Notification] Course approved error:", err)
-        );
+        .catch(() => {});
 
       const enrolledUsers = await prisma.enrollment.findMany({
         where: { courseId: course.id },
@@ -434,9 +428,7 @@ export class CourseService {
             body: `"${course.title}" has been published and is ready to learn.`,
             data: { courseId: course.id, type: "SYSTEM" },
           }
-        ).catch((err) =>
-          console.error("⚠️ [Notification] Students bulk notify error:", err)
-        );
+        ).catch(() => {});
       }
     }
 
@@ -446,9 +438,7 @@ export class CourseService {
       newStatus === CourseStatus.DRAFT
     ) {
       notifyCourseApproved(course.instructorId, course.title, course.id, false)
-        .catch((err) =>
-          console.error("⚠️ [Notification] Course rejected error:", err)
-        );
+        .catch(() => {});
     }
 
     // PUBLISHED → DRAFT: admin unpublished
@@ -462,9 +452,7 @@ export class CourseService {
         title: "⚠️ Course Unpublished",
         body: `Your course "${course.title}" has been unpublished by an admin.`,
         data: { courseId: course.id, type: "SYSTEM" },
-      }).catch((err) =>
-        console.error("⚠️ [Notification] Course unpublished error:", err)
-      );
+      }).catch(() => {});
     }
 
     // ─────────────────────────────────────────────────────────────

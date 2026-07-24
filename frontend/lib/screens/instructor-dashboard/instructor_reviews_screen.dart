@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/instructor_course_provider.dart';
 import '../../providers/theme_provider.dart';
 
@@ -68,10 +69,11 @@ class _InstructorReviewsScreenState extends State<InstructorReviewsScreen> {
               final comment = r['comment'] ?? '';
               final date = r['createdAt'] ?? r['date'] ?? '';
 
-              return Container(
+              return AppCard(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                borderRadius: 12,
+                backgroundColor: cardColor,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

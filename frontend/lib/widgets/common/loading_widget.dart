@@ -4,16 +4,12 @@ class LoadingWidget extends StatelessWidget {
   final String? message;
   final Color? color;
 
-  const LoadingWidget({
-    Key? key,
-    this.message,
-    this.color,
-  }) : super(key: key);
+  const LoadingWidget({Key? key, this.message, this.color}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

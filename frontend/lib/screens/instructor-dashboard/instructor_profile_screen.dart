@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/instructor_dashboard_provider.dart';
@@ -65,8 +66,10 @@ class InstructorProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                  AppCard(
+                    padding: EdgeInsets.zero,
+                    borderRadius: 12,
+                    backgroundColor: cardColor,
                     child: Column(
                       children: [
                         _ProfileTile(icon: Icons.school, label: 'Total Courses', value: '${provider.totalCourses}', textColor: textColor, textSecondaryColor: textSecondaryColor),
@@ -82,8 +85,10 @@ class InstructorProfileScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   Text('Account Settings', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
                   const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                  AppCard(
+                    padding: EdgeInsets.zero,
+                    borderRadius: 12,
+                    backgroundColor: cardColor,
                     child: Column(
                       children: [
                         ListTile(

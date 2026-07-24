@@ -258,7 +258,7 @@ class _InstructorLiveClassesScreenState extends State<InstructorLiveClassesScree
       content: Text('Cancel "${lc.title}"?'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
-        TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes, Cancel'), style: TextButton.styleFrom(foregroundColor: Colors.red)),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Yes, Cancel')),
       ],
     ));
     if (confirm == true) {

@@ -386,12 +386,8 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
       return _buildSkeletonLoading(isDark, cardWidth, cardHeight, brightness);
     }
 
-    if (_error != null) {
-      return _buildErrorState(isDark, brightness);
-    }
-
-    if (_courses.isEmpty) {
-      return _buildEmptyState(isDark, brightness);
+    if (_error != null || _courses.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return Column(

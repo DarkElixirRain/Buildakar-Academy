@@ -53,9 +53,7 @@ export class EnrollmentService {
 
     //Notification: Enroll successfully
         notifyEnrollment(userId, course.title, courseId)
-      .catch((err) =>
-        console.error("⚠️ [Notification] Enrollment notify error:", err)
-      );
+        .catch(() => {})
    
  
 

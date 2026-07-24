@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/instructor_dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
 
@@ -99,12 +100,13 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Container(
+                      child: AppCard(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                        borderRadius: 12,
+                        backgroundColor: cardColor,
                         child: Column(
                           children: [
-                            Icon(Icons.hourglass_empty, color: Colors.orange, size: 24),
+                            const Icon(Icons.hourglass_empty, color: Colors.orange, size: 24),
                             const SizedBox(height: 8),
                             Text('रु ${pendingPayout.toStringAsFixed(0)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
                             Text('Pending', style: GoogleFonts.inter(fontSize: 12, color: textSecondaryColor)),
@@ -151,10 +153,11 @@ class _InstructorEarningsScreenState extends State<InstructorEarningsScreen> {
                     final desc = txn['description'] ?? 'Course sale';
                     final date = txn['date'] ?? '';
                     final isCredit = (txn['type'] as String?)?.toLowerCase() == 'credit';
-                    return Container(
+                    return AppCard(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                      borderRadius: 12,
+                      backgroundColor: cardColor,
                       child: Row(
                         children: [
                           Container(

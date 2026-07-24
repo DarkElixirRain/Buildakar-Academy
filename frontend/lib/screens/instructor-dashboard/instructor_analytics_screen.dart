@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/instructor_dashboard_provider.dart';
 import '../../providers/theme_provider.dart';
 
@@ -77,9 +78,10 @@ class _InstructorAnalyticsScreenState extends State<InstructorAnalyticsScreen> {
                 const SizedBox(height: 24),
                 Text('Course Insights', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
                 const SizedBox(height: 12),
-                Container(
+                AppCard(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+                  borderRadius: 12,
+                  backgroundColor: cardColor,
                   child: Column(
                     children: [
                       _InsightRow(label: 'Top Section', value: a?['topPerformingSection'] ?? 'N/A', textColor: textColor, textSecondaryColor: textSecondaryColor),
@@ -108,9 +110,10 @@ class _AnalyticCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
+      child: AppCard(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+        borderRadius: 12,
+        backgroundColor: cardColor,
         child: Column(
           children: [
             Icon(icon, color: color, size: 28),

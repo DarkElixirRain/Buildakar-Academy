@@ -17,11 +17,7 @@ class LoadingShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer(
-      duration: duration,
-      curve: curve,
-      child: child,
-    );
+    return Shimmer(duration: duration, curve: curve, child: child);
   }
 }
 
@@ -49,17 +45,13 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    )..repeat();
-    
-    _animation = Tween<double>(begin: -0.5, end: 1.5).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: widget.curve,
-      ),
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat();
+
+    _animation = Tween<double>(
+      begin: -0.5,
+      end: 1.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
   }
 
   @override
@@ -70,10 +62,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return ShimmerWidget(
-      animation: _animation,
-      child: widget.child,
-    );
+    return ShimmerWidget(animation: _animation, child: widget.child);
   }
 }
 
@@ -82,11 +71,8 @@ class ShimmerWidget extends StatelessWidget {
   final Animation<double> animation;
   final Widget child;
 
-  const ShimmerWidget({
-    Key? key,
-    required this.animation,
-    required this.child,
-  }) : super(key: key);
+  const ShimmerWidget({Key? key, required this.animation, required this.child})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -95,18 +81,14 @@ class ShimmerWidget extends StatelessWidget {
       builder: (context, _) {
         final brightness = MediaQuery.of(context).platformBrightness;
         final isDark = brightness == Brightness.dark;
-        
+
         final baseColor = isDark ? Colors.grey[850]! : Colors.grey[300]!;
         final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
-        
+
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
+              colors: [baseColor, highlightColor, baseColor],
               stops: const [0.0, 0.5, 1.0],
               begin: Alignment(-1.0 + animation.value * 2, 0.0),
               end: Alignment(1.0 + animation.value * 2, 0.0),
@@ -139,7 +121,7 @@ class ShimmerPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = MediaQuery.of(context).platformBrightness;
     final dark = isDark ? true : brightness == Brightness.dark;
-    
+
     return LoadingShimmer(
       child: Container(
         width: width,
@@ -157,10 +139,7 @@ class ShimmerPlaceholder extends StatelessWidget {
 class CourseCardSkeleton extends StatelessWidget {
   final bool isDark;
 
-  const CourseCardSkeleton({
-    Key? key,
-    required this.isDark,
-  }) : super(key: key);
+  const CourseCardSkeleton({Key? key, required this.isDark}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +175,9 @@ class CourseCardSkeleton extends StatelessWidget {
                         width: 60,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                          color: isDark
+                              ? const Color(0xFF3D4045)
+                              : const Color(0xFFD1D5DB),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -205,7 +186,9 @@ class CourseCardSkeleton extends StatelessWidget {
                         height: 14,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                          color: isDark
+                              ? const Color(0xFF3D4045)
+                              : const Color(0xFFD1D5DB),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -214,7 +197,9 @@ class CourseCardSkeleton extends StatelessWidget {
                         height: 12,
                         width: 100,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                          color: isDark
+                              ? const Color(0xFF3D4045)
+                              : const Color(0xFFD1D5DB),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -229,7 +214,9 @@ class CourseCardSkeleton extends StatelessWidget {
                             width: 14,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                              color: isDark
+                                  ? const Color(0xFF3D4045)
+                                  : const Color(0xFFD1D5DB),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -238,7 +225,9 @@ class CourseCardSkeleton extends StatelessWidget {
                             width: 30,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                              color: isDark
+                                  ? const Color(0xFF3D4045)
+                                  : const Color(0xFFD1D5DB),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -248,7 +237,9 @@ class CourseCardSkeleton extends StatelessWidget {
                         width: 50,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                          color: isDark
+                              ? const Color(0xFF3D4045)
+                              : const Color(0xFFD1D5DB),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -268,10 +259,8 @@ class CourseCardSkeleton extends StatelessWidget {
 class CategoryCardSkeleton extends StatelessWidget {
   final bool isDark;
 
-  const CategoryCardSkeleton({
-    Key? key,
-    required this.isDark,
-  }) : super(key: key);
+  const CategoryCardSkeleton({Key? key, required this.isDark})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +293,9 @@ class CategoryCardSkeleton extends StatelessWidget {
                   height: 12,
                   width: 80,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                    color: isDark
+                        ? const Color(0xFF3D4045)
+                        : const Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -313,7 +304,9 @@ class CategoryCardSkeleton extends StatelessWidget {
                   height: 10,
                   width: 60,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                    color: isDark
+                        ? const Color(0xFF3D4045)
+                        : const Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -330,10 +323,8 @@ class CategoryCardSkeleton extends StatelessWidget {
 class InstructorCardSkeleton extends StatelessWidget {
   final bool isDark;
 
-  const InstructorCardSkeleton({
-    Key? key,
-    required this.isDark,
-  }) : super(key: key);
+  const InstructorCardSkeleton({Key? key, required this.isDark})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {

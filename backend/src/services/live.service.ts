@@ -105,8 +105,7 @@ export async function createLiveClass(data: CreateLiveClassData) {
         liveClass.scheduledAt
       );
     } catch (error) {
-      console.error("Failed to send live class notifications:", error);
-    }
+      }
   }
 
   return liveClass;
@@ -550,8 +549,7 @@ export async function updateLiveClass(
         updatedLiveClass.courseId
       );
     } catch (error) {
-      console.error("Failed to notify students:", error);
-    }
+      }
   }
 
   return updatedLiveClass;
@@ -595,11 +593,7 @@ export async function deleteLiveClass(
         updatedLiveClass.courseId
       );
     } catch (error) {
-      console.error(
-        "Failed to send live class cancellation notifications:",
-        error
-      );
-    }
+      }
   }
 
   return updatedLiveClass;
@@ -652,8 +646,7 @@ export async function startLiveClass(
       updatedLiveClass.id,
       updatedLiveClass.courseId
     ).catch((error: any) => {
-      console.error("Failed to send live class start notifications:", error);
-    });
+      });
   }
 
   return updatedLiveClass;
@@ -821,8 +814,6 @@ export async function joinLiveClass(
   id: string,
   userId: string
 ) {
-  console.log(`🔵 joinLiveClass: Class ID: ${id}, User ID: ${userId}`);
-
   const liveClass = await prisma.liveClass.findUnique({
     where: { id },
     include: {
@@ -833,8 +824,6 @@ export async function joinLiveClass(
   if (!liveClass) {
     throw new Error("Live class not found");
   }
-
-  console.log(`📋 Found class: ${liveClass.title}, Status: ${liveClass.status}`);
 
   if (liveClass.status !== LiveClassStatus.LIVE) {
     throw new Error("This class is not currently live.");
@@ -857,16 +846,13 @@ export async function joinLiveClass(
     throw new Error("User not found");
   }
 
-  console.log(`👤 User: ${user.firstName} ${user.lastName}, Role: ${user.role}`);
-
   // Check if user is the instructor of this class
   const isInstructor = liveClass.instructorId === userId;
   const isAdmin = user.role === 'ADMIN';
 
   // If user is instructor or admin, allow them to join without enrollment check
   if (isInstructor || isAdmin) {
-    console.log(`✅ User is ${isInstructor ? 'the instructor' : 'an admin'} of this class, skipping enrollment check`);
-  } else if (liveClass.courseId) {
+    } else if (liveClass.courseId) {
     // For students, check if they are enrolled (only if class is tied to a course)
     const enrollment = await prisma.enrollment.findUnique({
       where: {
@@ -878,13 +864,10 @@ export async function joinLiveClass(
     });
 
     if (!enrollment) {
-      console.error(`❌ User ${userId} is not enrolled in course ${liveClass.courseId}`);
       throw new Error("You are not enrolled in this course.");
     }
-    console.log(`✅ User is enrolled in this course`);
-  } else {
-    console.log(`✅ No course associated with this class, allowing direct join`);
-  }
+    } else {
+    }
 
   // Get Jitsi / JAAS configuration
   const jaasAppId = process.env.JAAS_APP_ID;
@@ -895,9 +878,6 @@ export async function joinLiveClass(
   // For JAAS mobile SDK, use base 8x8.vc URL
   // Room name in JWT already includes the appId prefix: <appId>/<roomName>
   const jitsiServerUrl = 'https://8x8.vc';
-
-  console.log(`🌐 Jitsi Server: ${jitsiServerUrl}`);
-  console.log(`🔑 JAAS configured: ${jaasAppId ? 'Yes' : 'No'}`);
 
   let token = null;
   let tokenError = null;
@@ -942,9 +922,7 @@ export async function joinLiveClass(
         algorithm: 'RS256',
         header: { kid: jaasKid, typ: 'JWT' },
       });
-      console.log('✅ JAAS JWT token generated successfully');
-    } catch (error) {
-      console.error('❌ Failed to generate JAAS JWT token:', error);
+      } catch (error) {
       throw new Error('Failed to generate authentication token');
     }
   } else if (jitsiJwtSecret && jitsiJwtSecret.length > 0) {
@@ -974,14 +952,11 @@ export async function joinLiveClass(
       };
 
       token = jwt.sign(payload, jitsiJwtSecret, { algorithm: 'HS256' });
-      console.log('✅ Jitsi JWT token generated (HS256)');
-    } catch (error) {
-      console.error('❌ Failed to generate Jitsi JWT token:', error);
+      } catch (error) {
       throw new Error('Failed to generate authentication token');
     }
   } else {
-    console.log('ℹ️ No JAAS or Jitsi credentials configured, connecting without token');
-  }
+    }
 
 
   const isModerator = user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || isInstructor;
@@ -996,14 +971,6 @@ export async function joinLiveClass(
     liveClassId: liveClass.id,
     title: liveClass.title,
   };
-
-  console.log('✅ Returning Jitsi room data:', {
-    room: responseData.room,
-    serverUrl: responseData.serverUrl,
-    tokenPresent: !!responseData.token,
-    isModerator: responseData.isModerator,
-    displayName: responseData.displayName,
-  });
 
   return responseData;
 }

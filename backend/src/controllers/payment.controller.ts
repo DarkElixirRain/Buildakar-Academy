@@ -54,7 +54,6 @@ export class PaymentController {
       const { data } = req.query;
 
       if (!data || typeof data !== 'string') {
-        console.error(' [Payment] Success callback missing data param');
         return res.redirect(
           `${frontendUrl}/payment/failure?reason=missing_data`
         );
@@ -62,16 +61,12 @@ export class PaymentController {
 
       const result = await paymentService.verifyAndCompletePayment(data);
 
-      console.log(`[Payment] Redirecting to success: courseId=${result.courseId}`);
-
       // Redirect WebView to frontend success screen
       // Expo's onNavigationStateChange detects this URL and closes the WebView
       return res.redirect(
         `${frontendUrl}/payment/success?courseId=${result.courseId}&paymentId=${result.paymentId}`
       );
     } catch (error: any) {
-      console.error(' [Payment] Success verification failed:', error.message);
-
       const reason = encodeURIComponent(error.message || 'verification_failed');
       return res.redirect(
         `${frontendUrl}/payment/failure?reason=${reason}`
@@ -95,8 +90,6 @@ export class PaymentController {
         `${frontendUrl}/payment/failure?reason=payment_cancelled`
       );
     } catch (error: any) {
-      console.error('[Payment] Failure handler error:', error.message);
-
       return res.redirect(
         `${frontendUrl}/payment/failure?reason=unknown`
       );

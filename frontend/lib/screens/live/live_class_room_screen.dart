@@ -341,7 +341,7 @@ class _InMeetingBackdrop extends StatelessWidget {
               Tooltip(
                 message: 'Mute microphone',
                 child: IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.mic_none,
                     color: Colors.white24,
                     size: 28,
@@ -354,7 +354,7 @@ class _InMeetingBackdrop extends StatelessWidget {
               Tooltip(
                 message: 'Turn off video',
                 child: IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.videocam,
                     color: Colors.white24,
                     size: 28,
@@ -367,7 +367,7 @@ class _InMeetingBackdrop extends StatelessWidget {
               Tooltip(
                 message: 'Switch camera',
                 child: IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.cameraswitch,
                     color: Colors.white24,
                     size: 28,

@@ -52,7 +52,6 @@ export const roleMiddleware = (allowedRoles: Role[]) => {
       // User has required role, proceed to next middleware/controller
       next();
     } catch (error) {
-      console.error('Role middleware error:', error);
       res.status(500).json({
         success: false,
         message: 'An error occurred while checking permissions',
@@ -187,7 +186,6 @@ export const isOwnerOrAdmin = (getResourceUserId: (req: Request) => string | Pro
         message: 'You do not have permission to access this resource',
       });
     } catch (error) {
-      console.error('Owner/Admin middleware error:', error);
       res.status(500).json({
         success: false,
         message: 'An error occurred while checking permissions',

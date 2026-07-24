@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/instructor_course_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/instructor_dashboard_provider.dart';
@@ -350,15 +351,15 @@ class _CourseListTile extends StatelessWidget {
                 itemBuilder: (context) => [
                   const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, size: 20), title: Text('Edit'), dense: true, contentPadding: EdgeInsets.zero)),
                   if (course.status == 'PUBLISHED')
-                    PopupMenuItem(value: 'publish', child: ListTile(
+                    const PopupMenuItem(value: 'publish', child: ListTile(
                       leading: Icon(Icons.radio_button_unchecked, size: 20, color: Colors.orange),
-                      title: const Text('Unpublish'),
+                      title: Text('Unpublish'),
                       dense: true, contentPadding: EdgeInsets.zero,
                     ))
                   else if (course.status == 'DRAFT')
-                    PopupMenuItem(value: 'publish', child: ListTile(
+                    const PopupMenuItem(value: 'publish', child: ListTile(
                       leading: Icon(Icons.send_rounded, size: 20, color: Colors.blue),
-                      title: const Text('Submit for Review'),
+                      title: Text('Submit for Review'),
                       dense: true, contentPadding: EdgeInsets.zero,
                     )),
                   const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, size: 20, color: Colors.red), title: Text('Delete', style: TextStyle(color: Colors.red)), dense: true, contentPadding: EdgeInsets.zero)),
@@ -421,44 +422,44 @@ class _CourseGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppCard(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  image: course.thumbnail.isNotEmpty ? DecorationImage(image: NetworkImage(course.thumbnail), fit: BoxFit.cover) : null,
+      padding: EdgeInsets.zero,
+      borderRadius: 12,
+      backgroundColor: cardColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                color: Colors.grey.withValues(alpha: 0.1),
+                image: course.thumbnail.isNotEmpty ? DecorationImage(image: NetworkImage(course.thumbnail), fit: BoxFit.cover) : null,
+              ),
+              child: course.thumbnail.isEmpty
+                  ? Center(child: Icon(Icons.video_library, size: 40, color: textSecondaryColor.withValues(alpha: 0.3)))
+                  : null,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(course.title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textColor, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _StatusBadge(label: statusLabel(course.status), color: statusColor(course.status)),
+                    const Spacer(),
+                    Text('${course.studentsCount}', style: GoogleFonts.inter(fontSize: 11, color: textSecondaryColor)),
+                  ],
                 ),
-                child: course.thumbnail.isEmpty
-                    ? Center(child: Icon(Icons.video_library, size: 40, color: textSecondaryColor.withValues(alpha: 0.3)))
-                    : null,
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(course.title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textColor, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _StatusBadge(label: statusLabel(course.status), color: statusColor(course.status)),
-                      const Spacer(),
-                      Text('${course.studentsCount}', style: GoogleFonts.inter(fontSize: 11, color: textSecondaryColor)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

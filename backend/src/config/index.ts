@@ -17,11 +17,9 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('\x1b[31m❌ Invalid environment variables:\x1b[0m');
   const errors = parsed.error.flatten().fieldErrors;
   for (const [key, msgs] of Object.entries(errors)) {
-    console.error(`  \x1b[31m• ${key}: ${msgs?.join(', ')}\x1b[0m`);
-  }
+    }
   process.exit(1);
 }
 

@@ -7,6 +7,8 @@ import 'package:buildacad/services/api_service.dart';
 
 import '../../../models/course_model.dart';
 import '../../../constants/colors.dart';
+import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 
 // ============================================================================
 // Q&A and Notes have no backend yet, so their models are defined locally.
@@ -802,23 +804,14 @@ class _CourseLearningPageState extends State<CourseLearningPage>
                   style: TextStyle(color: _textSecondaryColor, fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showCelebration = false;
-                        _tabController.animateTo(3);
-                      });
-                    },
-                    child: const Text('Leave a review', style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
+                AppButton(
+                  title: 'Leave a review',
+                  onPressed: () {
+                    setState(() {
+                      _showCelebration = false;
+                      _tabController.animateTo(3);
+                    });
+                  },
                 ),
                 TextButton(
                   onPressed: () => setState(() => _showCelebration = false),
@@ -1050,14 +1043,10 @@ class _CourseLearningPageState extends State<CourseLearningPage>
 
     return StatefulBuilder(
       builder: (context, setLocalState) {
-        return Container(
+        return AppCard(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: _backgroundElementColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _textSecondaryColor.withValues(alpha: 0.06)),
-          ),
+          borderRadius: 16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1379,13 +1368,9 @@ class _CourseLearningPageState extends State<CourseLearningPage>
   }
 
   Widget _buildNoteCard(LearningNote note) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _backgroundElementColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _textSecondaryColor.withValues(alpha: 0.06)),
-      ),
+      borderRadius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1439,13 +1424,9 @@ class _CourseLearningPageState extends State<CourseLearningPage>
       padding: EdgeInsets.all(_contentPadding),
       children: [
         // Review Form
-        Container(
+        AppCard(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _backgroundElementColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _textSecondaryColor.withValues(alpha: 0.06)),
-          ),
+          borderRadius: 16,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1491,35 +1472,10 @@ class _CourseLearningPageState extends State<CourseLearningPage>
               ),
               const SizedBox(height: 10),
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: _isSubmittingReview ? null : _submitReview,
-                  child: _isSubmittingReview
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'Submit Review',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                ),
+              AppButton(
+                title: 'Submit Review',
+                onPressed: _isSubmittingReview ? null : _submitReview,
+                isLoading: _isSubmittingReview,
               ),
               if (_reviewError != null) ...[
                 const SizedBox(height: 8),
@@ -1602,13 +1558,9 @@ class _CourseLearningPageState extends State<CourseLearningPage>
   }
 
   Widget _buildResourceCard(StudyMaterial m) {
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _backgroundElementColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _textSecondaryColor.withValues(alpha: 0.06)),
-      ),
+      borderRadius: 14,
       child: Row(
         children: [
           Container(

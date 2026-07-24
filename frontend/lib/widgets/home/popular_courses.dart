@@ -415,7 +415,7 @@ class _PopularCoursesState extends State<PopularCourses> {
     }
 
     if (_error != null || _courses.isEmpty) {
-      return _buildErrorState(isDark, brightness);
+      return const SizedBox.shrink();
     }
 
     return Column(

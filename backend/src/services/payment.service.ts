@@ -129,12 +129,8 @@ export class PaymentService {
         return enroll;
       });
 
-      console.log(`[Payment] Free enrollment: user=${userId} course=${courseId}`);
-
       notifyEnrollment(userId, course.title, courseId)
-        .catch((err) =>
-          console.error('[Notification] Free enrollment notify failed:', err)
-        );
+        .catch(() => {})
 
       return {
         isFree: true,
@@ -161,8 +157,6 @@ export class PaymentService {
         } satisfies EsewaMetadata,
       },
     });
-
-    console.log(`📦 [Payment] Created PENDING payment: ${payment.id}`);
 
     // 5. Build signed eSewa payload
     const merchantCode = getEnvOrThrow('ESEWA_MERCHANT_CODE');
@@ -212,8 +206,7 @@ export class PaymentService {
     let decoded: Record<string, string>;
     try {
       decoded = decodeEsewaResponse(encodedData);
-      console.log('📦 [Payment] Decoded eSewa response:', decoded);
-    } catch {
+      } catch {
       throw createError('Invalid payment response from eSewa', 400);
     }
 
@@ -246,8 +239,6 @@ export class PaymentService {
 
     // 4. Idempotency — already processed
     if (payment.status === PaymentStatus.SUCCEEDED) {
-      console.log(`ℹ️ [Payment] Already succeeded: ${payment.id}`);
-
       const enrollment = await prisma.enrollment.findUniqueOrThrow({
         where: {
           userId_courseId: {
@@ -275,8 +266,6 @@ export class PaymentService {
         transactionUuid,
       });
     } catch (error) {
-      console.error('❌ [Payment] eSewa status API error:', error);
-
       await prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -288,9 +277,7 @@ export class PaymentService {
 
       // ── NOTIFICATION: payment failed (API unreachable) ─────────
      notifyPaymentFailed(payment.userId, payment.course.title, payment.courseId)
-        .catch((err) =>
-          console.error('[Notification] Payment failed notify error:', err)
-        );
+        .catch(() => {})
 
       throw createError('Payment verification failed. Please contact support.', 400);
     }
@@ -307,9 +294,7 @@ export class PaymentService {
 
          // ── NOTIFICATION: payment not completed ────────────────────
       notifyPaymentFailed(payment.userId, payment.course.title, payment.courseId)
-        .catch((err) =>
-          console.error('⚠️ [Notification] Payment failed notify error:', err)
-        );
+        .catch(() => {})
 
       throw createError(`Payment not completed. Status: ${esewaStatus.status}`, 400);
     }
@@ -369,9 +354,6 @@ export class PaymentService {
       return { enrollment: enroll };
     });
 
-    console.log(
-      `[Payment] SUCCEEDED: payment=${payment.id} user=${payment.userId} course=${payment.courseId}`
-    );
     // ── NOTIFICATIONS: payment success + enrollment ─────────────
     // Both fire after transaction commits — non-blocking
   notifyPaymentSuccess(
@@ -381,14 +363,10 @@ export class PaymentService {
         payment.amount,
         payment.currency
       )
-      .catch((err) =>
-        console.error('[Notification] Payment success notify error:', err)
-      );
+        .catch(() => {})
 
     notifyEnrollment(payment.userId, payment.course.title, payment.courseId)
-      .catch((err) =>
-        console.error('[Notification] Enrollment notify error:', err)
-      );
+        .catch(() => {})
 
     return {
       success: true,
@@ -435,8 +413,7 @@ export class PaymentService {
         },
       });
 
-      console.log(` [Payment] Marked FAILED: ${payment.id}`);
-       // ── NOTIFICATION: payment cancelled ────────────────────────
+      // ── NOTIFICATION: payment cancelled ────────────────────────
 
        const course = await prisma.course.findFirst({where:{id:payment.courseId }})
 
@@ -448,12 +425,9 @@ export class PaymentService {
           course?.title,
           payment.courseId
         )
-        .catch((err) =>
-          console.error('⚠️ [Notification] Payment failure notify error:', err)
-        );
+        .catch(() => {})
     } catch (error) {
-      console.error('⚠️ [Payment] Error in handlePaymentFailure:', error);
-    }
+      }
   }
 
   /**

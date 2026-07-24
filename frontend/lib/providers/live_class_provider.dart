@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import '../models/live_class_model.dart';
-import '../models/auth_model.dart';
 import '../services/api_service.dart';
 import '../providers/auth_provider.dart';
 

@@ -47,7 +47,6 @@ export const checkCourseOwnership = async (
 
     next();
   } catch (error) {
-    console.error('Ownership check error:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking course ownership',
@@ -105,7 +104,6 @@ export const checkCourseOwnershipForSection = async (
 
     next();
   } catch (error) {
-    console.error('Ownership check error:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking course ownership',
@@ -163,7 +161,6 @@ export const checkSectionOwnership = async (
 
     next();
   } catch (error) {
-    console.error('Section ownership check error:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking section ownership',
@@ -221,7 +218,6 @@ export const checkCourseOwnershipForLesson = async (
 
     next();
   } catch (error) {
-    console.error('Course ownership for lesson check error:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking course ownership',
@@ -290,7 +286,6 @@ export const checkLessonOwnership = async (
 
     next();
   } catch (error) {
-    console.error('Lesson ownership check error:', error);
     return res.status(500).json({
       success: false,
       message: 'Error checking lesson ownership',

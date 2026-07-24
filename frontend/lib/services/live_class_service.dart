@@ -1,7 +1,5 @@
 // lib/services/live_class_service.dart
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../config/app_config.dart';
 import '../models/live_class_model.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';

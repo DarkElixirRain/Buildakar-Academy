@@ -429,7 +429,6 @@ export const instructorService = {
       });
       return !!follow;
     } catch (error) {
-      console.error('Error checking follow status:', error);
       return false;
     }
   },

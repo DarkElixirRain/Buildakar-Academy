@@ -106,9 +106,7 @@ const enrollment = await prisma.enrollment.findUnique({
       courseId,
       rating
     )
-    .catch((err) =>
-      console.error('⚠️ [Notification] New review notify error:', err)
-    );
+        .catch(() => {})
  
     return review as ReviewWithUser;
 

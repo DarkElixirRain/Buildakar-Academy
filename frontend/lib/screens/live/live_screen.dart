@@ -582,7 +582,7 @@ class _LiveScreenState extends State<LiveScreen>
             )
           : GridView.builder(
               padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 400,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,

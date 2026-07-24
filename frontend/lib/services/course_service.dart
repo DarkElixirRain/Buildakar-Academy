@@ -1,5 +1,3 @@
-// lib/services/course_service.dart
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -10,33 +8,67 @@ import '../types/api_response.dart';
 
 class CourseApiService extends BaseApiService {
   Future<ApiResponse<List<Map<String, dynamic>>>> getFeaturedCourses({int limit = 5}) async {
-    final response = await _authAwareJsonGet('/courses/featured?limit=$limit');
-    if (response != null) {
-      final courses = (response['data'] as List?)?.map((e) => e as Map<String, dynamic>).toList() ?? [];
-      return ApiResponse.success(courses, message: response['message']);
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/featured?limit=$limit'),
+        headers: await getHeaders(requireAuth: false),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        final List<dynamic> courses = data['data'] ?? [];
+        return ApiResponse.success(
+          courses.map((e) => e as Map<String, dynamic>).toList(),
+          message: data['message'],
+        );
+      }
+
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch featured courses');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to fetch featured courses');
   }
 
   Future<ApiResponse<List<Map<String, dynamic>>>> getRecommendedCourses({int limit = 10}) async {
-    final token = await getToken();
-    final response = await _authAwareJsonGet('/courses/public',
-        requireAuth: token != null && token.isNotEmpty);
-    if (response != null) {
-      final courses = (response['data'] as List?)?.map((e) => e as Map<String, dynamic>).toList() ?? [];
-      return ApiResponse.success(courses, message: response['message']);
+    try {
+      final token = await getToken();
+      final headers = await getHeaders(requireAuth: token != null);
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/public'),
+        headers: headers,
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        final List<dynamic> courses = data['data'] ?? [];
+        return ApiResponse.success(
+          courses.map((e) => e as Map<String, dynamic>).toList(),
+          message: data['message'],
+        );
+      }
+
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch recommended courses');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to fetch recommended courses');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> getCourseById(String id) async {
-    final token = await getToken();
-    final response = await _authAwareJsonGet('/courses/$id',
-        requireAuth: token != null && token.isNotEmpty);
-    if (response != null) {
-      return ApiResponse.success(response['data'] as Map<String, dynamic>, message: response['message']);
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/$id'),
+        headers: await getHeaders(requireAuth: false),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      }
+
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch course');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to fetch course');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> getPublicCourses({
@@ -47,14 +79,23 @@ class CourseApiService extends BaseApiService {
     String? sortBy = 'popular',
     String? level,
   }) async {
-    final response = await _authAwareJsonGet('/courses/public');
-    if (response != null) {
-      return ApiResponse.success(
-        {'data': response['data'] ?? []},
-        message: response['message'],
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/public'),
+        headers: await getHeaders(requireAuth: false),
       );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(
+          {'data': data['data'] ?? [], 'pagination': data['pagination'] ?? {}},
+          message: data['message'],
+        );
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch courses');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to fetch courses');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> getPopularCourses({
@@ -62,14 +103,23 @@ class CourseApiService extends BaseApiService {
     int page = 1,
     String timeRange = 'week',
   }) async {
-    final response = await _authAwareJsonGet('/courses/public');
-    if (response != null) {
-      return ApiResponse.success(
-        {'data': response['data'] ?? []},
-        message: response['message'],
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/public'),
+        headers: await getHeaders(requireAuth: false),
       );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(
+          {'data': data['data'] ?? [], 'pagination': data['pagination'] ?? {}},
+          message: data['message'],
+        );
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch popular courses');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to fetch popular courses');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> getInstructorCourses({
@@ -85,183 +135,192 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final userResponse = await _authAwareJsonGet('/auth/me', requireAuth: true);
-      if (userResponse == null || userResponse['data'] == null) {
-        return ApiResponse.error('Failed to get user info');
-      }
-
-      final instructorId = (userResponse['data'] as Map<String, dynamic>)['id'];
       final queryParams = <String, String>{
         'page': page.toString(),
         'limit': limit.toString(),
-        'instructorId': instructorId,
         if (status != null && status.isNotEmpty) 'status': status,
         if (search != null && search.isNotEmpty) 'search': search,
         'sortBy': sortBy ?? 'newest',
       };
 
-      final queryString = queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
-      final response = await _authAwareJsonGet('/courses?$queryString', requireAuth: true);
-      if (response != null) {
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/courses').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: await getHeaders(requireAuth: true));
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(
-          {'data': response['data'] ?? [], 'pagination': response['pagination'] ?? {}},
-          message: response['message'],
+          {'data': data['data'] ?? [], 'pagination': data['pagination'] ?? {}},
+          message: data['message'],
         );
       }
-      return ApiResponse.error('Failed to fetch instructor courses');
+
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor courses');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
   }
 
   Future<ApiResponse<Map<String, dynamic>>> getInstructorStats() async {
-    final response = await _authAwareJsonGet('/courses/stats', requireAuth: true);
-    if (response != null) {
-      return ApiResponse.success(response['data'] as Map<String, dynamic>, message: response['message']);
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return ApiResponse.error('User not authenticated');
+      }
+
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/instructors/stats'),
+        headers: await getHeaders(requireAuth: true),
+      );
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      }
+
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor stats');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to fetch instructor stats');
   }
 
   Future<ApiResponse<dynamic>> deleteCourse(String courseId) async {
-    final response = await _authAwareRequest('DELETE', '/courses/$courseId', requireAuth: true);
-    if (response != null) {
-      return ApiResponse.success(null, message: response['message']);
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return ApiResponse.error('User not authenticated');
+      }
+
+      final response = await http.delete(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId'),
+        headers: await getHeaders(requireAuth: true),
+      );
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(null, message: data['message']);
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to delete course');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to delete course');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> updateCourseStatus(String courseId, String status) async {
-    final response = await _authAwareJsonPatch(
-      '/courses/$courseId/status',
-      {'status': status},
-      requireAuth: true,
-    );
-    if (response != null) {
-      return ApiResponse.success(response['data'] as Map<String, dynamic>, message: response['message']);
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return ApiResponse.error('User not authenticated');
+      }
+
+      final response = await http.patch(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/status'),
+        headers: await getHeaders(requireAuth: true),
+        body: jsonEncode({'status': status}),
+      );
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to update course status');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to update course status');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> updateCourse(String courseId, Map<String, dynamic> data) async {
-    final response = await _authAwareJsonPatch('/courses/$courseId', data, requireAuth: true);
-    if (response != null) {
-      return ApiResponse.success(response['data'] as Map<String, dynamic>, message: response['message']);
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return ApiResponse.error('User not authenticated');
+      }
+
+      final response = await http.put(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId'),
+        headers: await getHeaders(requireAuth: true),
+        body: jsonEncode(data),
+      );
+      final result = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && result['success'] == true) {
+        return ApiResponse.success(result['data'] as Map<String, dynamic>, message: result['message']);
+      }
+      return ApiResponse.error(result['message'] ?? 'Failed to update course');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to update course');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> duplicateCourse(String courseId) async {
-    final response = await _authAwareJsonPost('/courses/$courseId/duplicate', requireAuth: true);
-    if (response != null) {
-      return ApiResponse.success(response['data'] as Map<String, dynamic>, message: response['message']);
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return ApiResponse.error('User not authenticated');
+      }
+
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/duplicate'),
+        headers: await getHeaders(requireAuth: true),
+      );
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 && data['success'] == true) {
+        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to duplicate course');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
-    return ApiResponse.error('Failed to duplicate course');
   }
 
   Future<ApiResponse<Map<String, dynamic>>> getCourseAnalytics({String? courseId}) async {
-    final queryString = courseId != null && courseId.isNotEmpty
-        ? '?courseId=${Uri.encodeComponent(courseId)}'
-        : '';
-    final response = await _authAwareJsonGet('/instructors/analytics$queryString', requireAuth: true);
-    if (response != null) {
-      return ApiResponse.success(response['data'] as Map<String, dynamic>, message: response['message']);
-    }
-    return ApiResponse.error('Failed to fetch course analytics');
-  }
-
-  // ── helpers with 401 auto-refresh ──
-
-  Future<Map<String, dynamic>?> _authAwareJsonGet(String endpoint, {bool requireAuth = false}) async {
-    final result = await _authAwareRequest('GET', endpoint, requireAuth: requireAuth);
-    return result;
-  }
-
-  Future<Map<String, dynamic>?> _authAwareJsonPost(String endpoint, {dynamic data, bool requireAuth = false}) async {
-    return await _authAwareRequest('POST', endpoint, data: data, requireAuth: requireAuth);
-  }
-
-  Future<Map<String, dynamic>?> _authAwareJsonPatch(String endpoint, dynamic data, {bool requireAuth = false}) async {
-    return await _authAwareRequest('PATCH', endpoint, data: data, requireAuth: requireAuth);
-  }
-
-  Future<Map<String, dynamic>?> _authAwareRequest(
-    String method,
-    String endpoint, {
-    dynamic data,
-    bool requireAuth = false,
-  }) async {
-    final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-    if (requireAuth) {
+    try {
       final token = await getToken();
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
+      if (token == null) {
+        return ApiResponse.error('User not authenticated');
       }
-    }
 
-    print('🌐 $method Request to: $url');
-    print('🔐 requireAuth: $requireAuth');
+      final queryParams = <String, String>{if (courseId != null && courseId.isNotEmpty) 'courseId': courseId};
+      final uri = Uri.parse('${AppConfig.apiBaseUrl}/instructors/analytics').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: await getHeaders(requireAuth: true));
+      final data = jsonDecode(response.body);
 
-    http.Response response;
-    try {
-      response = await _sendRequest(method, url, headers, data);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch course analytics');
     } catch (e) {
-      print('❌ $method Error: $e');
-      return null;
-    }
-
-    print('📥 $method Response Status: ${response.statusCode}');
-
-    if (response.statusCode == 401 && requireAuth) {
-      print('🔄 CourseService: Got 401, attempting token refresh...');
-      final newToken = await refreshAccessToken();
-      if (newToken != null) {
-        headers['Authorization'] = 'Bearer $newToken';
-        try {
-          response = await _sendRequest(method, url, headers, data);
-        } catch (e) {
-          print('❌ $method Error (retry): $e');
-          return null;
-        }
-        print('📥 $method Retry Response Status: ${response.statusCode}');
-      } else {
-        return null;
-      }
-    }
-
-    return _decodeJson(response);
-  }
-
-  Future<http.Response> _sendRequest(String method, Uri url, Map<String, String> headers, dynamic data) async {
-    switch (method) {
-      case 'GET':
-        return await http.get(url, headers: headers);
-      case 'POST':
-        return await http.post(url, headers: headers, body: data != null ? jsonEncode(data) : null);
-      case 'PUT':
-        return await http.put(url, headers: headers, body: data != null ? jsonEncode(data) : null);
-      case 'DELETE':
-        return await http.delete(url, headers: headers);
-      case 'PATCH':
-        return await http.patch(url, headers: headers, body: data != null ? jsonEncode(data) : null);
-      default:
-        throw Exception('Unsupported method: $method');
+      return ApiResponse.error(e.toString());
     }
   }
 
-  Map<String, dynamic>? _decodeJson(http.Response response) {
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorPublicCourses({
+    required String instructorId,
+    int page = 1,
+    int limit = 20,
+    String? search,
+    String? sortBy = 'newest',
+  }) async {
     try {
-      if (response.body.isEmpty) return null;
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (response.statusCode >= 200 && response.statusCode < 300 && json['success'] == true) {
-        return json;
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+        'instructorId': instructorId,
+        if (search != null && search.isNotEmpty) 'search': search,
+        'sortBy': sortBy ?? 'newest',
+      };
+
+      final queryString = queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+      final response = await get('/courses?$queryString', requireAuth: true);
+      if (response.success) {
+        return ApiResponse.success(
+          {'data': response.data['data'] ?? [], 'pagination': response.data['pagination'] ?? {}},
+          message: response.message,
+        );
       }
-      return null;
-    } catch (_) {
-      return null;
+      return ApiResponse.error('Failed to fetch instructor courses');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
     }
   }
 }

@@ -53,14 +53,12 @@ async function sendPush(params: SendPushParams): Promise<void> {
       },
     });
  
-    console.log(`[FCM] Push sent to token: ${pushToken.slice(0, 20)}...`);
-  } catch (error: any) {
+    } catch (error: any) {
     // If token is invalid/expired, clear it from DB
     if (
       error.code === 'messaging/invalid-registration-token' ||
       error.code === 'messaging/registration-token-not-registered'
     ) {
-      console.warn(`[FCM] Invalid token — clearing from DB`);
       await prisma.user
         .updateMany({
           where: { pushToken },
@@ -68,8 +66,7 @@ async function sendPush(params: SendPushParams): Promise<void> {
         })
         .catch(() => null);
     } else {
-      console.error(` [FCM] Push failed:`, error.message);
-    }
+      }
   }
 }
 
@@ -154,10 +151,6 @@ export async function createAndSendBulk(
         },
       });
  
-      console.log(
-        `[FCM] Multicast: ${response.successCount} sent, ${response.failureCount} failed`
-      );
- 
       // Clear invalid tokens
       response.responses.forEach(async (resp:any, idx:number ) => {
         if (
@@ -174,8 +167,7 @@ export async function createAndSendBulk(
         }
       });
     } catch (error: any) {
-      console.error('[FCM] Multicast failed:', error.message);
-    }
+      }
   }
 
 

@@ -73,7 +73,7 @@ class _SplashLogoState extends State<SplashLogo>
             },
             frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
               if (frame == null) {
-                return Container(
+                return SizedBox(
                   width: actualSize,
                   height: actualSize,
                   child: Center(

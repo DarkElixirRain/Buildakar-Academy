@@ -20,6 +20,9 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
+  <!-- Google Sign-In -->
+  <meta name="google-signin-client_id" content="743824025812-73jkos8mjp03muupgkuj9h24p4chh7hk.apps.googleusercontent.com">
+
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -31,6 +34,7 @@
 
   <title>buildacad</title>
   <link rel="manifest" href="manifest.json">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <!--
@@ -41,6 +45,27 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Google Sign-In credential callback handler
+    window.gisCredentialCallback = null;
+
+    window.handleGisCredential = function(response) {
+      if (window.gisCredentialCallback) {
+        window.gisCredentialCallback(response.credential);
+      }
+    };
+
+    window.initGoogleSignIn = function(clientId) {
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: window.handleGisCredential,
+      });
+    };
+
+    window.promptGoogleSignIn = function() {
+      google.accounts.id.prompt();
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

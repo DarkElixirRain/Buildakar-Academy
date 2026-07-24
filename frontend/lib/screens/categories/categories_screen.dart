@@ -14,7 +14,6 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   List<Map<String, dynamic>> _categories = [];
   bool _isLoading = true;
-  bool _isRefreshing = false;
   String? _error;
   final ApiService _apiService = ApiService();
   String _searchQuery = '';
@@ -106,11 +105,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Future<void> _refreshData() async {
-    setState(() => _isRefreshing = true);
     await _fetchCategories();
-    if (mounted) {
-      setState(() => _isRefreshing = false);
-    }
   }
 
   Map<String, dynamic> _transformCategoryData(Map<String, dynamic> category) {

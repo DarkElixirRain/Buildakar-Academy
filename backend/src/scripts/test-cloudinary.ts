@@ -14,9 +14,6 @@ cloudinary.config({
 
 async function testCloudinary() {
   try {
-    console.log('Testing Cloudinary connection...');
-    console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
-    
     // Test with a small image from the web
     const result = await cloudinary.uploader.upload(
       'https://res.cloudinary.com/demo/image/upload/sample.jpg',
@@ -26,11 +23,8 @@ async function testCloudinary() {
       }
     );
     
-    console.log('✅ Cloudinary connection successful!');
-    console.log('Upload result:', result.secure_url);
-  } catch (error) {
-    console.error('❌ Cloudinary connection failed:', error);
-  }
+    } catch (error) {
+    }
 }
 
 testCloudinary();

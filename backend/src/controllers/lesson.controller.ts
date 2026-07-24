@@ -144,44 +144,29 @@ export class LessonController {
   // ✅ UPLOAD VIDEO
   async uploadVideo(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('[uploadVideo] Request received');
-      console.log('[uploadVideo] Content-Type:', req.headers['content-type']);
-      console.log('[uploadVideo] Params:', req.params);
-      console.log('[uploadVideo] File exists:', !!req.file);
-
       const { id } = schemas.lessonId.parse(req.params);
       const userId = req.user!.id;
       const userRole = req.user!.role;
 
       // Check if file exists
       if (!req.file) {
-        console.log('[uploadVideo] No file in request');
         return res.status(400).json({
           success: false,
           message: 'No video file uploaded',
         });
       }
 
-      console.log('[uploadVideo] File details:', {
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        bufferLength: req.file.buffer?.length || 0,
-      });
-
       const { buffer, originalname, mimetype, size } = req.file;
 
       // Validate file
       const validation = validateVideoFile(mimetype, size);
       if (!validation.valid) {
-        console.log('[uploadVideo] Validation failed:', validation.error);
         return res.status(400).json({
           success: false,
           message: validation.error,
         });
       }
 
-      console.log('[uploadVideo] Starting upload to Cloudinary...');
       const result = await lessonService.uploadVideo(
         id,
         buffer,
@@ -191,15 +176,12 @@ export class LessonController {
         userRole
       );
 
-      console.log('[uploadVideo] Upload successful:', result.url);
-
       res.status(200).json({
         success: true,
         message: 'Video uploaded successfully',
         data: result,
       });
     } catch (error) {
-      console.error('[uploadVideo] Error:', error);
       next(error);
     }
   }

@@ -276,7 +276,6 @@ export class SearchController {
         data: results,
       });
     } catch (error) {
-      console.error('❌ Search error:', error);
       next(error);
     }
   }
@@ -424,7 +423,6 @@ export class SearchController {
         },
       });
     } catch (error) {
-      console.error('❌ Trending error:', error);
       next(error);
     }
   }
@@ -531,7 +529,6 @@ export class SearchController {
         query,
       });
     } catch (error) {
-      console.error('❌ Suggestion error:', error);
       next(error);
     }
   }
@@ -546,7 +543,6 @@ export class SearchController {
       req.query.type = type;
       return this.unifiedSearch(req, res, next);
     } catch (error) {
-      console.error('❌ Search by type error:', error);
       next(error);
     }
   }
@@ -580,7 +576,6 @@ export class SearchController {
         data: recentSearches.map((r: { query: any; }) => r.query),
       });
     } catch (error) {
-      console.error('❌ Recent searches error:', error);
       next(error);
     }
   }
@@ -650,7 +645,6 @@ export class SearchController {
         data: recentSearch,
       });
     } catch (error) {
-      console.error('❌ Save recent search error:', error);
       next(error);
     }
   }
@@ -679,7 +673,6 @@ export class SearchController {
         message: 'Recent searches cleared',
       });
     } catch (error) {
-      console.error('❌ Clear recent searches error:', error);
       next(error);
     }
   }

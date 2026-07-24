@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
-import '../../config/app_config.dart';
+import '../../core/widgets/app_button.dart';
 
 class CourseEditScreen extends StatefulWidget {
   final String courseId;
@@ -431,35 +430,10 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
               ),
               const SizedBox(height: 32),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isUploading ? null : _updateCourse,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isUploading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          'Save Changes',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+              AppButton(
+                title: 'Save Changes',
+                onPressed: _updateCourse,
+                isLoading: _isUploading,
               ),
               const SizedBox(height: 24),
             ],

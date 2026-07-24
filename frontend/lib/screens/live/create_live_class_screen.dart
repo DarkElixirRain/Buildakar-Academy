@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_error_banner.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/live_class_provider.dart';
 import '../../models/course_model.dart';
@@ -258,7 +259,6 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
-    final errorColor = AppColors.getErrorColor(brightness);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -299,36 +299,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                     children: [
                       // Error message
                       if (_errorMessage != null)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: errorColor.withAlpha(20),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: errorColor.withAlpha(50),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                color: errorColor,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _errorMessage!,
-                                  style: TextStyle(
-                                    color: errorColor,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        AppErrorBanner(message: _errorMessage!),
 
                       // Title Field
                       Text(
@@ -467,7 +438,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                                   }
                                 });
                               },
-                              activeColor: primaryColor,
+                              activeThumbColor: primaryColor,
                             ),
                           ],
                         ),
@@ -487,7 +458,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                                 ),
                               )
                             : DropdownButtonFormField<String>(
-                                value: _selectedCourseId,
+                                initialValue: _selectedCourseId,
                                 style: TextStyle(
                                   color: textColor,
                                   fontSize: 16,
@@ -520,12 +491,11 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                                     value: course.id,
                                     child: Row(
                                       children: [
-                                        if (course.thumbnail != null &&
-                                            course.thumbnail!.isNotEmpty)
+                                        if (course.thumbnail.isNotEmpty)
                                           ClipRRect(
                                             borderRadius: BorderRadius.circular(6),
                                             child: Image.network(
-                                              course.thumbnail!,
+                                              course.thumbnail,
                                               width: 30,
                                               height: 30,
                                               fit: BoxFit.cover,
@@ -771,7 +741,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.add_rounded,
                                       color: Colors.white,
                                       size: 22,

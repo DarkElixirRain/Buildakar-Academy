@@ -1,10 +1,13 @@
-// lib/screens/auth/verify_email_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:buildacad/constants/colors.dart';
 import 'package:buildacad/widgets/splash_logo.dart';
 import 'package:buildacad/services/api_service.dart';
+import 'package:buildacad/providers/auth_provider.dart';
 import 'package:buildacad/providers/theme_provider.dart';
+import 'package:buildacad/core/widgets/app_card.dart';
+import 'package:buildacad/core/widgets/app_button.dart';
+import 'package:buildacad/core/widgets/app_error_banner.dart';
+import 'package:buildacad/core/widgets/app_dialog.dart';
 import 'package:provider/provider.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
@@ -16,7 +19,10 @@ class VerifyEmailScreen extends StatefulWidget {
 }
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final List<TextEditingController> _codeControllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _codeControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _codeFocusNodes = List.generate(6, (_) => FocusNode());
   final ApiService _apiService = ApiService();
 
@@ -69,14 +75,50 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     });
 
     try {
-      final response = await _apiService.verifyEmail(widget.email, _enteredCode);
+      final response = await _apiService.verifyEmail(
+        widget.email,
+        _enteredCode,
+      );
       if (!mounted) return;
 
       if (response.success) {
-        _showSuccessDialog();
+        final data = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : null;
+
+        if (data != null && data['accessToken'] != null) {
+          if (data['user'] != null) {
+            await _apiService.saveUser(data['user'] as Map<String, dynamic>);
+          }
+          await _apiService.saveToken(data['accessToken'] as String);
+          if (data['refreshToken'] != null) {
+            await _apiService.saveRefreshToken(data['refreshToken'] as String);
+          }
+          if (data['accessTokenExpiresAt'] != null) {
+            await _apiService.saveTokenExpiry(
+              data['accessTokenExpiresAt'] as String,
+            );
+          }
+
+          if (!mounted) return;
+          await Provider.of<AuthProvider>(context, listen: false).loadUser();
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          showAppSuccessDialog(
+            context: context,
+            title: 'Email Verified!',
+            message:
+                'Your email has been verified successfully. Please login to continue.',
+            buttonText: 'Continue to Login',
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+          );
+        }
       } else {
         setState(() {
-          _error = response.message ?? 'Invalid verification code. Please try again.';
+          _error =
+              response.message ??
+              'Invalid verification code. Please try again.';
         });
       }
     } catch (e) {
@@ -102,7 +144,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       if (!mounted) return;
 
       if (response.success) {
-        for (final c in _codeControllers) c.clear();
+        for (final c in _codeControllers) {
+          c.clear();
+        }
         _codeFocusNodes[0].requestFocus();
         _startResendCountdown();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,40 +170,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     }
   }
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 12),
-            Text('Email Verified!'),
-          ],
-        ),
-        content: const Text(
-          'Your email has been verified successfully. Please login to continue.',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: const Text('Continue to Login', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
-    for (final c in _codeControllers) c.dispose();
-    for (final f in _codeFocusNodes) f.dispose();
+    for (final c in _codeControllers) {
+      c.dispose();
+    }
+    for (final f in _codeFocusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -171,7 +189,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final size = MediaQuery.of(context).size.width;
     final isSmallDevice = size < 375;
     final isTablet = size >= 768;
-    final cardPadding = isSmallDevice ? 16.0 : isTablet ? 32.0 : 24.0;
+    final cardPadding = isSmallDevice
+        ? 16.0
+        : isTablet
+        ? 32.0
+        : 24.0;
 
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(brightness),
@@ -218,57 +240,13 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 480),
+              AppCard(
                 padding: EdgeInsets.all(cardPadding),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? AppColors.darkBackgroundElement.withValues(alpha: 0.8)
-                      : AppColors.lightBackgroundElement.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.black.withValues(alpha: 0.05),
-                    width: 1,
-                  ),
-                ),
+                maxWidth: 480,
+                borderRadius: 28,
                 child: Column(
                   children: [
-                    if (_error != null)
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.red.withValues(alpha: 0.12)
-                              : const Color(0xFFFEF2F2),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.red.withValues(alpha: 0.25)
-                                : const Color(0xFFFECACA),
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _error!,
-                                style: const TextStyle(
-                                  color: Color(0xFFEF4444),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    if (_error != null) AppErrorBanner(message: _error!),
                     Text(
                       'Verification Code',
                       style: TextStyle(
@@ -306,13 +284,17 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                                 borderSide: BorderSide(
                                   color: _error != null
                                       ? const Color(0xFFEF4444)
-                                      : AppColors.getBackgroundSelectedColor(brightness),
+                                      : AppColors.getBackgroundSelectedColor(
+                                          brightness,
+                                        ),
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: AppColors.getBackgroundSelectedColor(brightness),
+                                  color: AppColors.getBackgroundSelectedColor(
+                                    brightness,
+                                  ),
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
@@ -325,44 +307,20 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             ),
                             onChanged: (value) => _onCodeChanged(index, value),
                             onEditingComplete: index < 5
-                                ? () => _codeFocusNodes[index + 1].requestFocus()
+                                ? () =>
+                                      _codeFocusNodes[index + 1].requestFocus()
                                 : null,
                           ),
                         );
                       }),
                     ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: (_isVerifying || _enteredCode.length != 6) ? null : _verifyEmail,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.getPrimaryColor(brightness),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 4,
-                        ),
-                        child: _isVerifying
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Verify Email',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                      ),
+                    AppButton(
+                      title: 'Verify Email',
+                      onPressed: (_isVerifying || _enteredCode.length != 6)
+                          ? null
+                          : _verifyEmail,
+                      isLoading: _isVerifying,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -376,7 +334,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: _canResend && !_isResending ? _resendCode : null,
+                          onPressed: _canResend && !_isResending
+                              ? _resendCode
+                              : null,
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
@@ -386,15 +346,21 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                               ? const SizedBox(
                                   height: 16,
                                   width: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Text(
-                                  _canResend ? 'Resend Code' : 'Resend in ${_resendCountdown}s',
+                                  _canResend
+                                      ? 'Resend Code'
+                                      : 'Resend in ${_resendCountdown}s',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: _canResend
                                         ? AppColors.getPrimaryColor(brightness)
-                                        : AppColors.getTextSecondaryColor(brightness),
+                                        : AppColors.getTextSecondaryColor(
+                                            brightness,
+                                          ),
                                     fontSize: isSmallDevice ? 13 : 14,
                                   ),
                                 ),
@@ -416,7 +382,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                    onPressed: () =>
+                        Navigator.pushReplacementNamed(context, '/login'),
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,

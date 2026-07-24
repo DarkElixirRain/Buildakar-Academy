@@ -102,7 +102,6 @@ class _CategoriesState extends State<Categories> {
         setState(() {
           _error = response.error ?? 'Failed to load categories';
           _isLoading = false;
-          _categories = _getFallbackCategories();
         });
       }
     } catch (e) {
@@ -110,7 +109,6 @@ class _CategoriesState extends State<Categories> {
       setState(() {
         _error = e.toString();
         _isLoading = false;
-        _categories = _getFallbackCategories();
       });
     }
   }
@@ -401,32 +399,8 @@ class _CategoriesState extends State<Categories> {
       );
     }
 
-    // Show error state but still display categories
-    if (_error != null && _categories.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 40.0,
-              color: errorColor,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Failed to load categories',
-              style: TextStyle(
-                color: textSecondaryColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _fetchCategories,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
+    if (_categories.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return Column(

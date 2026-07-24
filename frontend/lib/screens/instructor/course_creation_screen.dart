@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:convert';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
-import '../../config/app_config.dart';
+import '../../core/widgets/app_button.dart';
 
 class CourseCreationScreen extends StatefulWidget {
   const CourseCreationScreen({super.key});
@@ -420,35 +419,10 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
               const SizedBox(height: 32),
 
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isUploading ? null : _createCourse,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isUploading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          'Create Course',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+              AppButton(
+                title: 'Create Course',
+                onPressed: _createCourse,
+                isLoading: _isUploading,
               ),
               const SizedBox(height: 12),
               Text(

@@ -3,12 +3,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:buildacad/models/auth_model.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../constants/colors.dart';
+import '../../core/widgets/app_card.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 
@@ -903,20 +903,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
 
                 // User Profile Section
-                Container(
+                AppCard(
                   padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: backgroundElementColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDarkMode ? 0.1 : 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+                  borderRadius: 16,
+                  backgroundColor: backgroundElementColor,
                   child: Row(
                     children: [
                       // Avatar
@@ -1064,11 +1055,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: backgroundElementColor,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                          AppCard(
+                            padding: EdgeInsets.zero,
+                            borderRadius: 16,
+                            backgroundColor: backgroundElementColor,
                             child: Column(
                               children: section.items.asMap().entries.map((entry) {
                                 final index = entry.key;

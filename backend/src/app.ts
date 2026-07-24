@@ -112,9 +112,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`\x1b[36m${req.method}\x1b[0m \x1b[33m${req.url}\x1b[0m - \x1b[35m${new Date().toISOString()}\x1b[0m`);
-  console.log(`\x1b[36mOrigin:\x1b[0m ${req.headers.origin || 'No origin'}`);
-  console.log(`\x1b[36mFrom IP:\x1b[0m ${req.ip || req.socket.remoteAddress}`);
   next();
 });
 
@@ -228,8 +225,7 @@ if (process.env.NODE_ENV === 'development') {
     stack.forEach((layer: any) => {
       if (layer.route) {
         const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-        console.log(`  \x1b[33m${methods}\x1b[0m ${basePath}${layer.route.path}`);
-      } else if (layer.name === 'router' && layer.handle.stack) {
+        } else if (layer.name === 'router' && layer.handle.stack) {
         // Get the base path from the layer
         let path = '';
         if (layer.regexp) {
@@ -247,11 +243,9 @@ if (process.env.NODE_ENV === 'development') {
     });
   };
 
-  console.log('\n\x1b[36m📋 All Registered Routes:\x1b[0m');
   const routerStack = (app as any)._router?.stack || [];
   printRoutes(routerStack);
-  console.log('');
-}
+  }
 
 // ============================================
 // 404 HANDLER

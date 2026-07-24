@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
 import 'course_edit_screen.dart';
+import '../../core/widgets/app_card.dart';
 
 enum CourseTab {
   overview,
@@ -895,10 +896,12 @@ class _InstructorCourseDetailScreenState
           );
         }
       } finally {
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _isProcessingLesson = false;
           _processingSectionId = null;
         });
+        }
       }
     }
     titleController.dispose();
@@ -1677,34 +1680,14 @@ class _InstructorCourseDetailScreenState
     Color textSecondaryColor,
   ) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: textSecondaryColor,
-              ),
-            ),
-          ],
-        ),
+      child: AppStatCard(
+        icon: icon,
+        value: value,
+        label: label,
+        color: color,
+        cardColor: cardColor,
+        textColor: textColor,
+        textSecondaryColor: textSecondaryColor,
       ),
     );
   }
@@ -1842,12 +1825,10 @@ class _InstructorCourseDetailScreenState
         final section = _sections[index - 1];
         final lessons = section['lessons'] as List? ?? [];
 
-        return Container(
+        return AppCard(
           margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          padding: EdgeInsets.zero,
+          borderRadius: 12,
           child: ExpansionTile(
             tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             title: Text(
@@ -1966,7 +1947,7 @@ class _InstructorCourseDetailScreenState
                   ),
                 if (hasVideo)
                   IconButton(
-                    icon: Icon(Icons.video_library, color: Colors.green, size: 18),
+                    icon: const Icon(Icons.video_library, color: Colors.green, size: 18),
                     onPressed: () => _showVideoUploadDialog(lesson),
                     tooltip: 'Change Video',
                     padding: EdgeInsets.zero,
@@ -2059,13 +2040,10 @@ class _InstructorCourseDetailScreenState
     return Column(
       children: [
         // Rating Summary
-        Container(
+        AppCard(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          borderRadius: 12,
           child: Row(
             children: [
               Column(
@@ -2121,13 +2099,10 @@ class _InstructorCourseDetailScreenState
               final review = _reviews[index];
               final rating = review['rating'] ?? 0;
 
-              return Container(
+              return AppCard(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                borderRadius: 12,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2279,13 +2254,10 @@ class _InstructorCourseDetailScreenState
     return Column(
       children: [
         // Header
-        Container(
+        AppCard(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          borderRadius: 12,
           child: Row(
             children: [
               Column(
@@ -2593,12 +2565,9 @@ class _InstructorCourseDetailScreenState
           const SizedBox(height: 24),
 
           // Additional Stats
-          Container(
+          AppCard(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            borderRadius: 12,
             child: Column(
               children: [
                 _buildAnalyticsInfoRow(
@@ -2642,12 +2611,9 @@ class _InstructorCourseDetailScreenState
             ),
           ),
           const SizedBox(height: 12),
-          Container(
+          AppCard(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            borderRadius: 12,
             child: Column(
               children: _activities.map((activity) {
                 return _buildActivityItem(
