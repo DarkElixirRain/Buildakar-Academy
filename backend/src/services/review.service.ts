@@ -3,10 +3,11 @@ import {
   recalculateCourseRating,
   recalculateInstructorRating,
 } from '../utils/rating';
+import { AppError } from '../utils/AppError';
 import { notifyNewReview } from './notification.service';
- 
-function createError(message: string, statusCode: number): Error {
-  return Object.assign(new Error(message), { statusCode });
+
+function createError(message: string, statusCode: number): AppError {
+  return new AppError(message, statusCode);
 }
 
 export interface ReviewWithUser {
@@ -96,7 +97,7 @@ const enrollment = await prisma.enrollment.findUnique({
       return created;
     });
       const studentName = student
-    ? `${student.firstName}   student.lastName}`.trim()
+    ? `${student.firstName} ${student.lastName}`.trim()
     : 'A student';
  
   notifyNewReview(
@@ -237,5 +238,61 @@ export async  function  getMyReview(
     });
  
     return review as ReviewWithUser | null;
+  }
+
+export async function getInstructorReviews(
+    instructorId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedReviews> {
+    const skip = (page - 1) * limit;
+
+    const [reviews, total, aggregate, breakdown] = await Promise.all([
+      prisma.review.findMany({
+        where: {
+          course: { instructorId },
+        },
+        include: {
+          user: {
+            select: { id: true, firstName: true, lastName: true, photo: true },
+          },
+          course: {
+            select: { id: true, title: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+
+      prisma.review.count({
+        where: { course: { instructorId } },
+      }),
+
+      prisma.review.aggregate({
+        where: { course: { instructorId } },
+        _avg: { rating: true },
+      }),
+
+      prisma.review.groupBy({
+        by: ["rating"],
+        where: { course: { instructorId } },
+        _count: { rating: true },
+      }),
+    ]);
+
+    const ratingBreakdown: RatingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of breakdown) {
+      ratingBreakdown[row.rating as keyof RatingBreakdown] = row._count.rating;
+    }
+
+    return {
+      data: reviews as any,
+      total,
+      page,
+      limit,
+      averageRating: Math.round((aggregate._avg.rating ?? 0) * 10) / 10,
+      ratingBreakdown,
+    };
   }
  

@@ -48,6 +48,12 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
 
   final ApiService _apiService = ApiService();
 
+  // Review submission state
+  int _myRating = 0;
+  final TextEditingController _reviewController = TextEditingController();
+  bool _isSubmittingReview = false;
+  String? _reviewError;
+
   // Get brightness from context
   Brightness get _brightness => MediaQuery.of(context).platformBrightness;
 
@@ -167,6 +173,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
 
   @override
   void dispose() {
+    _reviewController.dispose();
     super.dispose();
   }
 
@@ -228,6 +235,19 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
         _enrolled = false;
       });
     }
+  }
+
+  Future<void> _refreshCourseData() async {
+    if (!mounted) return;
+    try {
+      final response = await _apiService.getCourseById(widget.courseId);
+      if (!mounted) return;
+      if (response.success && response.data != null) {
+        setState(() {
+          _course = Course.fromJson(response.data!);
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkEnrollmentStatus() async {
@@ -1239,6 +1259,61 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
   }
 
   // ------------------------------------------------------------------
+  // Review Submission
+  // ------------------------------------------------------------------
+  Future<void> _submitReview() async {
+    if (_myRating == 0) {
+      setState(() => _reviewError = 'Please select a rating');
+      return;
+    }
+
+    setState(() {
+      _isSubmittingReview = true;
+      _reviewError = null;
+    });
+
+    try {
+      final response = await _apiService.createReview(
+        courseId: widget.courseId,
+        rating: _myRating,
+        comment: _reviewController.text.trim().isEmpty
+            ? null
+            : _reviewController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      if (response.success) {
+        setState(() {
+          _isSubmittingReview = false;
+          _myRating = 0;
+          _reviewController.clear();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Review submitted successfully!'),
+            backgroundColor: AppColors.getSuccessColor(_brightness),
+          ),
+        );
+
+        _refreshCourseData();
+      } else {
+        setState(() {
+          _isSubmittingReview = false;
+          _reviewError = response.error ?? 'Failed to submit review';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmittingReview = false;
+        _reviewError = 'Error: $e';
+      });
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Reviews Tab - Using Real API Data from Course
   // ------------------------------------------------------------------
   Widget _buildReviewsTab() {
@@ -1250,16 +1325,131 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
     final reviews = course.reviews;
     final rating = course.rating;
 
-    if (reviews.isEmpty) {
-      return _buildEmptyState(
-        'No reviews yet. Be the first to review this course!'
-      );
-    }
-
-    return CourseReviews(
-      rating: rating,
-      reviews: reviews,
-      brightness: _brightness,
+    return ListView(
+      padding: EdgeInsets.all(_contentPadding),
+      children: [
+        if (_enrolled && !_isOwner)
+          AppCard(
+            padding: const EdgeInsets.all(16),
+            borderRadius: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rate this course',
+                  style: TextStyle(
+                    color: _textColor,
+                    fontSize: _titleSize - 2,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: List.generate(5, (i) {
+                    final filled = i < _myRating;
+                    return IconButton(
+                      onPressed: () => setState(() => _myRating = i + 1),
+                      icon: Icon(
+                        filled ? Icons.star : Icons.star_border,
+                        color: const Color(0xFFF59E0B),
+                        size: 28,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _reviewController,
+                  maxLines: 3,
+                  style: TextStyle(color: _textColor, fontSize: _bodySize),
+                  decoration: InputDecoration(
+                    hintText: 'Share your experience with this course...',
+                    hintStyle: TextStyle(color: _textSecondaryColor),
+                    filled: true,
+                    fillColor: _backgroundSelectedColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: _isSubmittingReview ? null : _submitReview,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isSubmittingReview
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Submit Review',
+                            style: TextStyle(
+                              fontSize: _bodySize,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                if (_reviewError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _reviewError!,
+                    style: TextStyle(color: _errorColor, fontSize: _smallBodySize),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        if (reviews.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          CourseReviews(
+            rating: rating,
+            reviews: reviews,
+            brightness: _brightness,
+          ),
+        ] else ...[
+          const SizedBox(height: 32),
+          Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.star_outline,
+                  size: 64,
+                  color: _textSecondaryColor.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No reviews yet',
+                  style: TextStyle(
+                    color: _textColor,
+                    fontSize: _bodySize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Be the first to review this course!',
+                  style: TextStyle(color: _textSecondaryColor, fontSize: _smallBodySize),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 

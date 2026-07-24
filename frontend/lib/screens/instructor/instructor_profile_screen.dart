@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/instructor_service.dart';
 import '../../services/course_service.dart';
+import '../../services/api_service.dart';
+import '../../models/course_model.dart';
 import '../../widgets/explore/course_card.dart';
+import '../../widgets/course/course_reviews.dart';
 import '../../widgets/common/error_state.dart';
 
 class InstructorProfileScreen extends StatefulWidget {
@@ -29,6 +32,14 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   bool _isError = false;
   String _errorMessage = '';
 
+  // Instructor reviews
+  List<Map<String, dynamic>> _instructorReviews = [];
+  bool _isLoadingReviews = false;
+  int _totalReviews = 0;
+  double _instructorAvgRating = 0.0;
+
+  final ApiService _apiService = ApiService();
+
   late final TabController _tabController;
 
   @override
@@ -36,10 +47,17 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
     super.initState();
     print('🔍 InstructorProfileScreen: initState called');
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
     );
+    _tabController.addListener(_onTabChanged);
     _loadInstructorData();
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == 2 && _instructorReviews.isEmpty && !_isLoadingReviews) {
+      _loadInstructorReviews();
+    }
   }
 
   String _getInstructorId(Map<String, dynamic> instructor) {
@@ -141,9 +159,46 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
     }
   }
 
+  Future<void> _loadInstructorReviews() async {
+    if (_isLoadingReviews) return;
+    setState(() => _isLoadingReviews = true);
+
+    try {
+      final instructorId = _instructorData != null
+          ? _getInstructorId(_instructorData!)
+          : widget.instructorId;
+      final response = await _apiService.getInstructorReviews(
+        instructorId: instructorId,
+        page: 1,
+        limit: 20,
+      );
+      if (!mounted) return;
+
+      if (response.success && response.data != null) {
+        final data = response.data!;
+        final reviewsList = (data['data'] as List<dynamic>?)
+            ?.map((e) => e as Map<String, dynamic>)
+            .toList() ?? [];
+        final meta = data['meta'] as Map<String, dynamic>?;
+        setState(() {
+          _instructorReviews = reviewsList;
+          _totalReviews = meta?['total'] as int? ?? 0;
+          _instructorAvgRating = (meta?['averageRating'] as num?)?.toDouble() ?? 0.0;
+          _isLoadingReviews = false;
+        });
+      } else {
+        setState(() => _isLoadingReviews = false);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingReviews = false);
+    }
+  }
+
   @override
   void dispose() {
     print('🔍 InstructorProfileScreen: dispose called');
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -168,11 +223,15 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
       if (!mounted) return;
 
       if (response.success) {
-        // Update with the actual state from the response
         final newIsFollowing =
             response.data?['isFollowing'] ?? !isCurrentlyFollowing;
+        final newFollowersCount =
+            response.data?['followersCount'] as int?;
         setState(() {
           _instructorData!['isFollowing'] = newIsFollowing;
+          if (newFollowersCount != null) {
+            _instructorData!['followersCount'] = newFollowersCount;
+          }
         });
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -495,6 +554,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
         unselectedLabelStyle: const TextStyle(fontSize: 16),
         tabs: const [
           Tab(text: 'Courses'),
+          Tab(text: 'Reviews'),
           Tab(text: 'About'),
         ],
       ),
@@ -562,6 +622,57 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
           },
         );
       },
+    );
+  }
+
+  Widget _buildInstructorReviewsTab(
+      BuildContext context, bool isDark, Brightness brightness) {
+    if (_isLoadingReviews) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_instructorReviews.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.star_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No reviews yet',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Reviews from students will appear here',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final reviews = _instructorReviews
+        .map((r) => Review.fromJson(r))
+        .toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: CourseReviews(
+        rating: _instructorAvgRating,
+        reviews: reviews,
+        brightness: brightness,
+      ),
     );
   }
 
@@ -640,6 +751,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
                             controller: _tabController,
                             children: [
                               _buildCoursesTab(context, isDark, brightness),
+                              _buildInstructorReviewsTab(context, isDark, brightness),
                               _buildAboutTab(context, isDark, brightness),
                             ],
                           ),

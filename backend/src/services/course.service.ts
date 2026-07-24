@@ -181,13 +181,28 @@ export class CourseService {
           },
           orderBy: { order: "asc" },
         },
+        reviews: {
+          take: 20,
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: {
+              select: { id: true, firstName: true, lastName: true, photo: true },
+            },
+          },
+        },
         _count: {
           select: { enrollments: true, lessons: true, reviews: true },
         },
       },
     });
 
-    return course;
+    if (!course) return null;
+
+    return {
+      ...course,
+      studentsCount: (course as any)._count?.enrollments || 0,
+      reviewsCount: (course as any)._count?.reviews || 0,
+    };
   }
 
   async getPublishedCourses(filters: {
@@ -258,7 +273,7 @@ export class CourseService {
     const formattedData = data.map((course: any) => ({
       ...course,
       studentsCount: course._count?.enrollments || 0,
-      reviewCount: course._count?.reviews || 0,
+      reviewsCount: course._count?.reviews || 0,
     }));
 
     return {

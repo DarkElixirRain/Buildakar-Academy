@@ -5,6 +5,7 @@ import { instructorService } from '../services/instructor.service';
 import { schemas } from '../utils/validation';
 import { AppError } from '../utils/AppError';
 import { prisma } from '../lib/prisma';
+import { getInstructorReviews } from '../services/review.service';
 
 export const instructorController = {
   // Get top instructors for homepage
@@ -123,12 +124,16 @@ export const instructorController = {
       const userId = req.user!.id;
 
       const result = await instructorService.toggleFollow(instructorId, userId);
+      const followersCount = await prisma.instructorFollow.count({
+        where: { instructorId },
+      });
 
       res.status(200).json({
         success: true,
         message: result.message,
         data: {
           isFollowing: result.following,
+          followersCount,
         },
       });
     } catch (error) {
@@ -154,6 +159,33 @@ export const instructorController = {
         message: 'Followers retrieved successfully',
         data: result.data,
         pagination: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // Get instructor's reviews (across all courses)
+  async getReviews(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { instructorId } = req.params;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await getInstructorReviews(instructorId, page, limit);
+
+      res.status(200).json({
+        success: true,
+        message: 'Instructor reviews retrieved successfully',
+        data: result.data,
+        meta: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: Math.ceil(result.total / result.limit),
+          averageRating: result.averageRating,
+          ratingBreakdown: result.ratingBreakdown,
+        },
       });
     } catch (error) {
       next(error);

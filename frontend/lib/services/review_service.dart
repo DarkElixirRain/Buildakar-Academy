@@ -114,4 +114,29 @@ class ReviewApiService extends BaseApiService {
       return ApiResponse.error(e.toString());
     }
   }
+
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorReviews({
+    required String instructorId,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final queryString = '?page=$page&limit=$limit';
+      final response = await sendAuthenticatedRequest(
+        method: 'GET',
+        endpoint: '/instructors/$instructorId/reviews$queryString',
+      );
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return ApiResponse.success({
+          'data': data['data'] ?? [],
+          'meta': data['meta'] ?? {},
+        }, message: data['message']);
+      }
+      return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor reviews');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
+    }
+  }
 }

@@ -1,7 +1,7 @@
 // backend/src/routes/instructor.routes.ts
 
 import express from 'express';
-import { authenticate } from '../middleware/auth.middleware';
+import { authenticate, optionalAuthenticate } from '../middleware/auth.middleware';
 import { roleMiddleware } from '../middleware/role.middleware';
 import { Role } from '@prisma/client';
 import { instructorController } from '../controllers/instructor.controller';
@@ -20,12 +20,14 @@ const adminOnly = roleMiddleware([Role.ADMIN]);
 // GET /api/instructors/top - Get top instructors
 router.get(
   '/top',
+  optionalAuthenticate,
   instructorController.getTopInstructors
 );
 
 // GET /api/instructors - Get all instructors with filters
 router.get(
   '/',
+  optionalAuthenticate,
   instructorController.getInstructors
 );
 
@@ -104,6 +106,14 @@ router.get(
   instructorController.getFollowers
 );
 
+// GET /api/instructors/:instructorId/reviews - Get instructor's reviews
+router.get(
+  '/:instructorId/reviews',
+  optionalAuthenticate,
+  validate(schemas.instructorId, 'params'),
+  instructorController.getReviews
+);
+
 // ============================================
 // ✅ PUBLIC CATCH-ALL - Must be last
 // ============================================
@@ -111,6 +121,7 @@ router.get(
 // GET /api/instructors/:instructorId - Get instructor by ID
 router.get(
   '/:instructorId',
+  optionalAuthenticate,
   validate(schemas.instructorId, 'params'),
   instructorController.getInstructorById
 );

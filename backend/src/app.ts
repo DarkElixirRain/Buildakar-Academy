@@ -125,6 +125,9 @@ app.use('/api/auth', authRoutes);
 // Category routes
 app.use('/api/categories', categoryRoutes);
 
+// Review Routes (must be before course routes to avoid auth middleware conflict)
+app.use('/api', reviewRoutes);
+
 // Course routes
 app.use('/api/courses', courseRoutes);
 
@@ -145,9 +148,6 @@ app.use('/api/search', searchRoutes);
 
 //Payment Routes
 app.use('/api/payments', paymentRoutes)
-
-//Review Routes
-app.use('/api', reviewRoutes)
 
 //Notification Routes
 app.use('/api/notifications', notificationRoutes)

@@ -325,6 +325,13 @@ class ApiService extends BaseApiService {
   Future<ApiResponse<Map<String, dynamic>>> getMyReview(String courseId) =>
       _reviewService.getMyReview(courseId);
 
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorReviews({
+    required String instructorId,
+    int page = 1,
+    int limit = 10,
+  }) =>
+      _reviewService.getInstructorReviews(instructorId: instructorId, page: page, limit: limit);
+
   // ==================== NOTES & MATERIALS METHODS ====================
   
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseNotes(String courseId) =>

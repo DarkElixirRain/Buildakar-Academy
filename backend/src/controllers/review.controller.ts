@@ -18,7 +18,7 @@ export async function CreateReview(req:Request,res:Response,next:NextFunction) {
         }
         const createreview = await createReview(userId,courseId,rating,comment)
 
-        if(!createReview){
+        if(!createreview){
         return res.status(401).json("Error while creating review")
         }
 

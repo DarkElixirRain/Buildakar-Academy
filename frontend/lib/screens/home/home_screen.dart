@@ -165,23 +165,6 @@ class _HomeContentState extends State<HomeContent> {
       searchProvider.clearResults();
     });
 
-    // Auto-navigate to instructor profile after 5 seconds for testing
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 5), () {
-        if (mounted && _topInstructors.isNotEmpty) {
-          final firstInstructor = _topInstructors.first;
-          final instructorId = _getInstructorId(firstInstructor);
-          if (instructorId.isNotEmpty) {
-            print('🏠 HomeScreen: Auto-navigating to instructor profile for instructorId: $instructorId');
-            Navigator.pushNamed(
-              context,
-              '/instructor',
-              arguments: {'instructorId': instructorId},
-            );
-          }
-        }
-      });
-    });
   }
 
   @override

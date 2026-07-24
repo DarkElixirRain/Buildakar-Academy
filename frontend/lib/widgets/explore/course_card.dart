@@ -143,7 +143,10 @@ class _GridCard extends StatelessWidget {
                 children: [
                   if (course['category'] != null)
                     Text(
-                      (course['category'] as String).toUpperCase(),
+                      (course['category'] is String
+                          ? course['category'] as String
+                          : (course['category'] as Map)['name'] as String? ?? ''
+                      ).toUpperCase(),
                       style: GoogleFonts.inter(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
@@ -165,7 +168,7 @@ class _GridCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    course['instructor'] ?? '',
+                    _getInstructorName(course),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
@@ -293,7 +296,7 @@ class _ListCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    course['instructor'] ?? '',
+                    _getInstructorName(course),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
@@ -467,4 +470,17 @@ class CourseGrid extends StatelessWidget {
       },
     );
   }
+}
+
+String _getInstructorName(Map<String, dynamic> course) {
+  final instructor = course['instructor'] ?? course['instructorName'];
+  if (instructor is String) return instructor;
+  if (instructor is Map) {
+    final firstName = instructor['firstName'] as String? ?? '';
+    final lastName = instructor['lastName'] as String? ?? '';
+    final name = instructor['name'] as String? ?? '';
+    if (name.isNotEmpty) return name;
+    return '${firstName} ${lastName}'.trim();
+  }
+  return '';
 }
