@@ -85,10 +85,10 @@ export const instructorController = {
   // Get instructor by ID
   async getInstructorById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const { instructorId } = req.params;
       const userId = req.user?.id;
 
-      const instructor = await instructorService.getInstructorById(id, userId);
+      const instructor = await instructorService.getInstructorById(instructorId, userId);
 
       res.status(200).json({
         success: true,

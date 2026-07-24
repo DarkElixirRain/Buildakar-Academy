@@ -108,9 +108,9 @@ router.get(
 // ✅ PUBLIC CATCH-ALL - Must be last
 // ============================================
 
-// GET /api/instructors/:id - Get instructor by ID
+// GET /api/instructors/:instructorId - Get instructor by ID
 router.get(
-  '/:id',
+  '/:instructorId',
   validate(schemas.instructorId, 'params'),
   instructorController.getInstructorById
 );
