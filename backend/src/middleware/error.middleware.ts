@@ -53,6 +53,7 @@ export const errorHandler = (
     return res.status(400).json({
       success: false,
       message: 'Invalid data provided',
+      error: err.message,
     });
   }
 
