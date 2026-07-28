@@ -9,6 +9,10 @@ class InstructorCourseProvider extends ChangeNotifier {
   bool _isSubmitting = false;
   String? _error;
 
+  double _uploadProgress = 0.0;
+  String _uploadPhase = '';
+  bool _isUploading = false;
+
   List<Course> _courses = [];
   int _totalCourses = 0;
   int _currentPage = 1;
@@ -22,6 +26,9 @@ class InstructorCourseProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   String? get error => _error;
+  double get uploadProgress => _uploadProgress;
+  String get uploadPhase => _uploadPhase;
+  bool get isUploading => _isUploading;
   List<Course> get courses => _courses;
   int get totalCourses => _totalCourses;
   bool get hasMore => _hasMore;
@@ -389,19 +396,44 @@ class InstructorCourseProvider extends ChangeNotifier {
   }
 
   Future<bool> uploadLessonVideo(String lessonId, File videoFile) async {
+    _isUploading = true;
+    _uploadProgress = 0.0;
+    _uploadPhase = 'Preparing...';
+    _error = null;
+    notifyListeners();
+
     try {
-      final r = await _api.uploadLessonVideo(lessonId, videoFile);
+      final fileSizeMb = videoFile.lengthSync() / (1024 * 1024);
+      final r = await _api.uploadLessonVideo(
+        lessonId,
+        videoFile,
+        onProgress: (sent, total) {
+          final percent = sent / total;
+          _uploadProgress = percent;
+          _uploadPhase = 'Uploading ${(percent * 100).toStringAsFixed(0)}%';
+          notifyListeners();
+        },
+      );
       if (r.success) {
+        _uploadPhase = 'Processing video...';
+        notifyListeners();
         final courseId = _currentCourseData?['id']?.toString();
         if (courseId != null) await loadCourseDetail(courseId);
+        _uploadPhase = 'Complete!';
+        _isUploading = false;
+        notifyListeners();
         return true;
       } else {
         _error = r.error;
+        _uploadPhase = 'Failed';
+        _isUploading = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
       _error = e.toString();
+      _uploadPhase = 'Failed';
+      _isUploading = false;
       notifyListeners();
       return false;
     }

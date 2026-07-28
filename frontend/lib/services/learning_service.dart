@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,6 +7,31 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
+
+class _ProgressMultipartRequest extends http.MultipartRequest {
+  final void Function(int bytesSent, int totalBytes) onProgress;
+
+  _ProgressMultipartRequest(super.method, super.url, {required this.onProgress});
+
+  @override
+  http.ByteStream finalize() {
+    final byteStream = super.finalize();
+    final total = contentLength;
+    var sent = 0;
+
+    final progressStream = byteStream.transform(
+      StreamTransformer.fromHandlers(
+        handleData: (List<int> data, EventSink<List<int>> sink) {
+          sent += data.length;
+          onProgress(sent, total);
+          sink.add(data);
+        },
+      ),
+    );
+
+    return http.ByteStream(progressStream);
+  }
+}
 
 class LearningApiService extends BaseApiService {
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseSections(String courseId) async {
@@ -89,32 +115,37 @@ class LearningApiService extends BaseApiService {
     return ApiResponse.error('Failed to delete lesson');
   }
 
-  Future<ApiResponse<Map<String, dynamic>>> uploadLessonVideo(String lessonId, File videoFile) async {
+  Future<ApiResponse<Map<String, dynamic>>> uploadLessonVideo(
+    String lessonId,
+    File videoFile, {
+    void Function(int sent, int total)? onProgress,
+  }) async {
     try {
       final token = await getToken();
       if (token == null) return ApiResponse.error('User not authenticated');
 
       final uri = Uri.parse('${AppConfig.apiBaseUrl}/lessons/$lessonId/upload-video');
+      final fileLength = await videoFile.length();
 
       http.Response response;
       var bearer = token;
 
-      // First attempt
-      {
-        final request = http.MultipartRequest('POST', uri);
-        request.headers['Authorization'] = 'Bearer $bearer';
+      Future<http.Response> _doUpload(String authToken) async {
+        final request = _ProgressMultipartRequest('POST', uri,
+          onProgress: onProgress ?? (_, __) {},
+        );
+        request.headers['Authorization'] = 'Bearer $authToken';
         request.files.add(await http.MultipartFile.fromPath('video', videoFile.path));
-        response = await http.Response.fromStream(await request.send());
+        return await http.Response.fromStream(await request.send());
       }
+
+      response = await _doUpload(bearer);
 
       if (response.statusCode == 401) {
         final newToken = await refreshAccessToken();
         if (newToken == null) return ApiResponse.error('Session expired. Please login again.');
         bearer = newToken;
-        final retry = http.MultipartRequest('POST', uri);
-        retry.headers['Authorization'] = 'Bearer $bearer';
-        retry.files.add(await http.MultipartFile.fromPath('video', videoFile.path));
-        response = await http.Response.fromStream(await retry.send());
+        response = await _doUpload(bearer);
       }
 
       final result = jsonDecode(response.body);
