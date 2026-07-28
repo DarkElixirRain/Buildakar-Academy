@@ -1,7 +1,7 @@
 // lib/config/app_config.dart
 
 class AppConfig {
-  static const String apiBaseUrl = 'http://192.168.1.11:3000/api';
+  static const String apiBaseUrl = 'https://api.buildakar.com/api';
   static const String authBaseUrl = '$apiBaseUrl/auth';
   static const String googleAuthUrl = '$authBaseUrl/google';
   static const String googleCallbackUrl = '$apiBaseUrl/auth/google/callback';

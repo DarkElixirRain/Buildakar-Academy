@@ -294,8 +294,12 @@ class ApiService extends BaseApiService {
   Future<ApiResponse<dynamic>> deleteLesson(String lessonId) =>
       _learningService.deleteLesson(lessonId);
 
-  Future<ApiResponse<Map<String, dynamic>>> uploadLessonVideo(String lessonId, File videoFile) =>
-      _learningService.uploadLessonVideo(lessonId, videoFile);
+  Future<ApiResponse<Map<String, dynamic>>> uploadLessonVideo(
+    String lessonId,
+    File videoFile, {
+    void Function(int sent, int total)? onProgress,
+  }) =>
+      _learningService.uploadLessonVideo(lessonId, videoFile, onProgress: onProgress);
 
   Future<ApiResponse<dynamic>> deleteLessonVideo(String lessonId) =>
       _learningService.deleteLessonVideo(lessonId);
