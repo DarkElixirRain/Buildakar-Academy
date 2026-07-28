@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/colors.dart';
 
 class LoadingWidget extends StatelessWidget {
   final String? message;
@@ -8,7 +9,7 @@ class LoadingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
 
     return Center(
       child: Column(
@@ -24,7 +25,7 @@ class LoadingWidget extends StatelessWidget {
             Text(
               message!,
               style: TextStyle(
-                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                color: AppColors.getTextSecondaryColor(brightness),
               ),
             ),
           ],

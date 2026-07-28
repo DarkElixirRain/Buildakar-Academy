@@ -1,6 +1,7 @@
 // lib/widgets/common/loading_shimmer.dart
 
 import 'package:flutter/material.dart';
+import '../../constants/colors.dart';
 
 /// A shimmer loading effect widget for loading states
 class LoadingShimmer extends StatelessWidget {
@@ -79,11 +80,11 @@ class ShimmerWidget extends StatelessWidget {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, _) {
-        final brightness = MediaQuery.of(context).platformBrightness;
+        final brightness = Theme.of(context).brightness;
         final isDark = brightness == Brightness.dark;
 
-        final baseColor = isDark ? Colors.grey[850]! : Colors.grey[300]!;
-        final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+        final baseColor = AppColors.getBackgroundElementColor(brightness);
+        final highlightColor = AppColors.getBackgroundSelectedColor(brightness);
 
         return ShaderMask(
           shaderCallback: (bounds) {
@@ -119,7 +120,7 @@ class ShimmerPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final dark = isDark ? true : brightness == Brightness.dark;
 
     return LoadingShimmer(
@@ -127,7 +128,7 @@ class ShimmerPlaceholder extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: dark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+          color: AppColors.getBackgroundElementColor(dark ? Brightness.dark : Brightness.light),
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
@@ -145,7 +146,7 @@ class CourseCardSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+        color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -154,7 +155,7 @@ class CourseCardSkeleton extends StatelessWidget {
             width: 100,
             height: double.infinity,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+              color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(14),
                 bottomLeft: Radius.circular(14),
@@ -268,7 +269,7 @@ class CategoryCardSkeleton extends StatelessWidget {
       width: 160,
       height: 120,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+        color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -277,7 +278,7 @@ class CategoryCardSkeleton extends StatelessWidget {
           Container(
             height: 70,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+              color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -332,7 +333,7 @@ class InstructorCardSkeleton extends StatelessWidget {
       width: 180,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+        color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -343,7 +344,7 @@ class InstructorCardSkeleton extends StatelessWidget {
             height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+              color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
             ),
           ),
           const SizedBox(height: 12),
@@ -351,7 +352,7 @@ class InstructorCardSkeleton extends StatelessWidget {
             height: 14,
             width: 100,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+              color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -360,7 +361,7 @@ class InstructorCardSkeleton extends StatelessWidget {
             height: 12,
             width: 80,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+              color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
               borderRadius: BorderRadius.circular(4),
             ),
           ),

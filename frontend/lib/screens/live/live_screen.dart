@@ -294,7 +294,7 @@ class _LiveScreenState extends State<LiveScreen>
                   Expanded(
                     child: showSkeleton
                         ? SkeletonLiveClassList(
-                            isDark: isDark,
+                            brightness: brightness,
                             isGrid: isGridLayout,
                             crossAxisCount: _crossAxisCount(screenWidth),
                             horizontalPadding: horizontalPadding,
@@ -675,9 +675,7 @@ class _ConnectingDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF1E2028)
-              : Colors.white,
+          color: AppColors.getBackgroundElementColor(Theme.of(context).brightness),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -705,9 +703,7 @@ class _ConnectingDialog extends StatelessWidget {
               'Please wait while we set up the meeting',
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white60
-                    : Colors.black54,
+                  color: AppColors.getTextSecondaryColor(Theme.of(context).brightness).withValues(alpha: 0.7),
               ),
             ),
           ],

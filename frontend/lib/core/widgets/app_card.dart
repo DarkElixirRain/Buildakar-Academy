@@ -27,6 +27,7 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
 
     Widget card = Container(
       width: double.infinity,
@@ -37,9 +38,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color:
             backgroundColor ??
-            (isDark
-                ? AppColors.darkBackgroundElement.withValues(alpha: 0.8)
-                : AppColors.lightBackgroundElement.withValues(alpha: 0.8)),
+            AppColors.getBackgroundElementColor(brightness).withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
           color: isDark

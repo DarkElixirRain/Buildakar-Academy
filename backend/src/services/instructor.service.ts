@@ -39,7 +39,7 @@ export const instructorService = {
         totalStudents: true,
         totalCourses: true,
         isVerifiedInstructor: true,
-        followers: {
+        following: {
           select: {
             followerId: true,
           },
@@ -62,7 +62,7 @@ export const instructorService = {
       coursesCount: instructor.totalCourses,
       isVerified: instructor.isVerifiedInstructor,
       isFollowing: false,
-      followerCount: instructor.followers.length,
+      followerCount: instructor.following.length,
     }));
   },
 
@@ -137,7 +137,7 @@ export const instructorService = {
           totalCourses: true,
           totalReviews: true,
           isVerifiedInstructor: true,
-          followers: {
+          following: {
             select: {
               followerId: true,
             },
@@ -202,7 +202,7 @@ export const instructorService = {
         title: instructor.title || '',
         bio: instructor.bio || '',
         isVerified: instructor.isVerifiedInstructor,
-        followerCount: instructor.followers.length,
+      followerCount: instructor.following.length,
         isFollowing: false,
         courses: instructor.courses,
         reviews: instructor.reviews,
@@ -241,7 +241,7 @@ export const instructorService = {
         isVerifiedInstructor: true,
         createdAt: true,
         socialLinks: true,
-        followers: {
+        following: {
           select: {
             followerId: true,
           },
@@ -310,7 +310,7 @@ export const instructorService = {
 
     // Check if current user is following this instructor
     const isFollowing = currentUserId
-      ? instructor.followers.some(f => f.followerId === currentUserId)
+      ? instructor.following.some(f => f.followerId === currentUserId)
       : false;
 
     // Calculate category stats
@@ -339,7 +339,7 @@ export const instructorService = {
     return {
       ...instructor,
       isFollowing,
-      followerCount: instructor.followers.length,
+      followerCount: instructor.following.length,
       categories: categories.map(cat => ({
         ...cat,
         courseCount: courseCategories.find(cc => cc.categoryId === cat.id)?._count || 0,
@@ -602,7 +602,7 @@ const follower = await prisma.user.findUnique({
         totalStudents: true,
         totalCourses: true,
         isVerifiedInstructor: true,
-        followers: {
+        following: {
           select: {
             followerId: true,
           },
@@ -623,7 +623,7 @@ const follower = await prisma.user.findUnique({
       studentsCount: instructor.totalStudents,
       coursesCount: instructor.totalCourses,
       isVerified: instructor.isVerifiedInstructor,
-      followerCount: instructor.followers.length,
+      followerCount: instructor.following.length,
     }));
   },
 

@@ -186,9 +186,6 @@ class InstructorApiService extends BaseApiService {
 
         print('✅ Loaded ${courses.length} courses');
         return ApiResponse.success(courses, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor courses');
     } catch (e) {
@@ -213,9 +210,6 @@ class InstructorApiService extends BaseApiService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor stats');
     } catch (e) {
@@ -243,9 +237,6 @@ class InstructorApiService extends BaseApiService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor analytics');
     } catch (e) {
@@ -270,9 +261,6 @@ class InstructorApiService extends BaseApiService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to update instructor profile');
     } catch (e) {
@@ -307,9 +295,6 @@ class InstructorApiService extends BaseApiService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor students');
     } catch (e) {
@@ -342,9 +327,6 @@ class InstructorApiService extends BaseApiService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor earnings');
     } catch (e) {

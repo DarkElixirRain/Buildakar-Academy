@@ -100,12 +100,11 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
       firstDate: DateTime.now().add(const Duration(hours: 1)),
       lastDate: DateTime.now().add(const Duration(days: 30)),
       builder: (context, child) {
+        final pickerBrightness = Provider.of<ThemeProvider>(context).isDarkMode ? Brightness.dark : Brightness.light;
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Provider.of<ThemeProvider>(context).isDarkMode
-                  ? Colors.blue.shade400
-                  : Colors.blue.shade700,
+              primary: AppColors.getPrimaryColor(pickerBrightness),
             ),
           ),
           child: child!,
@@ -121,12 +120,11 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
           minute: 0,
         ),
         builder: (context, child) {
+          final pickerBrightness = Provider.of<ThemeProvider>(context).isDarkMode ? Brightness.dark : Brightness.light;
           return Theme(
             data: Theme.of(context).copyWith(
               colorScheme: ColorScheme.light(
-                primary: Provider.of<ThemeProvider>(context).isDarkMode
-                    ? Colors.blue.shade400
-                    : Colors.blue.shade700,
+                primary: AppColors.getPrimaryColor(pickerBrightness),
               ),
             ),
             child: child!,
@@ -547,7 +545,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withAlpha(20),
+                                color: AppColors.getWarningColor(brightness).withAlpha(20),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -555,7 +553,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                                 children: [
                                   Icon(
                                     Icons.info_outline,
-                                    color: Colors.orange.shade700,
+                                    color: AppColors.getWarningColor(brightness),
                                     size: 20,
                                   ),
                                   const SizedBox(width: 10),
@@ -565,7 +563,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                                           ? 'You have $_totalCoursesCount course${_totalCoursesCount > 1 ? 's' : ''} but none are published. Publish a course first to link it.'
                                           : 'You don\'t have any courses yet.',
                                       style: TextStyle(
-                                        color: Colors.orange.shade700,
+                                        color: AppColors.getWarningColor(brightness),
                                         fontSize: 14,
                                       ),
                                     ),
@@ -765,19 +763,19 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withAlpha(10),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.blue.withAlpha(30),
-                          ),
+                        color: AppColors.getPrimaryColor(brightness).withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.getPrimaryColor(brightness).withAlpha(30),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              size: 18,
-                              color: Colors.blue.shade400,
-                            ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: AppColors.getPrimaryLightColor(brightness),
+                          ),
                             const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -786,9 +784,7 @@ class _CreateLiveClassScreenState extends State<CreateLiveClassScreen> {
                                   'Classes linked to a course require enrollment to join.',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
+                                    color: AppColors.getTextSecondaryColor(brightness),
                                     height: 1.5,
                                   ),
                                 ),

@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../models/course_model.dart';
-import '../../theme/app_colors.dart';
+import '../../constants/colors.dart';
 
 class StudyMaterialList extends StatefulWidget {
   final List<StudyMaterial> materials;
   final bool isEnrolled;
-  final AppColors colors;
-
   const StudyMaterialList({
     super.key,
     required this.materials,
     required this.isEnrolled,
-    required this.colors,
   });
 
   @override
@@ -57,11 +54,11 @@ class _StudyMaterialListState extends State<StudyMaterialList> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = widget.colors;
+    final brightness = Theme.of(context).brightness;
     if (widget.materials.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(24),
-        child: Text('No study materials yet.', style: TextStyle(color: colors.textSecondary)),
+        child: Text('No study materials yet.', style: TextStyle(color: AppColors.getTextSecondaryColor(brightness))),
       );
     }
 
@@ -72,12 +69,12 @@ class _StudyMaterialListState extends State<StudyMaterialList> {
         children: [
           Text(
             'Resources & downloads',
-            style: TextStyle(color: colors.text, fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.getTextColor(brightness), fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             'Slides, source code, and reference docs to go along with the lessons.',
-            style: TextStyle(color: colors.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppColors.getTextSecondaryColor(brightness), fontSize: 12),
           ),
           const SizedBox(height: 14),
           ...widget.materials.map((m) {
@@ -88,7 +85,7 @@ class _StudyMaterialListState extends State<StudyMaterialList> {
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colors.backgroundElement,
+                color: AppColors.getBackgroundElementColor(brightness),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -96,19 +93,19 @@ class _StudyMaterialListState extends State<StudyMaterialList> {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(color: colors.badgeBg, borderRadius: BorderRadius.circular(10)),
-                    child: Icon(_iconFor(m.type), color: colors.primary, size: 20),
+                    decoration: BoxDecoration(color: AppColors.getBackgroundElementColor(brightness), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(_iconFor(m.type), color: AppColors.getPrimaryColor(brightness), size: 20),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(m.title, style: TextStyle(color: colors.text, fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text(m.title, style: TextStyle(color: AppColors.getTextColor(brightness), fontSize: 13, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 2),
                         Text(
                           m.relatedSectionTitle != null ? '${m.sizeLabel} • ${m.relatedSectionTitle}' : m.sizeLabel,
-                          style: TextStyle(color: colors.textSecondary, fontSize: 11),
+                          style: TextStyle(color: AppColors.getTextSecondaryColor(brightness), fontSize: 11),
                         ),
                         if (downloading) ...[
                           const SizedBox(height: 6),
@@ -117,7 +114,7 @@ class _StudyMaterialListState extends State<StudyMaterialList> {
                             child: LinearProgressIndicator(
                               value: progress,
                               minHeight: 4,
-                              backgroundColor: colors.backgroundSelected,
+                              backgroundColor: AppColors.getBackgroundSelectedColor(brightness),
                             ),
                           ),
                         ],
@@ -133,7 +130,7 @@ class _StudyMaterialListState extends State<StudyMaterialList> {
                           : m.type == StudyMaterialType.link
                               ? Icons.open_in_new
                               : Icons.download_outlined,
-                      color: done ? colors.success : colors.primary,
+                      color: done ? AppColors.getSuccessColor(brightness) : AppColors.getPrimaryColor(brightness),
                     ),
                   ),
                 ],

@@ -203,7 +203,7 @@ export class EnrollmentService {
   private async getFirstLessons(courseIds: string[]) {
     const sections = await prisma.section.findMany({
       where: { courseId: { in: courseIds } },
-      orderBy: { courseId: "asc", order: "asc" },
+      orderBy: [{ courseId: "asc" }, { order: "asc" }],
       include: {
         lessons: { orderBy: { order: "asc" }, take: 1 },
       },

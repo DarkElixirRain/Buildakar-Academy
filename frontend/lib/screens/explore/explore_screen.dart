@@ -6,10 +6,12 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/common/error_state.dart';
 import '../../widgets/explore/explore_widget.dart';
 import '../../widgets/explore/course_card.dart';
 import '../../widgets/explore/explore_loading_skeleton.dart';
+import '../course/course_detail/course_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   final int? initialTab;
@@ -33,7 +35,6 @@ class _ExploreContentState extends State<ExploreScreen>
 
   bool _isLoading = true;
   bool _isLoadingMore = false;
-  bool _isRefreshing = false;
   bool _hasMore = true;
   String? _error;
 
@@ -83,26 +84,16 @@ class _ExploreContentState extends State<ExploreScreen>
   }
 
   Future<void> _loadCategoriesAndCourses() async {
-    // If categories are cached, use them immediately
     if (_cachedCategories.isNotEmpty) {
-      setState(() {
-        _categories = _cachedCategories;
-        _isLoading = false;
-      });
-      // Still load courses
-      await _loadCourses(reset: true);
+      _categories = _cachedCategories;
+      _loadCourses(reset: true);
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    _error = null;
 
     try {
-      // Load categories first
       final categoryResponse = await _apiService.getCategories();
-      
       if (!mounted) return;
 
       if (categoryResponse.success) {
@@ -120,21 +111,14 @@ class _ExploreContentState extends State<ExploreScreen>
             };
           }).toList()
         ];
-        
-        // Cache categories
         _cachedCategories = newCategories;
         _categories = newCategories;
       }
 
-      // Load courses using the public endpoint
       await _loadCourses(reset: true);
-      
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _error = 'Failed to load data. Please try again.';
-        _isLoading = false;
-      });
+      setState(() => _error = 'Failed to load data. Please try again.');
     }
   }
 
@@ -202,16 +186,39 @@ class _ExploreContentState extends State<ExploreScreen>
   }
 
   Future<void> _refresh() async {
-    setState(() => _isRefreshing = true);
     _currentPage = 0;
     await _loadCourses(reset: true);
-    if (mounted) setState(() => _isRefreshing = false);
   }
 
   Map<String, dynamic> _transformCourseData(dynamic course) {
     final price = _toDouble(course['price']);
     final originalPrice = _toDouble(course['originalPrice'] ?? course['price']);
-    
+    final discountPrice = _toDouble(course['discountPrice']);
+    final students = _toInt(course['studentCount'] ?? course['_count']?['enrollments']);
+    final rating = _toDouble(course['rating'] ?? course['avgRating']);
+
+    // Determine badge
+    String badge = '📚 Course';
+    if (students > 10000) {
+      badge = '🔥 Bestseller';
+    } else if (rating >= 4.8 && students > 1000) {
+      badge = '⭐ Top Rated';
+    } else if (students > 5000) {
+      badge = '📈 Popular';
+    } else if (course['isNew'] == true) {
+      badge = '✨ New';
+    }
+
+    // Format price display
+    String priceDisplay;
+    if (discountPrice > 0) {
+      priceDisplay = 'रू ${_formatCurrency(discountPrice)}';
+    } else if (price > 0) {
+      priceDisplay = 'रू ${_formatCurrency(price)}';
+    } else {
+      priceDisplay = 'Free';
+    }
+
     // Get category name
     String categoryName = '';
     if (course['category'] != null) {
@@ -221,7 +228,7 @@ class _ExploreContentState extends State<ExploreScreen>
         categoryName = course['category'];
       }
     }
-    
+
     // Get instructor name
     String instructorName = 'Unknown Instructor';
     if (course['instructor'] != null) {
@@ -249,10 +256,13 @@ class _ExploreContentState extends State<ExploreScreen>
       'category': categoryName,
       'categoryId': course['categoryId'] ?? course['category']?['id'] ?? '',
       'level': course['level'] ?? 'Beginner',
-      'rating': _toDouble(course['rating'] ?? course['avgRating']),
-      'students': _toInt(course['studentCount'] ?? course['_count']?['enrollments']),
+      'rating': rating,
+      'students': students,
       'price': price,
+      'discountPrice': discountPrice,
       'oldPrice': originalPrice > price ? originalPrice : null,
+      'priceDisplay': priceDisplay,
+      'badge': badge,
       'isBookmarked': false,
       'description': course['description'] ?? '',
       'lessonCount': _toInt(course['lessonCount'] ?? course['_count']?['lessons']),
@@ -260,6 +270,15 @@ class _ExploreContentState extends State<ExploreScreen>
       'isBestseller': course['isBestseller'] ?? false,
       'progress': _toDouble(course['progress']),
     };
+  }
+
+  String _formatCurrency(num amount) {
+    final double amountDouble = amount.toDouble();
+    if (amountDouble == amountDouble.roundToDouble()) {
+      return amountDouble.toStringAsFixed(0);
+    } else {
+      return amountDouble.toStringAsFixed(2);
+    }
   }
 
   String _getThumbnail(dynamic course) {
@@ -322,14 +341,14 @@ class _ExploreContentState extends State<ExploreScreen>
       case 'Highest Rated':
         return 'rating';
       case 'Price: Low to High':
-        return 'price_asc';
+        return 'priceLow';
       case 'Price: High to Low':
-        return 'price_desc';
+        return 'priceHigh';
       case 'Newest':
         return 'newest';
       case 'Most Popular':
       default:
-        return 'popular';
+        return 'popularity';
     }
   }
 
@@ -379,10 +398,17 @@ class _ExploreContentState extends State<ExploreScreen>
   }
 
   void _openCourse(String courseId) {
-    Navigator.pushNamed(
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isAuthenticated = authProvider.isAuthenticated;
+
+    Navigator.push(
       context,
-      '/course',
-      arguments: {'courseId': courseId},
+      MaterialPageRoute(
+        builder: (context) => CourseDetailScreen(
+          courseId: courseId,
+          isAuthenticated: isAuthenticated,
+        ),
+      ),
     );
   }
 
@@ -441,19 +467,9 @@ class _ExploreContentState extends State<ExploreScreen>
             ? 24
             : 40;
 
-    // Fixed: Removed const so the skeleton can access ThemeProvider
-    if (_isLoading && _allCourses.isEmpty) {
-      return const ExploreLoadingSkeleton();
-    }
-
-    if (_error != null && _allCourses.isEmpty) {
-      return ErrorState(
-        message: _error!,
-        onRetry: _loadCategoriesAndCourses,
-      );
-    }
-
     final courses = _visibleCourses;
+    final showSkeleton = _isLoading && _allCourses.isEmpty;
+    final showError = _error != null && _allCourses.isEmpty && !_isLoading;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -497,8 +513,7 @@ class _ExploreContentState extends State<ExploreScreen>
                               ),
                             ],
                           ),
-                          // Course count on large screens
-                          if (screenWidth > 900 && courses.isNotEmpty)
+                          if (screenWidth > 900 && !showSkeleton && courses.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
@@ -521,37 +536,17 @@ class _ExploreContentState extends State<ExploreScreen>
                       ),
                       const SizedBox(height: 20),
                       
-                      // Search bar and filters row - now side by side on large screens
+                      // Filters row - just the sort button
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Search bar (flexible)
-                          Expanded(
-                            child: ExploreSearchBar(
-                              controller: _searchController,
-                              hasActiveFilters: _hasActiveFilters,
-                              onFilterTap: _openFilters,
-                              onChanged: (v) {
-                                setState(() => _searchQuery = v);
-                                // Debounce search
-                                Future.delayed(const Duration(milliseconds: 500), () {
-                                  if (_searchQuery == v) {
-                                    _currentPage = 0;
-                                    _loadCourses(reset: true);
-                                  }
-                                });
-                              },
-                            ),
-                          ),
-                          // Sort dropdown on large screens
-                          if (screenWidth > 780) ...[
-                            const SizedBox(width: 12),
-                            Container(
-                              height: 52,
+                          InkWell(
+                            onTap: _openFilters,
+                            child: Container(
+                              height: 44,
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
                                 color: backgroundElementColor,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.1),
                                 ),
@@ -559,50 +554,69 @@ class _ExploreContentState extends State<ExploreScreen>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    Icons.sort_rounded,
-                                    size: 18,
-                                    color: textSecondaryColor,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  DropdownButton<String>(
-                                    value: _sort,
-                                    dropdownColor: backgroundElementColor,
-                                    underline: const SizedBox(),
+                                  Icon(Icons.sort_rounded, size: 18, color: textSecondaryColor),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _sort,
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: textColor,
                                     ),
-                                    items: const [
-                                      'Most Popular',
-                                      'Newest',
-                                      'Highest Rated',
-                                      'Price: Low to High',
-                                      'Price: High to Low',
-                                    ].map((String value) {
-                                      return DropdownMenuItem<String>(
-                                        value: value,
-                                        child: Text(value),
-                                      );
-                                    }).toList(),
-                                    onChanged: (String? newValue) {
-                                      if (newValue != null) {
-                                        setState(() {
-                                          _sort = newValue;
-                                          _currentPage = 0;
-                                          _loadCourses(reset: true);
-                                        });
-                                      }
-                                    },
                                   ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.expand_more_rounded, size: 18, color: textSecondaryColor),
                                 ],
                               ),
                             ),
-                          ],
+                          ),
+                          const SizedBox(width: 10),
+                          if (_hasActiveFilters)
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _levelFilters = {};
+                                  _priceRange = const RangeValues(0, 200);
+                                });
+                                _loadCourses(reset: true);
+                              },
+                              child: Container(
+                                height: 44,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.clear_rounded, size: 16, color: primaryColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Clear',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          const Spacer(),
+                          if (!showSkeleton)
+                            Text(
+                              '${courses.length} ${courses.length == 1 ? 'course' : 'courses'}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: textSecondaryColor,
+                              ),
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       // Categories chips
                       if (_categories.isNotEmpty)
@@ -612,49 +626,59 @@ class _ExploreContentState extends State<ExploreScreen>
                           onSelected: _handleCategorySelected,
                         ),
                       const SizedBox(height: 16),
-                      
-                      // Sort and count row (for mobile)
-                      if (screenWidth <= 780)
-                        Row(
-                          children: [
-                            Text(
-                              '${courses.length} courses',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: textSecondaryColor,
-                              ),
-                            ),
-                            const Spacer(),
-                            InkWell(
-                              onTap: _openFilters,
-                              child: Row(
-                                children: [
-                                  Text(
-                                    _sort,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.expand_more_rounded,
-                                    size: 18,
-                                    color: primaryColor,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      const SizedBox(height: 14),
                     ],
                   ),
                 ),
               ),
             ),
-            if (courses.isEmpty)
+            // Course grid area - shows skeleton, error, or actual courses
+            if (showSkeleton)
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(horizontalPadding, 0, horizontalPadding, 24),
+                sliver: SliverToBoxAdapter(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1400),
+                    child: _buildCourseSkeleton(screenWidth, isDark, brightness),
+                  ),
+                ),
+              )
+            else if (showError)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cloud_off_rounded, size: 64, color: textSecondaryColor),
+                        const SizedBox(height: 16),
+                        Text(
+                          _error!,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: textColor,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadCategoriesAndCourses,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Try Again'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (courses.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
@@ -706,9 +730,7 @@ class _ExploreContentState extends State<ExploreScreen>
                             },
                             child: Text(
                               'Clear all filters',
-                              style: TextStyle(
-                                color: primaryColor,
-                              ),
+                              style: TextStyle(color: primaryColor),
                             ),
                           ),
                         ],
@@ -734,9 +756,7 @@ class _ExploreContentState extends State<ExploreScreen>
                           if (_isLoadingMore)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 24),
-                              child: CircularProgressIndicator(
-                                color: primaryColor,
-                              ),
+                              child: CircularProgressIndicator(color: primaryColor),
                             ),
                           if (!_hasMore && courses.isNotEmpty)
                             Padding(
@@ -758,6 +778,76 @@ class _ExploreContentState extends State<ExploreScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCourseSkeleton(double screenWidth, bool isDark, Brightness brightness) {
+    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
+    final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
+    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
+
+    int columns;
+    if (screenWidth < 480) columns = 2;
+    else if (screenWidth < 780) columns = 2;
+    else if (screenWidth < 1100) columns = 3;
+    else columns = 4;
+
+    return Column(
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: columns * 2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.66,
+          ),
+          itemBuilder: (context, index) {
+            return Container(
+              decoration: BoxDecoration(
+                color: backgroundElementColor,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 110,
+                    decoration: BoxDecoration(
+                      color: backgroundSelectedColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(14),
+                        topRight: Radius.circular(14),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(height: 12, color: backgroundSelectedColor),
+                        const SizedBox(height: 8),
+                        Container(height: 10, width: 100, color: backgroundSelectedColor),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(height: 10, width: 40, color: backgroundSelectedColor),
+                            const SizedBox(width: 8),
+                            Container(height: 10, width: 60, color: backgroundSelectedColor),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

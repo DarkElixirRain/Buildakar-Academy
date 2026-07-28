@@ -73,25 +73,25 @@ class LiveClassCard extends StatelessWidget {
       case 'live':
       case 'started':
       case 'active':
-        statusColor = Colors.green;
+        statusColor = AppColors.getSuccessColor(brightness);
         statusText = 'LIVE';
         break;
       case 'scheduled':
       case 'upcoming':
-        statusColor = Colors.blue;
+        statusColor = AppColors.getPrimaryColor(brightness);
         statusText = 'Upcoming';
         break;
       case 'ended':
       case 'completed':
-        statusColor = Colors.grey;
+        statusColor = AppColors.getTextSecondaryColor(brightness);
         statusText = 'Ended';
         break;
       case 'cancelled':
-        statusColor = Colors.red;
+        statusColor = AppColors.getErrorColor(brightness);
         statusText = 'Cancelled';
         break;
       default:
-        statusColor = Colors.grey;
+        statusColor = AppColors.getTextSecondaryColor(brightness);
         statusText = status.toUpperCase();
     }
 
@@ -350,8 +350,8 @@ class _ActionButtons extends StatelessWidget {
           child: OutlinedButton(
             onPressed: isLive ? null : onRemindMe,
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               side: BorderSide(
                 color: isFollowing ? Colors.green.withAlpha(100) : textSecondaryColor.withAlpha(50),
               ),
@@ -363,13 +363,13 @@ class _ActionButtons extends StatelessWidget {
               children: [
                 Icon(
                   isFollowing ? Icons.notifications_active_rounded : Icons.notifications_off_rounded,
-                  size: 14,
+                  size: 12,
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 2),
                 Flexible(
                   child: Text(
                     isFollowing ? 'Remind' : 'Remind',
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -383,8 +383,8 @@ class _ActionButtons extends StatelessWidget {
           child: ElevatedButton(
             onPressed: canStart ? onStart : isLive ? onJoin : null,
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
               backgroundColor: canStart ? Colors.blue : isLive ? Colors.green : textSecondaryColor.withAlpha(50),
               foregroundColor: canStart || isLive ? Colors.white : textSecondaryColor,
               disabledBackgroundColor: textSecondaryColor.withAlpha(30),
@@ -395,13 +395,13 @@ class _ActionButtons extends StatelessWidget {
               children: [
                 Icon(
                   canStart ? Icons.play_circle_fill_rounded : isLive ? Icons.play_arrow_rounded : Icons.meeting_room_rounded,
-                  size: 14,
+                  size: 12,
                 ),
                 const SizedBox(width: 3),
                 Flexible(
                   child: Text(
                     canStart ? 'Start' : isLive ? 'Join' : status == 'upcoming' ? 'Soon' : 'Ended',
-                    style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

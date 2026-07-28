@@ -309,7 +309,6 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
-    final errorColor = AppColors.getErrorColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
@@ -489,9 +488,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : const Color(0xFF0F172A).withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
               offset: const Offset(0, 2),
               blurRadius: 6,
             ),
@@ -735,7 +732,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                 height: screenWidth < 380 ? 20 : 24,
                 width: screenWidth < 380 ? 120 : 160,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                  color: backgroundSelectedColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -743,7 +740,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                 height: screenWidth < 380 ? 14 : 18,
                 width: screenWidth < 380 ? 50 : 60,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                  color: backgroundSelectedColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -776,7 +773,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                     Container(
                       height: imageHeight,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                        color: backgroundSelectedColor,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(14),
                           topRight: Radius.circular(14),
@@ -794,7 +791,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                               height: 14,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                color: backgroundSelectedColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -803,7 +800,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                               height: 10,
                               width: 100,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                color: backgroundSelectedColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -814,7 +811,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                                   height: 12,
                                   width: 40,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                    color: backgroundSelectedColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
@@ -823,7 +820,7 @@ class _FeaturedCoursesState extends State<FeaturedCourses> {
                                   height: 10,
                                   width: 60,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                    color: backgroundSelectedColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),

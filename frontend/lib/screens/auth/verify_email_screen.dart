@@ -276,9 +276,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             decoration: InputDecoration(
                               counterText: '',
                               filled: true,
-                              fillColor: isDark
-                                  ? AppColors.darkBackgroundElement
-                                  : AppColors.lightBackgroundElement,
+                              fillColor: AppColors.getBackgroundElementColor(brightness),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(

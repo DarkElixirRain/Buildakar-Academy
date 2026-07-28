@@ -209,11 +209,12 @@ export class CourseService {
     page?: number;
     limit?: number;
     categoryId?: string;
+    instructorId?: string;
     search?: string;
     sortBy?: string;
     level?: string;
   }) {
-    const { page = 1, limit = 10, categoryId, search, sortBy, level } = filters;
+    const { page = 1, limit = 10, categoryId, instructorId, search, sortBy, level } = filters;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -222,6 +223,7 @@ export class CourseService {
     };
 
     if (categoryId) where.categoryId = categoryId;
+    if (instructorId) where.instructorId = instructorId;
     if (level) where.level = level;
     if (search) {
       where.OR = [

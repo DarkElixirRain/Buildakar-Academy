@@ -1,3 +1,4 @@
+import 'package:buildacad/screens/course/course_detail/course_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -5,6 +6,7 @@ import '../../providers/theme_provider.dart';
 import '../../services/instructor_service.dart';
 import '../../services/course_service.dart';
 import '../../services/api_service.dart';
+import '../../constants/colors.dart';
 import '../../models/course_model.dart';
 import '../../widgets/explore/course_card.dart';
 import '../../widgets/course/course_reviews.dart';
@@ -49,6 +51,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   bool _hasReviewedInstructor = false;
 
   late final TabController _tabController;
+  bool _isTogglingFollow = false;
 
   @override
   void initState() {
@@ -63,7 +66,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   }
 
   void _onTabChanged() {
-    if (_tabController.index == 2 && _instructorReviews.isEmpty && !_isLoadingReviews) {
+    if (_tabController.index == 1 && _instructorReviews.isEmpty && !_isLoadingReviews) {
       _loadInstructorReviews();
     }
   }
@@ -102,9 +105,19 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
       if (!mounted) return;
 
       if (instructorResponse.success && instructorResponse.data != null) {
+        final data = instructorResponse.data as Map<String, dynamic>;
         print('🔍 InstructorProfileScreen: Setting instructor data');
+        print('🔍 INSTRUCTOR DATA KEYS: ${data.keys}');
+        print('🔍 followerCount: ${data['followerCount']} (${data['followerCount'].runtimeType})');
+        print('🔍 followersCount: ${data['followersCount']} (${data['followersCount'].runtimeType})');
+        print('🔍 totalStudents: ${data['totalStudents']} (${data['totalStudents'].runtimeType})');
+        print('🔍 studentsCount: ${data['studentsCount']} (${data['studentsCount'].runtimeType})');
+        print('🔍 totalCourses: ${data['totalCourses']} (${data['totalCourses'].runtimeType})');
+        print('🔍 coursesCount: ${data['coursesCount']} (${data['coursesCount'].runtimeType})');
+        print('🔍 isFollowing: ${data['isFollowing']} (${data['isFollowing'].runtimeType})');
+        print('🔍 followers array length: ${(data['followers'] as List?)?.length}');
         setState(() {
-          _instructorData = instructorResponse.data as Map<String, dynamic>;
+          _instructorData = data;
           // Extract courses from instructor data if available
           final courses = _instructorData?['courses'] as List<dynamic>?;
           if (courses != null && courses.isNotEmpty) {
@@ -138,12 +151,11 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   Future<void> _loadInstructorCourses() async {
     try {
       print('🔍 InstructorProfileScreen: Loading instructor courses for ID: ${widget.instructorId}');
-      // Fetch courses for this instructor
-      final coursesResponse = await _courseService.getInstructorPublicCourses(
+      final coursesResponse = await _courseService.getPublicCourses(
         instructorId: widget.instructorId,
-        limit: 20, // Limit to 20 courses for now
+        limit: 20,
       );
-      print('🔍 InstructorProfileScreen: getInstructorPublicCourses response: success=${coursesResponse.success}, data=${coursesResponse.data != null ? 'present' : 'null'}');
+      print('🔍 InstructorProfileScreen: getPublicCourses response: success=${coursesResponse.success}, data=${coursesResponse.data != null ? 'present' : 'null'}');
       if (!mounted) return;
 
       if (coursesResponse.success &&
@@ -243,8 +255,8 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Instructor review submitted successfully!'),
-            backgroundColor: Colors.green,
+            content: Text('Instructor review submitted successfully!'),
+            backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
           ),
         );
 
@@ -275,14 +287,14 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   }
 
   Future<void> _toggleFollow() async {
-    if (_instructorData == null) return;
+    if (_instructorData == null || _isTogglingFollow) return;
 
     final instructorId = _getInstructorId(_instructorData!);
     if (instructorId.isEmpty) return;
 
+    setState(() => _isTogglingFollow = true);
     final isCurrentlyFollowing = _isFollowing(_instructorData!);
 
-    // Optimistically update UI
     setState(() {
       _instructorData!['isFollowing'] = !isCurrentlyFollowing;
     });
@@ -299,12 +311,12 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
         final newFollowersCount =
             response.data?['followersCount'] as int?;
         setState(() {
+          _isTogglingFollow = false;
           _instructorData!['isFollowing'] = newIsFollowing;
           if (newFollowersCount != null) {
             _instructorData!['followersCount'] = newFollowersCount;
           }
         });
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -312,12 +324,12 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
                   ? 'Now following this instructor'
                   : 'Unfollowed instructor',
             ),
-            backgroundColor: newIsFollowing ? Colors.green : Colors.orange,
+            backgroundColor: newIsFollowing ? AppColors.getSuccessColor(Theme.of(context).brightness) : AppColors.getWarningColor(Theme.of(context).brightness),
           ),
         );
       } else {
-        // Revert the optimistic update
         setState(() {
+          _isTogglingFollow = false;
           _instructorData!['isFollowing'] = isCurrentlyFollowing;
         });
         if (mounted) {
@@ -325,21 +337,21 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
             SnackBar(
               content: Text(response.error ??
                   'Failed to update follow status'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
             ),
           );
         }
       }
     } catch (e) {
-      // Revert the optimistic update
       setState(() {
+        _isTogglingFollow = false;
         _instructorData!['isFollowing'] = isCurrentlyFollowing;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
           ),
         );
       }
@@ -407,39 +419,45 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
   }
 
   int _getFollowersCount(Map<String, dynamic> instructor) {
-    if (instructor['followersCount'] != null) {
-      if (instructor['followersCount'] is int) {
-        return instructor['followersCount'] as int;
-      }
-      if (instructor['followersCount'] is double) {
-        return (instructor['followersCount'] as double).toInt();
+    const keys = ['followersCount', 'followerCount'];
+    for (final key in keys) {
+      if (instructor[key] != null) {
+        print('🔍 _getFollowersCount: found $key = ${instructor[key]} (${instructor[key].runtimeType})');
+        if (instructor[key] is int) return instructor[key] as int;
+        if (instructor[key] is double) return (instructor[key] as double).toInt();
+        print('🔍 _getFollowersCount: $key was not int/double, type=${instructor[key].runtimeType}');
       }
     }
+    if (instructor['followers'] is List) {
+      final len = (instructor['followers'] as List).length;
+      print('🔍 _getFollowersCount: using followers array length = $len');
+      return len;
+    }
+    print('🔍 _getFollowersCount: returning 0 (no data found)');
     return 0;
   }
 
   int _getCoursesCount(Map<String, dynamic> instructor) {
-    if (instructor['coursesCount'] != null) {
-      if (instructor['coursesCount'] is int) {
-        return instructor['coursesCount'] as int;
-      }
-      if (instructor['coursesCount'] is double) {
-        return (instructor['coursesCount'] as double).toInt();
+    const keys = ['coursesCount', 'totalCourses'];
+    for (final key in keys) {
+      if (instructor[key] != null) {
+        if (instructor[key] is int) return instructor[key] as int;
+        if (instructor[key] is double) return (instructor[key] as double).toInt();
       }
     }
-    // Fallback to actual courses list length
     return _instructorCourses.length;
   }
 
   int _getStudentsCount(Map<String, dynamic> instructor) {
-    if (instructor['studentsCount'] != null) {
-      if (instructor['studentsCount'] is int) {
-        return instructor['studentsCount'] as int;
-      }
-      if (instructor['studentsCount'] is double) {
-        return (instructor['studentsCount'] as double).toInt();
+    const keys = ['studentsCount', 'totalStudents'];
+    for (final key in keys) {
+      if (instructor[key] != null) {
+        print('🔍 _getStudentsCount: found $key = ${instructor[key]} (${instructor[key].runtimeType})');
+        if (instructor[key] is int) return instructor[key] as int;
+        if (instructor[key] is double) return (instructor[key] as double).toInt();
       }
     }
+    print('🔍 _getStudentsCount: returning 0');
     return 0;
   }
 
@@ -464,26 +482,43 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
       int studentsCount,
       bool isDark,
       Brightness brightness) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
+        ),
+      ),
       child: Column(
         children: [
-          // Avatar
-          CircleAvatar(
-            radius: 60,
-            backgroundImage: imageUrl.isNotEmpty
-                ? NetworkImage(imageUrl)
-                : null,
-            child: imageUrl.isEmpty
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  )
-                : null,
+          // Avatar with loading border
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: colorScheme.primary.withValues(alpha: 0.2),
+                width: 3,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 58,
+              backgroundImage: imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
+                  : null,
+              child: imageUrl.isEmpty
+                  ? Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: TextStyle(
+                        fontSize: 44,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(height: 16),
           // Name
@@ -492,58 +527,73 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: colorScheme.onSurface,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           // Title
           Text(
             title,
             style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 15,
+              color: colorScheme.onSurfaceVariant,
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           // Follow button and stats
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Follow button
-              ElevatedButton.icon(
-                onPressed: _toggleFollow,
-                icon: Icon(
-                  isFollowing ? Icons.check : Icons.person_add,
-                  size: 20,
-                ),
-                label: Text(
-                  isFollowing ? 'Following' : 'Follow',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+              SizedBox(
+                width: 130,
+                height: 42,
+                child: ElevatedButton.icon(
+                  onPressed: _isTogglingFollow ? null : _toggleFollow,
+                  icon: _isTogglingFollow
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isFollowing
+                                ? colorScheme.onSecondaryContainer
+                                : Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          isFollowing ? Icons.check : Icons.person_add,
+                          size: 20,
+                        ),
+                  label: Text(
+                    isFollowing ? 'Following' : 'Follow',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isFollowing
-                      ? Theme.of(context).colorScheme.secondaryContainer
-                      : Theme.of(context).colorScheme.primary,
-                  foregroundColor: isFollowing
-                      ? Theme.of(context).colorScheme.onSecondaryContainer
-                      : Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isFollowing
+                        ? colorScheme.secondaryContainer
+                        : colorScheme.primary,
+                    foregroundColor: isFollowing
+                        ? colorScheme.onSecondaryContainer
+                        : Colors.white,
+                    disabledBackgroundColor: isFollowing
+                        ? colorScheme.secondaryContainer
+                        : colorScheme.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
               // Stats
               Expanded(
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildStatColumn(
                       _formatCount(coursesCount),
@@ -671,14 +721,15 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
         return CourseCard(
           course: courseData,
           onTap: () {
-            // Navigate to course detail
             final courseId = courseData['id'] as String?;
             if (courseId != null && courseId.isNotEmpty) {
-              // For now, we'll just show a snackbar since the course detail screen doesn't exist yet
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Course details screen not implemented yet'),
-                  backgroundColor: Colors.orange,
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CourseDetailScreen(
+                    courseId: courseId,
+                    isAuthenticated: Provider.of<AuthProvider>(context, listen: false).user != null,
+                  ),
                 ),
               );
               Navigator.pushNamed(

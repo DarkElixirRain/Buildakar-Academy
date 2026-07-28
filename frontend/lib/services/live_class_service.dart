@@ -27,9 +27,6 @@ class LiveClassApiService extends BaseApiService {
             .map((item) => LiveClass.fromJson(item))
             .toList();
         return ApiResponse.success(classes, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch instructor live classes');
     } catch (e) {
@@ -57,9 +54,6 @@ class LiveClassApiService extends BaseApiService {
           LiveClass.fromJson(data['data'] ?? {}),
           message: data['message']
         );
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to create live class');
     } catch (e) {
@@ -87,9 +81,6 @@ class LiveClassApiService extends BaseApiService {
           LiveClass.fromJson(data['data'] ?? {}),
           message: data['message']
         );
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to update live class');
     } catch (e) {
@@ -116,9 +107,6 @@ class LiveClassApiService extends BaseApiService {
           LiveClass.fromJson(data['data'] ?? {}),
           message: data['message']
         );
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to start live class');
     } catch (e) {
@@ -145,9 +133,6 @@ class LiveClassApiService extends BaseApiService {
           LiveClass.fromJson(data['data'] ?? {}),
           message: data['message']
         );
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to end live class');
     } catch (e) {
@@ -174,9 +159,6 @@ class LiveClassApiService extends BaseApiService {
           LiveClass.fromJson(data['data'] ?? {}),
           message: data['message']
         );
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to cancel live class');
     } catch (e) {
@@ -212,9 +194,6 @@ class LiveClassApiService extends BaseApiService {
         _parseClassList(result, 'all');
 
         return ApiResponse.success(result, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch student live classes');
     } catch (e) {
@@ -251,9 +230,6 @@ class LiveClassApiService extends BaseApiService {
             .map((item) => LiveClass.fromJson(item))
             .toList();
         return ApiResponse.success(classes, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch student live classes');
     } catch (e) {
@@ -281,9 +257,6 @@ class LiveClassApiService extends BaseApiService {
             .map((item) => LiveClass.fromJson(item))
             .toList();
         return ApiResponse.success(classes, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch upcoming live classes');
     } catch (e) {
@@ -311,9 +284,6 @@ class LiveClassApiService extends BaseApiService {
             .map((item) => LiveClass.fromJson(item))
             .toList();
         return ApiResponse.success(classes, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch current live classes');
     } catch (e) {
@@ -347,9 +317,6 @@ class LiveClassApiService extends BaseApiService {
         }
 
         return ApiResponse.success(stats, message: data['message']);
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch live class statistics');
     } catch (e) {
@@ -376,9 +343,6 @@ class LiveClassApiService extends BaseApiService {
           data['data'] ?? {},
           message: data['message']
         );
-      } else if (response.statusCode == 401) {
-        await clearToken();
-        return ApiResponse.error('Session expired. Please login again.');
       }
       return ApiResponse.error(data['message'] ?? 'Failed to join live class');
     } catch (e) {

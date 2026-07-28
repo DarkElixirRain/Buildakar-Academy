@@ -2,7 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
+import '../../constants/colors.dart';
+import '../../providers/live_class_provider.dart';
 import '../../services/jitsi_service.dart';
+import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class LiveClassRoomScreen extends StatefulWidget {
   final Map<String, dynamic> liveClass;
@@ -165,6 +169,89 @@ Future<void> _connect() async {
     }
   }
 
+  Future<void> _switchCamera() async {
+    await JitsiService.switchCamera();
+  }
+
+  Future<void> _endClass() async {
+    // Show confirmation dialog
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('End Class'),
+        content: const Text('Are you sure you want to end this class for everyone?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('End Class'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // End the class using the LiveClassProvider
+    if (!mounted) return;
+    try {
+      final liveClassId = widget.liveClass['id']?.toString();
+      if (liveClassId == null || liveClassId.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unable to end class: Invalid class ID'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final provider = Provider.of<LiveClassProvider>(context, listen: false);
+      final success = await provider.endLiveClass(liveClassId);
+
+      if (!success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(provider.errorMessage.isNotEmpty
+                  ? provider.errorMessage
+                  : 'Failed to end class'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else if (mounted) {
+        // Successfully ended the class, show success message and leave
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Class ended successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Leave the room after ending the class
+        if (mounted) {
+          await _leaveRoom();
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error ending class: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _toggleAudio(bool mute) async {
     await JitsiService.toggleAudio(mute);
   }
@@ -192,7 +279,7 @@ Future<void> _connect() async {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF0E0F14),
+        backgroundColor: AppColors.getBackgroundColor(Theme.of(context).brightness),
         body: SafeArea(
           child: _buildBody(title),
         ),
@@ -205,12 +292,18 @@ Future<void> _connect() async {
       case _RoomState.connecting:
         return _ConnectingView(title: title);
       case _RoomState.inMeeting:
+        final bool isInstructor = widget.liveClass['instructorId']?.toString() ==
+            Provider.of<AuthProvider>(context, listen: false).user?.id;
+
         return _InMeetingBackdrop(
           title: title,
           participantCount: _participantCount,
           onLeave: _leaveRoom,
+          onEnd: isInstructor ? _endClass : null,
+          isInstructor: isInstructor,
           onAudioToggle: (mute) => _toggleAudio(mute),
           onVideoToggle: (mute) => _toggleVideo(mute),
+          onCameraToggle: _switchCamera,
         );
       case _RoomState.ended:
         return const _EndedView();
@@ -234,6 +327,7 @@ class _ConnectingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -242,7 +336,7 @@ class _ConnectingView extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.red,
+              color: AppColors.getErrorColor(brightness),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -250,7 +344,7 @@ class _ConnectingView extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: AppColors.getTextColor(brightness),
               ),
             ),
           ),
@@ -261,16 +355,16 @@ class _ConnectingView extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppColors.getTextColor(brightness),
             ),
           ),
           const SizedBox(height: 24),
-          const SizedBox(
+          SizedBox(
             width: 32,
             height: 32,
             child: CircularProgressIndicator(
               strokeWidth: 3,
-              color: Colors.white,
+              color: AppColors.getTextColor(brightness),
             ),
           ),
           const SizedBox(height: 16),
@@ -278,7 +372,7 @@ class _ConnectingView extends StatelessWidget {
             'Connecting to class…',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white60,
+              color: AppColors.getTextSecondaryColor(brightness),
             ),
           ),
         ],
@@ -291,33 +385,41 @@ class _InMeetingBackdrop extends StatelessWidget {
   final String title;
   final int participantCount;
   final VoidCallback onLeave;
+  final VoidCallback? onEnd;
+  final bool isInstructor;
   final Function(bool) onAudioToggle;
   final Function(bool) onVideoToggle;
+  final VoidCallback? onCameraToggle;
 
   const _InMeetingBackdrop({
     required this.title,
     required this.participantCount,
     required this.onLeave,
+    this.onEnd,
+    this.isInstructor = false,
     required this.onAudioToggle,
     required this.onVideoToggle,
+    this.onCameraToggle,
   });
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final textColor = AppColors.getTextColor(brightness);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.videocam_rounded,
-            color: Colors.white24,
+            color: textColor.withValues(alpha: 0.24),
             size: 40,
           ),
           const SizedBox(height: 12),
           Text(
             title,
             style: GoogleFonts.inter(
-              color: Colors.white38,
+              color: textColor.withValues(alpha: 0.38),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -328,7 +430,7 @@ class _InMeetingBackdrop extends StatelessWidget {
                   participantCount > 1 ? 's' : ''
               }',
               style: GoogleFonts.inter(
-                color: Colors.white24,
+                color: textColor.withValues(alpha: 0.24),
                 fontSize: 12,
               ),
             ),
@@ -341,9 +443,9 @@ class _InMeetingBackdrop extends StatelessWidget {
               Tooltip(
                 message: 'Mute microphone',
                 child: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.mic_none,
-                    color: Colors.white24,
+                    color: textColor.withValues(alpha: 0.24),
                     size: 28,
                   ),
                   onPressed: () => onAudioToggle(true),
@@ -354,45 +456,69 @@ class _InMeetingBackdrop extends StatelessWidget {
               Tooltip(
                 message: 'Turn off video',
                 child: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.videocam,
-                    color: Colors.white24,
+                    color: textColor.withValues(alpha: 0.24),
                     size: 28,
                   ),
                   onPressed: () => onVideoToggle(true),
                 ),
               ),
               const SizedBox(width: 16),
-              // Switch camera button (placeholder)
-              Tooltip(
-                message: 'Switch camera',
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.cameraswitch,
-                    color: Colors.white24,
-                    size: 28,
+              // Switch camera button
+              if (onCameraToggle != null) ...[
+                Tooltip(
+                  message: 'Switch camera',
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.cameraswitch,
+                      color: textColor.withValues(alpha: 0.24),
+                      size: 28,
+                    ),
+                    onPressed: () => onCameraToggle!(),
                   ),
-                  onPressed: () {
-                    // TODO: Implement camera switching
-                  },
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 32),
+          if (isInstructor && onEnd != null) ...[
+            // Instructor sees "End Class" button
+            ElevatedButton.icon(
+              onPressed: onEnd,
+              icon:
+                  const Icon(Icons.stop_circle, color: Colors.white, size: 20),
+              label: Text(
+                'End Class',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
           ElevatedButton.icon(
             onPressed: onLeave,
             icon:
-                const Icon(Icons.call_end, color: Colors.white, size: 20),
+                Icon(Icons.call_end, color: textColor, size: 20),
             label: Text(
               'Leave Class',
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: textColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.getErrorColor(brightness),
               padding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -411,13 +537,15 @@ class _EndedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final textColor = AppColors.getTextColor(brightness);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.call_end_rounded,
-            color: Colors.redAccent,
+            color: AppColors.getErrorColor(brightness),
             size: 40,
           ),
           const SizedBox(height: 16),
@@ -426,7 +554,7 @@ class _EndedView extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -434,7 +562,7 @@ class _EndedView extends StatelessWidget {
             'The meeting has ended',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white54,
+              color: textColor.withValues(alpha: 0.54),
             ),
           ),
         ],
@@ -456,15 +584,17 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final textColor = AppColors.getTextColor(brightness);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
-              color: Colors.redAccent,
+              color: AppColors.getErrorColor(brightness),
               size: 48,
             ),
             const SizedBox(height: 16),
@@ -473,7 +603,7 @@ class _ErrorView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 15,
-                color: Colors.white70,
+                color: textColor.withValues(alpha: 0.70),
               ),
             ),
             const SizedBox(height: 24),
@@ -483,7 +613,7 @@ class _ErrorView extends StatelessWidget {
                 OutlinedButton(
                   onPressed: onClose,
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white24),
+                    side: BorderSide(color: textColor.withValues(alpha: 0.24)),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -492,14 +622,14 @@ class _ErrorView extends StatelessWidget {
                   ),
                   child: Text(
                     'Close',
-                    style: GoogleFonts.inter(color: Colors.white),
+                    style: GoogleFonts.inter(color: textColor),
                   ),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton(
                   onPressed: onRetry,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
+                    backgroundColor: AppColors.getPrimaryColor(brightness),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -509,7 +639,7 @@ class _ErrorView extends StatelessWidget {
                   child: Text(
                     'Retry',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: textColor,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

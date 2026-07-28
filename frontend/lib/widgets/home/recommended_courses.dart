@@ -542,9 +542,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : const Color(0xFF0F172A).withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
               offset: const Offset(0, 2),
               blurRadius: 6,
             ),
@@ -835,7 +833,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                 height: screenWidth < 380 ? 20 : 24,
                 width: screenWidth < 380 ? 120 : 160,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                  color: backgroundSelectedColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -843,7 +841,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                 height: screenWidth < 380 ? 14 : 18,
                 width: screenWidth < 380 ? 50 : 60,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                  color: backgroundSelectedColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -877,7 +875,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                     Container(
                       height: cardHeight * 0.5,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                        color: backgroundSelectedColor,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(14),
                           topRight: Radius.circular(14),
@@ -896,7 +894,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                               height: 14,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                color: backgroundSelectedColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -905,7 +903,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                               height: 10,
                               width: 80,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                color: backgroundSelectedColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -916,7 +914,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                                   height: 12,
                                   width: 40,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                    color: backgroundSelectedColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
@@ -925,7 +923,7 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
                                   height: 10,
                                   width: 60,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                    color: backgroundSelectedColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
@@ -971,19 +969,19 @@ class _RecommendedCoursesState extends State<RecommendedCourses> {
           decoration: BoxDecoration(
             color: backgroundElementColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.red.withValues(alpha: 0.3),
-              width: 1,
-            ),
+              border: Border.all(
+                color: AppColors.getErrorColor(brightness).withValues(alpha: 0.3),
+                width: 1,
+              ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Colors.red,
-              ),
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: AppColors.getErrorColor(brightness),
+                  ),
               const SizedBox(height: 8),
               Text(
                 'Failed to load recommendations',

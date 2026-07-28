@@ -358,8 +358,6 @@ class _TopInstructorsState extends State<TopInstructors> {
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
-    final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
-    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
     final isSmallScreen = screenWidth < 360;
     final isMediumScreen = screenWidth < 480;
@@ -501,11 +499,9 @@ class _TopInstructorsState extends State<TopInstructors> {
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.black.withValues(alpha: 0.2)
-                    : const Color(0xFF0F172A).withValues(alpha: 0.06),
-                offset: const Offset(0, 2),
-                blurRadius: 6,
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+              offset: const Offset(0, 2),
+              blurRadius: 6,
               ),
             ],
           ),

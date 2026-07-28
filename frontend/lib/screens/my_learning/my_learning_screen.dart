@@ -413,6 +413,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
   // ============================================
 
   Widget _buildSkeletonLoading(bool isDark, double screenWidth) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     int crossAxisCount;
     double aspectRatio;
 
@@ -442,7 +443,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
           height: 24,
           width: 150,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+            color: AppColors.getBackgroundSelectedColor(brightness),
             borderRadius: BorderRadius.circular(8),
           ),
         ),
@@ -451,7 +452,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+              color: AppColors.getBackgroundSelectedColor(brightness),
               borderRadius: BorderRadius.circular(20),
             ),
           ),
@@ -460,7 +461,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+              color: AppColors.getBackgroundSelectedColor(brightness),
               borderRadius: BorderRadius.circular(20),
             ),
           ),
@@ -480,7 +481,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     width: 80,
@@ -514,6 +515,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
   }
 
   Widget _buildSkeletonCard(bool isDark) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
@@ -531,7 +533,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
             height: 120,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+              color: AppColors.getBackgroundSelectedColor(brightness),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -551,7 +553,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                     height: 14,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -561,7 +563,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                     height: 14,
                     width: 120,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -571,7 +573,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                     height: 10,
                     width: 80,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -583,7 +585,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                         height: 16,
                         width: 50,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                          color: AppColors.getBackgroundSelectedColor(brightness),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -592,7 +594,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                         height: 16,
                         width: 60,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                          color: AppColors.getBackgroundSelectedColor(brightness),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -604,7 +606,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                     height: 4,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -617,7 +619,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                         height: 8,
                         width: 60,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                          color: AppColors.getBackgroundSelectedColor(brightness),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -625,7 +627,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                         height: 8,
                         width: 30,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB),
+                          color: AppColors.getBackgroundSelectedColor(brightness),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -683,7 +685,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     return Container(
       height: 40,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFF0F0F0),
+        color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
@@ -814,11 +816,12 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     bool isDark,
     double screenWidth,
   ) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final progress = (course['progress'] as num?)?.toDouble() ?? 0.0;
     final isCompleted = course['isCompleted'] ?? false;
     final progressColor = isCompleted
-        ? const Color(0xFF22C55E)
-        : AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light);
+        ? AppColors.getSuccessColor(brightness)
+        : AppColors.getPrimaryColor(brightness);
     final progressValue = (progress / 100).clamp(0.0, 1.0);
 
     return GestureDetector(
@@ -835,7 +838,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
             BoxShadow(
               color: isDark
                   ? Colors.black.withValues(alpha: 0.2)
-                  : const Color(0xFF0F172A).withValues(alpha: 0.06),
+                  : AppColors.getTextColor(brightness).withValues(alpha: 0.06),
               offset: const Offset(0, 2),
               blurRadius: 8,
             ),
@@ -907,7 +910,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E),
+                          color: AppColors.getSuccessColor(brightness),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Row(
@@ -1004,7 +1007,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                           height: 4,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
+                            color: AppColors.getBackgroundSelectedColor(brightness),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: FractionallySizedBox(

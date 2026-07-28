@@ -4,17 +4,21 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../types/api_response.dart';
 import '../config/app_config.dart';
+import '../models/auth_model.dart';
 
 class BaseApiService {
   final http.Client _client = http.Client();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+  /// Called when the refresh token is permanently invalid/expired
+  /// so the app can perform a centralized logout.
+  static void Function()? onSessionExpired;
 
   // ----- token management -----
   Future<String?> getToken() async {
     try {
       return await _secureStorage.read(key: 'token');
     } catch (e) {
-      print('❌ BaseApiService: Error getting token: $e');
       return null;
     }
   }
@@ -23,7 +27,6 @@ class BaseApiService {
     try {
       await _secureStorage.write(key: 'token', value: token);
     } catch (e) {
-      print('❌ BaseApiService: Error saving token: $e');
     }
   }
 
@@ -31,7 +34,6 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'token');
     } catch (e) {
-      print('❌ BaseApiService: Error clearing token: $e');
     }
   }
 
@@ -48,7 +50,6 @@ class BaseApiService {
     try {
       await _secureStorage.write(key: 'refreshToken', value: token);
     } catch (e) {
-      print('❌ BaseApiService: Error saving refresh token: $e');
     }
   }
 
@@ -56,7 +57,6 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'refreshToken');
     } catch (e) {
-      print('❌ BaseApiService: Error clearing refresh token: $e');
     }
   }
 
@@ -73,7 +73,6 @@ class BaseApiService {
     try {
       await _secureStorage.write(key: 'tokenExpiresAt', value: expiry);
     } catch (e) {
-      print('❌ BaseApiService: Error saving token expiry: $e');
     }
   }
 
@@ -81,7 +80,6 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'tokenExpiresAt');
     } catch (e) {
-      print('❌ BaseApiService: Error clearing token expiry: $e');
     }
   }
 
@@ -93,7 +91,6 @@ class BaseApiService {
         value: jsonEncode(userData),
       );
     } catch (e) {
-      print('❌ BaseApiService: Error saving user: $e');
     }
   }
 
@@ -103,7 +100,6 @@ class BaseApiService {
       if (userData != null) return jsonDecode(userData);
       return null;
     } catch (e) {
-      print('❌ BaseApiService: Error getting user: $e');
       return null;
     }
   }
@@ -112,7 +108,6 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'user');
     } catch (e) {
-      print('❌ BaseApiService: Error clearing user: $e');
     }
   }
 
@@ -133,13 +128,30 @@ class BaseApiService {
   static bool _refreshInProgress = false;
   static Completer<String?>? _refreshCompleter;
 
+  /// Proactively check if the access token is expired or about to expire
+  /// and refresh it before making a request.
+  Future<bool> _ensureValidToken() async {
+    try {
+      final expiryStr = await getTokenExpiry();
+      if (expiryStr == null) return true;
+
+      final expiry = DateTime.parse(expiryStr);
+      if (DateTime.now().isAfter(expiry.subtract(const Duration(minutes: 2)))) {
+        final newToken = await refreshAccessToken();
+        return newToken != null;
+      }
+      return true;
+    } catch (e) {
+      return true;
+    }
+  }
+
   /// Attempt to refresh the access token by calling POST /auth/refresh
   /// with the stored refresh token.  Uses a lock so only one refresh
   /// runs at a time; concurrent callers await the same result.
   Future<String?> refreshAccessToken() async {
-    // If a refresh is already in flight, wait for it
     if (_refreshInProgress) {
-      return await _refreshCompleter?.future;
+      return _refreshCompleter?.future;
     }
 
     _refreshInProgress = true;
@@ -148,12 +160,12 @@ class BaseApiService {
     try {
       final refreshToken = await getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) {
-        print('⚠️ BaseApiService: No refresh token stored');
+        await clearSession();
+        onSessionExpired?.call();
         _refreshCompleter!.complete(null);
         return null;
       }
 
-      print('🔄 BaseApiService: Refreshing access token...');
       final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh');
       final response = await _client.post(
         url,
@@ -163,40 +175,56 @@ class BaseApiService {
 
       if (response.statusCode == 200) {
         final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-        final data = jsonResponse['data'] as Map<String, dynamic>?;
-
-        if (data != null) {
-          final newToken = data['accessToken'] as String?;
-          final newRefreshToken = data['refreshToken'] as String?;
-          final newExpiresAt = data['accessTokenExpiresAt'] as String?;
-
-          if (newToken != null && newToken.isNotEmpty) {
-            await saveToken(newToken);
-            if (newRefreshToken != null) {
-              await saveRefreshToken(newRefreshToken);
+        // Try to parse using AuthData.fromJson which handles multiple formats
+        try {
+          final authData = AuthData.fromJson(jsonResponse);
+          if (authData.token != null && authData.token!.isNotEmpty) {
+            await saveToken(authData.token!);
+            if (authData.refreshToken != null) {
+              await saveRefreshToken(authData.refreshToken!);
             }
-            if (newExpiresAt != null) {
-              await saveTokenExpiry(newExpiresAt);
+            if (authData.expiresAt != null) {
+              await saveTokenExpiry(authData.expiresAt!);
             }
-            print('✅ BaseApiService: Token refreshed successfully');
-            _refreshCompleter!.complete(newToken);
-            return newToken;
+            _refreshCompleter!.complete(authData.token);
+            return authData.token;
+          }
+        } catch (e) {
+          // Fallback to original parsing if AuthData.fromJson fails
+          final data = jsonResponse['data'] as Map<String, dynamic>?;
+          if (data != null) {
+            final newToken = data['accessToken'] as String?;
+            final newRefreshToken = data['refreshToken'] as String?;
+            final newExpiresAt = data['accessTokenExpiresAt'] as String?;
+
+            if (newToken != null && newToken.isNotEmpty) {
+              await saveToken(newToken);
+              if (newRefreshToken != null) {
+                await saveRefreshToken(newRefreshToken);
+              }
+              if (newExpiresAt != null) {
+                await saveTokenExpiry(newExpiresAt);
+              }
+              _refreshCompleter!.complete(newToken);
+              return newToken;
+            }
           }
         }
       }
 
-      // Refresh failed – clear everything
-      print('❌ BaseApiService: Token refresh failed (${response.statusCode})');
+      // If we reach here, the refresh failed
       await clearSession();
+      onSessionExpired?.call();
       _refreshCompleter!.complete(null);
       return null;
     } catch (e) {
-      print('❌ BaseApiService: Token refresh error: $e');
       await clearSession();
+      onSessionExpired?.call();
       _refreshCompleter!.complete(null);
       return null;
     } finally {
       _refreshInProgress = false;
+      _refreshCompleter = null;
     }
   }
 
@@ -237,6 +265,11 @@ class BaseApiService {
     bool requireAuth = false,
   }) async {
     final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+
+    if (requireAuth) {
+      await _ensureValidToken();
+    }
+
     final token = await getToken();
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -246,12 +279,6 @@ class BaseApiService {
       headers['Authorization'] = 'Bearer $token';
     }
     if (extraHeaders != null) headers.addAll(extraHeaders);
-
-    print('🌐 $method Request to: $url');
-    print('🔐 requireAuth: $requireAuth');
-    if (data != null && method != 'GET') {
-      print('📤 $method Data: $data');
-    }
 
     http.Response response;
     try {
@@ -287,21 +314,14 @@ class BaseApiService {
           return ApiResponse.error('Unsupported HTTP method: $method');
       }
     } catch (e) {
-      print('❌ $method Error: $e');
       return ApiResponse.error(e.toString());
     }
 
-    print('📥 $method Response Status: ${response.statusCode}');
-
-    // ── 401 → try token refresh once ──
     if (response.statusCode == 401 && requireAuth) {
-      print('🔄 BaseApiService: Got 401, attempting token refresh...');
       final newToken = await refreshAccessToken();
 
       if (newToken != null) {
-        // Retry with the new token
         headers['Authorization'] = 'Bearer $newToken';
-        print('🔄 BaseApiService: Retrying $method request after refresh...');
         try {
           switch (method) {
             case 'GET':
@@ -333,12 +353,9 @@ class BaseApiService {
               break;
           }
         } catch (e) {
-          print('❌ $method Error (retry): $e');
           return ApiResponse.error(e.toString());
         }
-        print('📥 $method Retry Response Status: ${response.statusCode}');
       } else {
-        // Refresh failed – return a clear error so the caller can redirect
         return ApiResponse.error('Session expired. Please login again.');
       }
     }
@@ -350,7 +367,6 @@ class BaseApiService {
 
   /// Sends an authenticated HTTP request with automatic 401 token refresh.
   /// Returns the raw [http.Response] so callers can handle parsing themselves.
-  /// The 401 retry uses the same lock as [_request] via [refreshAccessToken].
   Future<http.Response> sendAuthenticatedRequest({
     required String method,
     required String endpoint,
@@ -359,13 +375,14 @@ class BaseApiService {
   }) async {
     final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
 
+    await _ensureValidToken();
+
+    final token = await getToken();
     var currentHeaders = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (extraHeaders != null) ...extraHeaders,
     };
-
-    final token = await getToken();
     if (token != null && token.isNotEmpty) {
       currentHeaders['Authorization'] = 'Bearer $token';
     }

@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../constants/colors.dart';
 import '../../providers/theme_provider.dart';
 
 class ExploreLoadingSkeleton extends StatefulWidget {
@@ -52,10 +53,10 @@ class _ExploreLoadingSkeletonState extends State<ExploreLoadingSkeleton>
             : 40;
 
     // Get theme-aware skeleton colors
-    final backgroundColor = isDark ? const Color(0xFF121417) : const Color(0xFFF7F8FA);
-    final baseColor = isDark ? const Color(0xFF2A2E37) : const Color(0xFFE9EBEF);
-    final highlightColor = isDark ? const Color(0xFF3A3F4B) : Colors.white;
-    final cardColor = isDark ? const Color(0xFF1C1F26) : Colors.white;
+    final backgroundColor = AppColors.getBackgroundColor(brightness);
+    final baseColor = AppColors.getBackgroundSelectedColor(brightness);
+    final highlightColor = AppColors.getBackgroundElementColor(brightness);
+    final cardColor = AppColors.getBackgroundElementColor(brightness);
 
     int columns;
     double aspectRatio;

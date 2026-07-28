@@ -6,6 +6,7 @@
 // matches the final layout (no jarring content jump).
 
 import 'package:flutter/material.dart';
+import '../../constants/colors.dart';
 
 /// Wraps [child] in a moving shimmer highlight, looping forever.
 class ShimmerEffect extends StatefulWidget {
@@ -92,15 +93,15 @@ class SkeletonBox extends StatelessWidget {
 /// Skeleton placeholder shaped like [LiveClassCard] so the loading
 /// state lines up pixel-for-pixel with the real content.
 class SkeletonLiveClassCard extends StatelessWidget {
-  final bool isDark;
+  final Brightness brightness;
 
-  const SkeletonLiveClassCard({Key? key, required this.isDark}) : super(key: key);
+  const SkeletonLiveClassCard({Key? key, required this.brightness}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = isDark ? const Color(0xFF2A2C34) : const Color(0xFFE7E9EE);
-    final highlightColor = isDark ? const Color(0xFF3A3D48) : const Color(0xFFF6F7F9);
-    final cardColor = isDark ? const Color(0xFF1E2028) : Colors.white;
+    final baseColor = AppColors.getBackgroundSelectedColor(brightness);
+    final highlightColor = AppColors.getBackgroundElementColor(brightness);
+    final cardColor = AppColors.getBackgroundElementColor(brightness);
 
     return Container(
       decoration: BoxDecoration(
@@ -108,7 +109,7 @@ class SkeletonLiveClassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 40 : 12),
+            color: Colors.black.withAlpha(brightness == Brightness.dark ? 40 : 12),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -149,7 +150,7 @@ class SkeletonLiveClassCard extends StatelessWidget {
 /// A full skeleton grid/list, mirroring the real content layout so
 /// swapping skeleton -> real data causes no layout shift.
 class SkeletonLiveClassList extends StatelessWidget {
-  final bool isDark;
+  final Brightness brightness;
   final bool isGrid;
   final int crossAxisCount;
   final double horizontalPadding;
@@ -157,7 +158,7 @@ class SkeletonLiveClassList extends StatelessWidget {
 
   const SkeletonLiveClassList({
     Key? key,
-    required this.isDark,
+    required this.brightness,
     required this.isGrid,
     required this.crossAxisCount,
     required this.horizontalPadding,
@@ -173,7 +174,7 @@ class SkeletonLiveClassList extends StatelessWidget {
         itemCount: itemCount,
         itemBuilder: (context, index) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: SkeletonLiveClassCard(isDark: isDark),
+          child: SkeletonLiveClassCard(brightness: brightness),
         ),
       );
     }
@@ -188,7 +189,7 @@ class SkeletonLiveClassList extends StatelessWidget {
         childAspectRatio: 0.9,
       ),
       itemCount: itemCount,
-      itemBuilder: (context, index) => SkeletonLiveClassCard(isDark: isDark),
+      itemBuilder: (context, index) => SkeletonLiveClassCard(brightness: brightness),
     );
   }
 }

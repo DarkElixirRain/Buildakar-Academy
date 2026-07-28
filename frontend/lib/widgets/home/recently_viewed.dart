@@ -13,7 +13,7 @@ class RecentlyViewed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return Column(
@@ -46,7 +46,7 @@ class RecentlyViewed extends StatelessWidget {
   }
 
   Widget _buildRecentCard(BuildContext context, Map<String, dynamic> course) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return GestureDetector(
@@ -79,7 +79,7 @@ class RecentlyViewed extends StatelessWidget {
                   return Container(
                     height: 60,
                     color: AppColors.getPrimaryColor(brightness).withValues(alpha: 0.2),
-                    child: const Icon(Icons.image, color: Colors.grey, size: 24),
+                    child: Icon(Icons.image, color: AppColors.getTextSecondaryColor(brightness), size: 24),
                   );
                 },
               ),

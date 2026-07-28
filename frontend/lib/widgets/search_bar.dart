@@ -29,16 +29,16 @@ class CustomSearchBar extends StatefulWidget {
 class _CustomSearchBarState extends State<CustomSearchBar> {
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final isTablet = MediaQuery.of(context).size.width > 600;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.grey[50],
+        color: AppColors.getBackgroundElementColor(brightness),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+          color: AppColors.getBackgroundSelectedColor(brightness),
           width: 1,
         ),
         boxShadow: [
@@ -104,7 +104,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
           Container(
             height: 30,
             width: 1,
-            color: isDark ? Colors.grey[700] : Colors.grey[300],
+            color: AppColors.getBackgroundSelectedColor(brightness),
           ),
           const SizedBox(width: 8),
           IconButton(
@@ -127,7 +127,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
   }
 
   void _showFilterDialog(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     showModalBottomSheet(

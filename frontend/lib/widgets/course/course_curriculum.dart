@@ -42,7 +42,6 @@ class _CourseCurriculumState extends State<CourseCurriculum> {
   Color get _textSecondaryColor => AppColors.getTextSecondaryColor(_brightness);
   Color get _primaryColor => AppColors.getPrimaryColor(_brightness);
   Color get _successColor => AppColors.getSuccessColor(_brightness);
-  Color get _errorColor => AppColors.getErrorColor(_brightness);
   Color get _badgeBg => _primaryColor.withValues(alpha: 0.15);
 
   @override

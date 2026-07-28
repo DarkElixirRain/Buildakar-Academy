@@ -168,7 +168,7 @@ class _SearchBarState extends State<SearchBar> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return Column(
@@ -250,9 +250,7 @@ class _SearchBarState extends State<SearchBar> with SingleTickerProviderStateMix
                     Container(
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFF1F5F9),
+                        color: AppColors.getBackgroundElementColor(brightness),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: IconButton(

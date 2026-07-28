@@ -89,9 +89,9 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Thumbnail selected successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
               duration: Duration(seconds: 1),
             ),
           );
@@ -102,7 +102,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error picking image: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
           ),
         );
       }
@@ -117,9 +117,9 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
     if (_thumbnailFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please add a course thumbnail'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.getWarningColor(Theme.of(context).brightness),
         ),
       );
       return;
@@ -164,9 +164,9 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
       if (response.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Course created successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
             ),
           );
           Navigator.pop(context, true);
@@ -179,7 +179,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
           ),
         );
       }
@@ -192,7 +192,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);

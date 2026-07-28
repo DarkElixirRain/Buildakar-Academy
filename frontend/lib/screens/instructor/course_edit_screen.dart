@@ -127,9 +127,9 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Thumbnail selected successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
               duration: Duration(seconds: 1),
             ),
           );
@@ -140,7 +140,7 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error picking image: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
           ),
         );
       }
@@ -191,9 +191,9 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
       if (response.success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Course updated successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
             ),
           );
           Navigator.pop(context, true);
@@ -206,7 +206,7 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
           ),
         );
       }
@@ -219,7 +219,7 @@ class _CourseEditScreenState extends State<CourseEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);

@@ -152,7 +152,7 @@ class _CourseLearningPageState extends State<CourseLearningPage>
   // --------------------------------------------------------------------
   // Colors
   // --------------------------------------------------------------------
-  Brightness get _brightness => MediaQuery.of(context).platformBrightness;
+  Brightness get _brightness => Theme.of(context).brightness;
   Color get _textColor => AppColors.getTextColor(_brightness);
   Color get _backgroundColor => AppColors.getBackgroundColor(_brightness);
   Color get _backgroundElementColor => AppColors.getBackgroundElementColor(_brightness);
@@ -402,9 +402,9 @@ class _CourseLearningPageState extends State<CourseLearningPage>
 
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Review submitted successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('✅ Review submitted successfully!'),
+            backgroundColor: _successColor,
           ),
         );
         
@@ -1447,7 +1447,7 @@ class _CourseLearningPageState extends State<CourseLearningPage>
                     onPressed: () => setState(() => _myRating = i + 1),
                     icon: Icon(
                       filled ? Icons.star : Icons.star_border,
-                      color: const Color(0xFFF59E0B),
+                      color: AppColors.getWarningColor(_brightness),
                       size: 28,
                     ),
                   );

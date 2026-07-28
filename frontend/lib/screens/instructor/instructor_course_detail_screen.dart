@@ -294,7 +294,7 @@ class _InstructorCourseDetailScreenState
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
             ),
             child: const Text('Delete'),
           ),
@@ -311,9 +311,9 @@ class _InstructorCourseDetailScreenState
           _reviews.removeWhere((review) => review['id'] == reviewId);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Review deleted successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Review deleted successfully'),
+            backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
           ),
         );
         await _refreshData(); // Refresh to update counts
@@ -324,7 +324,7 @@ class _InstructorCourseDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
         ),
       );
     }
@@ -389,16 +389,16 @@ class _InstructorCourseDetailScreenState
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Answer posted successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
           ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
           ),
         );
       }
@@ -421,9 +421,9 @@ class _InstructorCourseDetailScreenState
           _courseData['status'] = 'UNDER_REVIEW';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Course submitted for admin review!'),
-            backgroundColor: Colors.blue,
+            backgroundColor: AppColors.getPrimaryColor(Theme.of(context).brightness),
           ),
         );
       } else {
@@ -433,7 +433,7 @@ class _InstructorCourseDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
         ),
       );
     } finally {
@@ -453,9 +453,9 @@ class _InstructorCourseDetailScreenState
           _courseData['status'] = 'DRAFT';
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Course unpublished successfully!'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.getWarningColor(Theme.of(context).brightness),
           ),
         );
       } else {
@@ -465,7 +465,7 @@ class _InstructorCourseDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
         ),
       );
     } finally {
@@ -483,13 +483,13 @@ class _InstructorCourseDetailScreenState
     }
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(String status, Brightness brightness) {
     switch (status) {
-      case 'PUBLISHED': return Colors.green;
-      case 'PENDING_APPROVAL': return Colors.purple;
-      case 'DRAFT': return Colors.orange;
-      case 'UNDER_REVIEW': return Colors.blue;
-      default: return Colors.grey;
+      case 'PUBLISHED': return AppColors.getSuccessColor(brightness);
+      case 'PENDING_APPROVAL': return AppColors.getPrimaryColor(brightness);
+      case 'DRAFT': return AppColors.getWarningColor(brightness);
+      case 'UNDER_REVIEW': return AppColors.getPrimaryColor(brightness);
+      default: return AppColors.getTextSecondaryColor(brightness);
     }
   }
 
@@ -509,7 +509,7 @@ class _InstructorCourseDetailScreenState
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
             ),
             child: const Text('Delete'),
           ),
@@ -524,9 +524,9 @@ class _InstructorCourseDetailScreenState
       final response = await _apiService.deleteCourse(widget.courseId);
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Course deleted successfully'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
           ),
         );
         Navigator.pop(context, true);
@@ -537,7 +537,7 @@ class _InstructorCourseDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
         ),
       );
     } finally {
@@ -551,9 +551,9 @@ class _InstructorCourseDetailScreenState
       final response = await _apiService.duplicateCourse(widget.courseId);
       if (response.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Course duplicated successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
           ),
         );
         Navigator.pop(context, true);
@@ -564,7 +564,7 @@ class _InstructorCourseDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
         ),
       );
     } finally {
@@ -657,7 +657,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Section created'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Section created'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -666,7 +666,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       } finally {
@@ -735,7 +735,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Section updated'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Section updated'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -744,7 +744,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       } finally {
@@ -765,7 +765,7 @@ class _InstructorCourseDetailScreenState
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
             child: const Text('Delete'),
           ),
         ],
@@ -783,7 +783,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Section deleted'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Section deleted'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -792,7 +792,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       } finally {
@@ -886,7 +886,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Lesson created'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Lesson created'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -895,7 +895,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       } finally {
@@ -983,7 +983,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Lesson updated'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Lesson updated'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -992,7 +992,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       } finally {
@@ -1014,7 +1014,7 @@ class _InstructorCourseDetailScreenState
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
             child: const Text('Delete'),
           ),
         ],
@@ -1037,7 +1037,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Lesson deleted'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Lesson deleted'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -1046,7 +1046,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       } finally {
@@ -1073,7 +1073,7 @@ class _InstructorCourseDetailScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking video: ${e.toString()}'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error picking video: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
         );
       }
     }
@@ -1089,6 +1089,7 @@ class _InstructorCourseDetailScreenState
             final progress = _courseProvider.uploadProgress;
             final phase = _courseProvider.uploadPhase;
             final isUploading = _courseProvider.isUploading;
+            final fileSizeMb = videoFile.lengthSync() / (1024 * 1024);
 
             return AlertDialog(
               title: const Text('Upload Video'),
@@ -1176,7 +1177,7 @@ class _InstructorCourseDetailScreenState
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
             child: const Text('Delete'),
           ),
         ],
@@ -1190,7 +1191,7 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Video deleted'), backgroundColor: Colors.green),
+              SnackBar(content: Text('Video deleted'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
             );
           }
         } else {
@@ -1199,7 +1200,7 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
           );
         }
       }
@@ -1211,7 +1212,7 @@ class _InstructorCourseDetailScreenState
   // ============================================
 
   void _showReviewActions(Map<String, dynamic> review) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final textColor = AppColors.getTextColor(brightness);
     final cardColor = AppColors.getBackgroundElementColor(brightness);
 
@@ -1226,7 +1227,7 @@ class _InstructorCourseDetailScreenState
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.reply, color: Colors.blue),
+              leading: Icon(Icons.reply, color: AppColors.getPrimaryColor(brightness)),
               title: Text(
                 'Reply to Review',
                 style: GoogleFonts.inter(color: textColor),
@@ -1234,12 +1235,12 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reply feature coming soon!')),
+                  SnackBar(content: Text('Reply feature coming soon!')),
                 );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.flag, color: Colors.orange),
+              leading: Icon(Icons.flag, color: AppColors.getWarningColor(brightness)),
               title: Text(
                 'Report Review',
                 style: GoogleFonts.inter(color: textColor),
@@ -1247,18 +1248,18 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text('Review reported successfully'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.getSuccessColor(brightness),
                   ),
                 );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
+              leading: Icon(Icons.delete, color: AppColors.getErrorColor(brightness)),
               title: Text(
                 'Delete Review',
-                style: GoogleFonts.inter(color: Colors.red),
+                style: GoogleFonts.inter(color: AppColors.getErrorColor(brightness)),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -1273,7 +1274,7 @@ class _InstructorCourseDetailScreenState
   }
 
   void _showMoreOptions() {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final textColor = AppColors.getTextColor(brightness);
     final cardColor = AppColors.getBackgroundElementColor(brightness);
 
@@ -1288,7 +1289,7 @@ class _InstructorCourseDetailScreenState
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: Colors.blue),
+              leading: Icon(Icons.edit_outlined, color: AppColors.getPrimaryColor(brightness)),
               title: Text(
                 'Edit Course',
                 style: GoogleFonts.inter(color: textColor),
@@ -1299,7 +1300,7 @@ class _InstructorCourseDetailScreenState
               },
             ),
             ListTile(
-              leading: const Icon(Icons.copy_outlined, color: Colors.purple),
+              leading: Icon(Icons.copy_outlined, color: AppColors.getPrimaryLightColor(brightness)),
               title: Text(
                 'Duplicate Course',
                 style: GoogleFonts.inter(color: textColor),
@@ -1310,7 +1311,7 @@ class _InstructorCourseDetailScreenState
               },
             ),
             ListTile(
-              leading: const Icon(Icons.download_outlined, color: Colors.orange),
+              leading: Icon(Icons.download_outlined, color: AppColors.getWarningColor(brightness)),
               title: Text(
                 'Export Course Data',
                 style: GoogleFonts.inter(color: textColor),
@@ -1318,13 +1319,13 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Exporting course data...')),
+                  SnackBar(content: Text('Exporting course data...')),
                 );
               },
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.archive_outlined, color: Colors.orange),
+              leading: Icon(Icons.archive_outlined, color: AppColors.getWarningColor(brightness)),
               title: Text(
                 'Archive Course',
                 style: GoogleFonts.inter(color: textColor),
@@ -1332,15 +1333,15 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Course archived!')),
+                  SnackBar(content: Text('Course archived!')),
                 );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              leading: Icon(Icons.delete_outline, color: AppColors.getErrorColor(brightness)),
               title: Text(
                 'Delete Course',
-                style: GoogleFonts.inter(color: Colors.red),
+                style: GoogleFonts.inter(color: AppColors.getErrorColor(brightness)),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -1370,7 +1371,7 @@ class _InstructorCourseDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
@@ -1557,13 +1558,13 @@ class _InstructorCourseDetailScreenState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _statusColor(_courseData['status'] ?? 'DRAFT').withValues(alpha: 0.1),
+                    color: _statusColor(_courseData['status'] ?? 'DRAFT', brightness).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   _statusLabel(_courseData['status'] ?? 'DRAFT'),
                   style: GoogleFonts.inter(
-                    color: _statusColor(_courseData['status'] ?? 'DRAFT'),
+                    color: _statusColor(_courseData['status'] ?? 'DRAFT', brightness),
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -1576,7 +1577,7 @@ class _InstructorCourseDetailScreenState
                   icon: const Icon(Icons.visibility_off, size: 18),
                   label: const Text('Unpublish'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: AppColors.getWarningColor(brightness),
                     foregroundColor: Colors.white,
                   ),
                 )
@@ -1586,7 +1587,7 @@ class _InstructorCourseDetailScreenState
                   icon: const Icon(Icons.send_rounded, size: 18),
                   label: const Text('Submit for Review'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.getPrimaryColor(brightness),
                     foregroundColor: Colors.white,
                   ),
                 )
@@ -1596,7 +1597,7 @@ class _InstructorCourseDetailScreenState
                   icon: const Icon(Icons.hourglass_empty, size: 18),
                   label: const Text('Pending Approval'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey,
+                    backgroundColor: AppColors.getTextSecondaryColor(brightness),
                     foregroundColor: Colors.white,
                   ),
                 )
@@ -1606,7 +1607,7 @@ class _InstructorCourseDetailScreenState
                   icon: const Icon(Icons.visibility, size: 18),
                   label: const Text('Under Review'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.withValues(alpha: 0.5),
+                    backgroundColor: AppColors.getPrimaryColor(brightness).withValues(alpha: 0.5),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1621,7 +1622,7 @@ class _InstructorCourseDetailScreenState
                 'Students',
                 '${_courseData['studentsCount'] ?? 0}',
                 Icons.people_rounded,
-                Colors.blue,
+                AppColors.getPrimaryColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -1631,7 +1632,7 @@ class _InstructorCourseDetailScreenState
                 'Rating',
                 '${_courseData['rating'] ?? 0.0} ⭐',
                 Icons.star_rounded,
-                Colors.amber,
+                AppColors.getWarningColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -1645,7 +1646,7 @@ class _InstructorCourseDetailScreenState
                 'Lessons',
                 '${_courseData['lessonCount'] ?? 0}',
                 Icons.play_circle_rounded,
-                Colors.purple,
+                AppColors.getPrimaryLightColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -1655,7 +1656,7 @@ class _InstructorCourseDetailScreenState
                 'Revenue',
                 'रु ${(_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0)}',
                 Icons.attach_money_rounded,
-                Colors.green,
+                AppColors.getSuccessColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -1704,7 +1705,7 @@ class _InstructorCourseDetailScreenState
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        Icon(Icons.check_circle, color: AppColors.getSuccessColor(brightness), size: 20),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -1936,9 +1937,9 @@ class _InstructorCourseDetailScreenState
                   },
                   itemBuilder: (context) => [
                     const PopupMenuItem(value: 'edit', child: Text('Edit Section')),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
-                      child: Text('Delete Section', style: TextStyle(color: Colors.red)),
+                      child: Text('Delete Section', style: TextStyle(color: AppColors.getErrorColor(brightness))),
                     ),
                   ],
                   child: Icon(Icons.more_vert, color: textSecondaryColor),
@@ -1947,7 +1948,7 @@ class _InstructorCourseDetailScreenState
             ),
             children: [
               ...lessons.map<Widget>((lesson) {
-                return _buildLessonTile(lesson, textColor, textSecondaryColor, cardColor, primaryColor, section['id']);
+                return _buildLessonTile(lesson, textColor, textSecondaryColor, cardColor, primaryColor, brightness, section['id']);
               }),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1974,6 +1975,7 @@ class _InstructorCourseDetailScreenState
     Color textSecondaryColor,
     Color cardColor,
     Color primaryColor,
+    Brightness brightness,
     String sectionId,
   ) {
     final hasVideo = lesson['videoUrl'] != null && lesson['videoUrl'].toString().isNotEmpty;
@@ -1984,7 +1986,7 @@ class _InstructorCourseDetailScreenState
         children: [
           Icon(
             hasVideo ? Icons.play_circle_filled : Icons.description_outlined,
-            color: hasVideo ? Colors.blue : textSecondaryColor,
+            color: hasVideo ? AppColors.getPrimaryColor(brightness) : textSecondaryColor,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -2020,7 +2022,7 @@ class _InstructorCourseDetailScreenState
                   ),
                 if (hasVideo)
                   IconButton(
-                    icon: const Icon(Icons.video_library, color: Colors.green, size: 18),
+                    icon: Icon(Icons.video_library, color: AppColors.getSuccessColor(brightness), size: 18),
                     onPressed: () => _showVideoUploadDialog(lesson),
                     tooltip: 'Change Video',
                     padding: EdgeInsets.zero,
@@ -2045,14 +2047,14 @@ class _InstructorCourseDetailScreenState
                 const PopupMenuItem(value: 'upload_video', child: Text('Upload Video'))
               else ...[
                 const PopupMenuItem(value: 'upload_video', child: Text('Change Video')),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete_video',
-                  child: Text('Remove Video', style: TextStyle(color: Colors.orange)),
+                  child: Text('Remove Video', style: TextStyle(color: AppColors.getWarningColor(brightness))),
                 ),
               ],
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
-                child: Text('Delete Lesson', style: TextStyle(color: Colors.red)),
+                child: Text('Delete Lesson', style: TextStyle(color: AppColors.getErrorColor(brightness))),
               ),
             ],
             child: Icon(Icons.more_vert, color: textSecondaryColor, size: 18),
@@ -2133,7 +2135,7 @@ class _InstructorCourseDetailScreenState
                     children: List.generate(5, (i) {
                       return Icon(
                         i < avgRating.floor() ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
+                        color: AppColors.getWarningColor(brightness),
                         size: 20,
                       );
                     }),
@@ -2151,11 +2153,11 @@ class _InstructorCourseDetailScreenState
               Expanded(
                 child: Column(
                   children: [
-                    _buildRatingBar(5, 45, textSecondaryColor),
-                    _buildRatingBar(4, 30, textSecondaryColor),
-                    _buildRatingBar(3, 15, textSecondaryColor),
-                    _buildRatingBar(2, 7, textSecondaryColor),
-                    _buildRatingBar(1, 3, textSecondaryColor),
+                    _buildRatingBar(5, 45, textSecondaryColor, brightness),
+                    _buildRatingBar(4, 30, textSecondaryColor, brightness),
+                    _buildRatingBar(3, 15, textSecondaryColor, brightness),
+                    _buildRatingBar(2, 7, textSecondaryColor, brightness),
+                    _buildRatingBar(1, 3, textSecondaryColor, brightness),
                   ],
                 ),
               ),
@@ -2205,7 +2207,7 @@ class _InstructorCourseDetailScreenState
                                 children: List.generate(5, (i) {
                                   return Icon(
                                     i < rating ? Icons.star : Icons.star_border,
-                                    color: Colors.amber,
+                                    color: AppColors.getWarningColor(brightness),
                                     size: 16,
                                   );
                                 }),
@@ -2269,7 +2271,7 @@ class _InstructorCourseDetailScreenState
     );
   }
 
-  Widget _buildRatingBar(int rating, int percentage, Color textSecondaryColor) {
+  Widget _buildRatingBar(int rating, int percentage, Color textSecondaryColor, Brightness brightness) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -2289,8 +2291,8 @@ class _InstructorCourseDetailScreenState
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: percentage / 100,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                backgroundColor: AppColors.getBackgroundSelectedColor(brightness),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.getWarningColor(brightness)),
                 minHeight: 6,
               ),
             ),
@@ -2358,13 +2360,13 @@ class _InstructorCourseDetailScreenState
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
+                    color: AppColors.getWarningColor(brightness).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '$unansweredCount Pending',
                     style: GoogleFonts.inter(
-                      color: Colors.orange,
+                      color: AppColors.getWarningColor(brightness),
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
@@ -2389,8 +2391,8 @@ class _InstructorCourseDetailScreenState
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: qa['answered']
-                        ? Colors.green.withValues(alpha: 0.3)
-                        : Colors.orange.withValues(alpha: 0.3),
+                        ? AppColors.getSuccessColor(brightness).withValues(alpha: 0.3)
+                        : AppColors.getWarningColor(brightness).withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -2433,14 +2435,14 @@ class _InstructorCourseDetailScreenState
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: qa['answered']
-                                ? Colors.green.withValues(alpha: 0.1)
-                                : Colors.orange.withValues(alpha: 0.1),
+                                ? AppColors.getSuccessColor(brightness).withValues(alpha: 0.1)
+                                : AppColors.getWarningColor(brightness).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             qa['answered'] ? 'Answered' : 'Pending',
                             style: GoogleFonts.inter(
-                              color: qa['answered'] ? Colors.green : Colors.orange,
+                              color: qa['answered'] ? AppColors.getSuccessColor(brightness) : AppColors.getWarningColor(brightness),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2462,10 +2464,10 @@ class _InstructorCourseDetailScreenState
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.05),
+                          color: AppColors.getSuccessColor(brightness).withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.green.withValues(alpha: 0.2),
+                            color: AppColors.getSuccessColor(brightness).withValues(alpha: 0.2),
                           ),
                         ),
                         child: Column(
@@ -2473,13 +2475,13 @@ class _InstructorCourseDetailScreenState
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                Icon(Icons.check_circle, color: AppColors.getSuccessColor(brightness), size: 16),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Your Answer',
                                   style: GoogleFonts.inter(
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.green,
+                                    color: AppColors.getSuccessColor(brightness),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -2577,7 +2579,7 @@ class _InstructorCourseDetailScreenState
                 'Students',
                 '${analytics['totalStudents'] ?? 0}',
                 Icons.people_rounded,
-                Colors.blue,
+                AppColors.getPrimaryColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -2587,7 +2589,7 @@ class _InstructorCourseDetailScreenState
                 'Revenue',
                 'रु ${analytics['totalRevenue']?.toStringAsFixed(0) ?? '0'}',
                 Icons.attach_money_rounded,
-                Colors.green,
+                AppColors.getSuccessColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -2597,7 +2599,7 @@ class _InstructorCourseDetailScreenState
                 'Rating',
                 '${analytics['avgRating'] ?? 0} ⭐',
                 Icons.star_rounded,
-                Colors.amber,
+                AppColors.getWarningColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -2607,7 +2609,7 @@ class _InstructorCourseDetailScreenState
                 'Completion',
                 '${analytics['completionRate'] ?? 0}%',
                 Icons.trending_up_rounded,
-                Colors.orange,
+                AppColors.getWarningColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -2617,7 +2619,7 @@ class _InstructorCourseDetailScreenState
                 'Engagement',
                 '${analytics['engagement'] ?? 0}%',
                 Icons.insights_rounded,
-                Colors.purple,
+                AppColors.getPrimaryLightColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -2627,7 +2629,7 @@ class _InstructorCourseDetailScreenState
                 'Retention',
                 '${analytics['retentionRate'] ?? 0}%',
                 Icons.people_alt_rounded,
-                Colors.teal,
+                AppColors.getSuccessColor(brightness),
                 cardColor,
                 textColor,
                 textSecondaryColor,
@@ -2647,7 +2649,7 @@ class _InstructorCourseDetailScreenState
                   'Top Performing Section',
                   analytics['topPerformingSection'] ?? 'N/A',
                   Icons.trending_up_rounded,
-                  Colors.green,
+                  AppColors.getSuccessColor(brightness),
                   textColor,
                   textSecondaryColor,
                 ),
@@ -2656,7 +2658,7 @@ class _InstructorCourseDetailScreenState
                   'Average Quiz Score',
                   '${analytics['avgQuizScore'] ?? 0}%',
                   Icons.quiz_outlined,
-                  Colors.orange,
+                  AppColors.getWarningColor(brightness),
                   textColor,
                   textSecondaryColor,
                 ),
@@ -2665,7 +2667,7 @@ class _InstructorCourseDetailScreenState
                   'Total Certificates',
                   '${analytics['totalCertificates'] ?? 0}',
                   Icons.emoji_events_rounded,
-                  Colors.amber,
+                  AppColors.getWarningColor(brightness),
                   textColor,
                   textSecondaryColor,
                 ),

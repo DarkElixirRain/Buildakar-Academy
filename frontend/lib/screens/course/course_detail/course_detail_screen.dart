@@ -55,7 +55,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
   String? _reviewError;
 
   // Get brightness from context
-  Brightness get _brightness => MediaQuery.of(context).platformBrightness;
+  Brightness get _brightness => Theme.of(context).brightness;
 
   // Helper getters using AppColors from constants/colors.dart
   Color get _textColor => AppColors.getTextColor(_brightness);
@@ -389,10 +389,10 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully enrolled in the course!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: const Text('Successfully enrolled in the course!'),
+              backgroundColor: _successColor,
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -796,7 +796,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, size: 15, color: Color(0xFFF59E0B)),
+                    Icon(Icons.star, size: 15, color: AppColors.getWarningColor(_brightness)),
                     const SizedBox(width: 4),
                     Text(
                       displayRating.toStringAsFixed(1),
@@ -1110,8 +1110,8 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.star,
-                                  size: 14, color: Color(0xFFF59E0B)),
+                              Icon(Icons.star,
+                                  size: 14, color: AppColors.getWarningColor(_brightness)),
                               const SizedBox(width: 4),
                               Text(
                                 '${course.instructor.rating}',
@@ -1351,7 +1351,7 @@ class _CourseDetailsScreenState extends State<CourseDetailScreen> {
                       onPressed: () => setState(() => _myRating = i + 1),
                       icon: Icon(
                         filled ? Icons.star : Icons.star_border,
-                        color: const Color(0xFFF59E0B),
+                        color: AppColors.getWarningColor(_brightness),
                         size: 28,
                       ),
                     );

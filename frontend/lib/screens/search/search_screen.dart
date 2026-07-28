@@ -1,6 +1,7 @@
 // lib/screens/search/search_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../constants/colors.dart';
 import '../../providers/search_provider.dart';
 import '../../widgets/search/search_results.dart';
 
@@ -53,21 +54,21 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchProvider = Provider.of<SearchProvider>(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
     
     return Scaffold(
       appBar: AppBar(
         title: Container(
           height: 40,
           decoration: BoxDecoration(
-            color: isDark ? Colors.grey[800] : Colors.grey[200],
+            color: AppColors.getBackgroundElementColor(brightness),
             borderRadius: BorderRadius.circular(8),
           ),
           child: TextField(
             controller: _controller,
             focusNode: _focusNode,
             style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
+              color: AppColors.getTextColor(brightness),
             ),
             decoration: const InputDecoration(
               hintText: 'Search courses, instructors...',
@@ -122,21 +123,21 @@ class _SearchScreenState extends State<SearchScreen> {
                     );
                   },
                 )
-              : const Center(
+              : Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.search,
                         size: 64,
-                        color: Colors.grey,
+                        color: AppColors.getTextSecondaryColor(brightness),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text(
                         'Search for courses, instructors, and more',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: AppColors.getTextSecondaryColor(brightness),
                         ),
                       ),
                     ],

@@ -350,7 +350,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     GoogleButton(
                       onPressed: _handleGoogleSignUp,
                       isLoading: _isLoading,
-                      isDark: isDark,
                       isSmallDevice: isSmallDevice,
                     ),
                     const SizedBox(height: 12),

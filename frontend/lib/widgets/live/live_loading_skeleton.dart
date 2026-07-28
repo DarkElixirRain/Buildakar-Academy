@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import '../../constants/colors.dart';
 
 class LiveLoadingSkeleton extends StatefulWidget {
   const LiveLoadingSkeleton({Key? key}) : super(key: key);
@@ -27,7 +28,7 @@ class _LiveLoadingSkeletonState extends State<LiveLoadingSkeleton>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final screenWidth = MediaQuery.of(context).size.width;
 
     final double horizontalPadding = screenWidth < 480 ? 16 : (screenWidth < 900 ? 24 : 40);
@@ -101,8 +102,8 @@ class _Shimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = brightness == Brightness.dark ? const Color(0xFF2A2E37) : const Color(0xFFE9EBEF);
-    final highlightColor = brightness == Brightness.dark ? const Color(0xFF3A3F4B) : Colors.white;
+    final baseColor = AppColors.getBackgroundElementColor(brightness);
+    final highlightColor = AppColors.getBackgroundSelectedColor(brightness);
 
     return AnimatedBuilder(
       animation: controller,

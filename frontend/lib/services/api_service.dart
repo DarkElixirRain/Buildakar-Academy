@@ -66,7 +66,8 @@ class ApiService extends BaseApiService {
 
   @override
   Future<void> clearSession() async {
-    // This is handled by AuthService
+    await super.clearSession();
+    await _authService.clearSession();
   }
 
   // ==================== CATEGORY METHODS ====================
@@ -110,6 +111,7 @@ class ApiService extends BaseApiService {
     int page = 1,
     int limit = 20,
     String? categoryId,
+    String? instructorId,
     String? search,
     String? sortBy = 'popular',
     String? level,
@@ -117,6 +119,7 @@ class ApiService extends BaseApiService {
         page: page,
         limit: limit,
         categoryId: categoryId,
+        instructorId: instructorId,
         search: search,
         sortBy: sortBy,
         level: level,

@@ -12,6 +12,7 @@ import '../screens/categories/categories_screen.dart';
 import '../screens/category/category_detail_screen.dart';
 import '../screens/explore/explore_screen.dart';
 import '../screens/live/live_screen.dart';
+import '../screens/instructor/instructor_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String browse = '/browse';
   static const String instructorProfile = '/instructor-profile';
   static const String liveClass = '/live-class';
+  static const String instructors = '/instructors';
 
   static const String argInstructorId = 'instructorId';
   static const String argCourseId = 'courseId';
@@ -86,9 +88,11 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const ExploreScreen());
       case liveClass:
         return MaterialPageRoute(builder: (_) => const LiveScreen());
+      case instructors:
+        return MaterialPageRoute(builder: (_) => const InstructorsScreen());
       default:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
+          builder: (context) => Scaffold(
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -99,17 +103,17 @@ class AppRoutes {
                     const SizedBox(height: 16),
                     Text(
                       'Page Not Found',
-                      style: Theme.of(_).textTheme.headlineSmall,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'We couldn\'t find the page you\'re looking for.',
+                      'We could not find the page you\'re looking for.',
                       style: TextStyle(color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      onPressed: () => Navigator.of(_).pushNamedAndRemoveUntil(
+                      onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
                         home, (route) => false,
                       ),
                       icon: const Icon(Icons.home),

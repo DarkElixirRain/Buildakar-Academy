@@ -435,7 +435,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                     Icon(
                       Icons.local_fire_department,
                       size: screenWidth < 380 ? 18 : 20,
-                      color: const Color(0xFFEF4444),
+                      color: AppColors.getErrorColor(brightness),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -567,9 +567,7 @@ class _PopularCoursesState extends State<PopularCourses> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : const Color(0xFF0F172A).withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
               offset: const Offset(0, 2),
               blurRadius: 6,
             ),
@@ -863,7 +861,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                     width: screenWidth < 380 ? 18 : 20,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                      color: backgroundSelectedColor,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -871,7 +869,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                     height: screenWidth < 380 ? 20 : 24,
                     width: screenWidth < 380 ? 120 : 160,
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                      color: backgroundSelectedColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -881,7 +879,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                 height: screenWidth < 380 ? 14 : 18,
                 width: screenWidth < 380 ? 50 : 60,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                  color: backgroundSelectedColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -914,7 +912,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                     Container(
                       height: cardHeight * 0.5,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                        color: backgroundSelectedColor,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(14),
                           topRight: Radius.circular(14),
@@ -932,7 +930,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                               height: 14,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                color: backgroundSelectedColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -941,7 +939,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                               height: 10,
                               width: 80,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                color: backgroundSelectedColor,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -952,7 +950,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                                   height: 12,
                                   width: 40,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                    color: backgroundSelectedColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
@@ -961,7 +959,7 @@ class _PopularCoursesState extends State<PopularCourses> {
                                   height: 10,
                                   width: 60,
                                   decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                                    color: backgroundSelectedColor,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
@@ -998,11 +996,11 @@ class _PopularCoursesState extends State<PopularCourses> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.local_fire_department,
-                size: 20,
-                color: Color(0xFFEF4444),
-              ),
+                Icon(
+                  Icons.local_fire_department,
+                  size: 20,
+                  color: AppColors.getErrorColor(brightness),
+                ),
               const SizedBox(width: 8),
               Text(
                 'Popular Courses',

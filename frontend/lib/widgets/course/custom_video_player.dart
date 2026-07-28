@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import '../../constants/colors.dart';
 
 /// Full-screen video preview player.
 ///
@@ -126,8 +127,8 @@ class _CustomVideoPlayerState extends State<CustomVideoPlayer> {
                 child: VideoProgressIndicator(
                   _controller!,
                   allowScrubbing: true,
-                  colors: const VideoProgressColors(
-                    playedColor: Color(0xFF2563EB),
+                  colors: VideoProgressColors(
+                    playedColor: AppColors.getPrimaryColor(Theme.of(context).brightness),
                     bufferedColor: Colors.white30,
                     backgroundColor: Colors.white12,
                   ),

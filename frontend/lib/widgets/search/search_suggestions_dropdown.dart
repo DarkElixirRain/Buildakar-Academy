@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../constants/colors.dart';
 import '../../providers/search_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/search_suggestion.dart';
@@ -77,13 +78,13 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
     final isLoading = searchProvider.isLoadingSuggestions;
 
     // Get theme-aware colors with non-nullable values
-    final backgroundColor = isDark ? Colors.grey[900]! : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final textSecondaryColor = isDark ? Colors.grey[400]! : Colors.grey[600]!;
-    final textMutedColor = isDark ? Colors.grey[500]! : Colors.grey[400]!;
-    final surfaceColor = isDark ? Colors.grey[800]! : Colors.grey[100]!;
-    final borderColor = isDark ? Colors.grey[700]! : Colors.grey[300]!;
-    final dividerColor = isDark ? Colors.grey[800]! : Colors.grey[200]!;
+    final backgroundColor = AppColors.getBackgroundElementColor(brightness);
+    final textColor = AppColors.getTextColor(brightness);
+    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
+    final textMutedColor = AppColors.getTextSecondaryColor(brightness);
+    final surfaceColor = AppColors.getBackgroundSelectedColor(brightness);
+    final borderColor = AppColors.getBackgroundSelectedColor(brightness);
+    final dividerColor = AppColors.getBackgroundSelectedColor(brightness);
 
     return Container(
       constraints: const BoxConstraints(
@@ -145,6 +146,7 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
     Color textMutedColor,
     Color dividerColor,
   ) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final searchProvider = Provider.of<SearchProvider>(context, listen: false);
     
     return Column(
@@ -175,7 +177,7 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
                   'Clear All',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.red[400],
+                    color: AppColors.getErrorColor(brightness),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -235,6 +237,7 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
     Color textSecondaryColor,
     Color textMutedColor,
   ) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     if (isLoading) {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -244,7 +247,7 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
             height: 24,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: isDark ? Colors.blue[400] : Colors.blue[600],
+              color: AppColors.getPrimaryColor(brightness),
             ),
           ),
         ),
@@ -338,6 +341,7 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
   }
 
   Widget _buildSuggestionIcon(SearchSuggestion suggestion, bool isDark) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     // Theme-aware colors with non-nullable values
     final primaryColor = isDark ? Colors.blue[400]! : Colors.blue[600]!;
     final primaryLightColor = isDark ? Colors.blue[900]! : Colors.blue[50]!;
@@ -406,18 +410,19 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDark ? Colors.grey[800]! : Colors.grey[100]!,
+            color: AppColors.getBackgroundSelectedColor(brightness),
           ),
           child: Icon(
             Icons.search,
             size: 20,
-            color: isDark ? Colors.grey[500]! : Colors.grey[400]!,
+            color: AppColors.getTextSecondaryColor(brightness),
           ),
         );
     }
   }
 
   Widget _buildNoResults(bool isDark, Color textSecondaryColor) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Center(
@@ -426,7 +431,7 @@ class _SearchSuggestionsDropdownState extends State<SearchSuggestionsDropdown> {
             Icon(
               Icons.search_off,
               size: 48,
-              color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+              color: AppColors.getTextSecondaryColor(brightness),
             ),
             const SizedBox(height: 8),
             Text(

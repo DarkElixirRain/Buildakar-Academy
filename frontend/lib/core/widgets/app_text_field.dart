@@ -72,9 +72,7 @@ class AppTextField extends StatelessWidget {
   Widget _buildInputField(bool isDark, Brightness brightness) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.darkBackgroundElement
-            : AppColors.lightBackgroundElement,
+        color: AppColors.getBackgroundElementColor(brightness),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: error != null

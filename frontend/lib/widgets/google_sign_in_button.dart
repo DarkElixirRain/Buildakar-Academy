@@ -6,14 +6,12 @@ import 'google_button.dart';
 class GoogleSignInButton extends StatefulWidget {
   final void Function(AuthResponse response) onSuccess;
   final void Function(Object error) onError;
-  final bool isDark;
   final bool isSmallDevice;
 
   const GoogleSignInButton({
     Key? key,
     required this.onSuccess,
     required this.onError,
-    this.isDark = false,
     this.isSmallDevice = false,
   }) : super(key: key);
 
@@ -60,7 +58,6 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
     return GoogleButton(
       onPressed: _handleSignIn,
       isLoading: _loading,
-      isDark: widget.isDark,
       isSmallDevice: widget.isSmallDevice,
     );
   }

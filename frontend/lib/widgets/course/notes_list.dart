@@ -1,12 +1,11 @@
 // lib/widgets/course/notes_list.dart
 import 'package:flutter/material.dart';
 import '../../models/course_model.dart';
-import '../../theme/app_colors.dart';
+import '../../constants/colors.dart';
 
 class NotesList extends StatefulWidget {
   final List<NoteItem> notes;
   final List<Lesson> lessons;
-  final AppColors colors;
   final void Function(NoteItem note) onAdd;
   final void Function(NoteItem note) onUpdate;
   final void Function(String noteId) onDelete;
@@ -15,7 +14,6 @@ class NotesList extends StatefulWidget {
     super.key,
     required this.notes,
     required this.lessons,
-    required this.colors,
     required this.onAdd,
     required this.onUpdate,
     required this.onDelete,
@@ -27,7 +25,7 @@ class NotesList extends StatefulWidget {
 
 class _NotesListState extends State<NotesList> {
   Future<void> _openEditor({NoteItem? existing}) async {
-    final colors = widget.colors;
+    final brightness = Theme.of(context).brightness;
     
     // Get the initial values
     String selectedLesson = existing?.lessonTitle ?? 
@@ -37,7 +35,7 @@ class _NotesListState extends State<NotesList> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: colors.backgroundElement,
+      backgroundColor: AppColors.getBackgroundElementColor(brightness),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20))
       ),
@@ -58,7 +56,7 @@ class _NotesListState extends State<NotesList> {
                   Text(
                     existing == null ? 'New note' : 'Edit note',
                     style: TextStyle(
-                      color: colors.text,
+                      color: AppColors.getTextColor(brightness),
                       fontSize: 16,
                       fontWeight: FontWeight.bold
                     ),
@@ -99,7 +97,7 @@ class _NotesListState extends State<NotesList> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
+                        backgroundColor: AppColors.getPrimaryColor(brightness),
                         padding: const EdgeInsets.symmetric(vertical: 14)
                       ),
                       onPressed: () {
@@ -161,7 +159,7 @@ class _NotesListState extends State<NotesList> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = widget.colors;
+    final brightness = Theme.of(context).brightness;
     final isSmallScreen = MediaQuery.of(context).size.width < 400;
     
     return Padding(
@@ -175,18 +173,18 @@ class _NotesListState extends State<NotesList> {
               Text(
                 'My notes',
                 style: TextStyle(
-                  color: colors.text,
+                  color: AppColors.getTextColor(brightness),
                   fontSize: isSmallScreen ? 12 : 14,
                   fontWeight: FontWeight.bold
                 ),
               ),
               TextButton.icon(
                 onPressed: () => _openEditor(),
-                icon: Icon(Icons.add, size: 18, color: colors.primary),
+                icon: Icon(Icons.add, size: 18, color: AppColors.getPrimaryColor(brightness)),
                 label: Text(
                   'Add note',
                   style: TextStyle(
-                    color: colors.primary,
+                    color: AppColors.getPrimaryColor(brightness),
                     fontSize: isSmallScreen ? 12 : 14,
                   ),
                 ),
@@ -203,14 +201,14 @@ class _NotesListState extends State<NotesList> {
                     Icon(
                       Icons.sticky_note_2_outlined,
                       size: isSmallScreen ? 30 : 40,
-                      color: colors.textSecondary,
+                      color: AppColors.getTextSecondaryColor(brightness),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No notes yet — tap "Add note" to jot something down.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: colors.textSecondary,
+                        color: AppColors.getTextSecondaryColor(brightness),
                         fontSize: isSmallScreen ? 12 : 13,
                       ),
                     ),
@@ -223,10 +221,10 @@ class _NotesListState extends State<NotesList> {
               margin: const EdgeInsets.only(top: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colors.backgroundElement,
+                color: AppColors.getBackgroundElementColor(brightness),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: colors.textSecondary.withValues(alpha: 0.1), // ✅ Fixed: withOpacity instead of withValues
+                  color: AppColors.getTextSecondaryColor(brightness).withValues(alpha: 0.1), // ✅ Fixed: withOpacity instead of withValues
                 ),
               ),
               child: Column(
@@ -238,7 +236,7 @@ class _NotesListState extends State<NotesList> {
                         child: Text(
                           n.lessonTitle,
                           style: TextStyle(
-                            color: colors.primary,
+                            color: AppColors.getPrimaryColor(brightness),
                             fontSize: isSmallScreen ? 11 : 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -251,7 +249,7 @@ class _NotesListState extends State<NotesList> {
                         icon: Icon(
                           Icons.edit_outlined,
                           size: isSmallScreen ? 15 : 17,
-                          color: colors.textSecondary,
+                          color: AppColors.getTextSecondaryColor(brightness),
                         ),
                       ),
                       // Delete button
@@ -261,7 +259,7 @@ class _NotesListState extends State<NotesList> {
                         icon: Icon(
                           Icons.delete_outline,
                           size: isSmallScreen ? 15 : 17,
-                          color: colors.danger,
+                          color: AppColors.getErrorColor(brightness),
                         ),
                       ),
                     ],
@@ -270,7 +268,7 @@ class _NotesListState extends State<NotesList> {
                   Text(
                     n.content,
                     style: TextStyle(
-                      color: colors.text,
+                      color: AppColors.getTextColor(brightness),
                       fontSize: isSmallScreen ? 12 : 13,
                       height: 1.4,
                     ),
@@ -282,7 +280,7 @@ class _NotesListState extends State<NotesList> {
                       child: Text(
                         'Updated: ${_formatDate(n.updatedAt)}',
                         style: TextStyle(
-                          color: colors.textSecondary,
+                          color: AppColors.getTextSecondaryColor(brightness),
                           fontSize: isSmallScreen ? 10 : 11,
                         ),
                       ),

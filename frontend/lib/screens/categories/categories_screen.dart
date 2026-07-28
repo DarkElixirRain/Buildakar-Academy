@@ -174,7 +174,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 768;
@@ -209,14 +209,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF2E3135)
-                    : const Color(0xFFF3F4F6),
+                color: AppColors.getBackgroundSelectedColor(brightness),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF3D4045)
-                      : const Color(0xFFE5E7EB),
+                  color: AppColors.getBackgroundSelectedColor(brightness),
                   width: 1,
                 ),
                 boxShadow: [
@@ -273,14 +269,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: RefreshIndicator(
         onRefresh: _refreshData,
         color: AppColors.getPrimaryColor(brightness),
-        backgroundColor: isDark ? const Color(0xFF2E3135) : Colors.white,
+        backgroundColor: isDark ? AppColors.getBackgroundSelectedColor(brightness) : AppColors.getBackgroundColor(brightness),
         child: _buildBody(),
       ),
     );
   }
 
   Widget _buildBody() {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 768;
     final isSmallScreen = screenWidth < 400;
@@ -627,7 +623,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Widget _buildSkeleton(bool isTablet, bool isSmallScreen) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
@@ -680,10 +676,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         itemBuilder: (context, index) {
           return Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2E3135) : const Color(0xFFF3F4F6),
+              color: AppColors.getBackgroundSelectedColor(brightness),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? const Color(0xFF3D4045) : const Color(0xFFE5E7EB),
+                color: AppColors.getBackgroundSelectedColor(brightness),
                 width: 1,
               ),
             ),
@@ -695,7 +691,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   flex: 2,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF3D4045) : const Color(0xFFE5E7EB),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
@@ -719,7 +715,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                               height: 14.0,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF3D4045) : const Color(0xFFE5E7EB),
+                                color: AppColors.getBackgroundSelectedColor(brightness),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -729,7 +725,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                               height: 10.0,
                               width: 60.0,
                               decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF3D4045) : const Color(0xFFE5E7EB),
+                                color: AppColors.getBackgroundSelectedColor(brightness),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -740,7 +736,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           height: 20.0,
                           width: 80.0,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF3D4045) : const Color(0xFFE5E7EB),
+                            color: AppColors.getBackgroundSelectedColor(brightness),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),

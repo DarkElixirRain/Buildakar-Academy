@@ -6,7 +6,7 @@ class SplashTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final primaryColor = AppColors.getPrimaryColor(brightness);
     final primaryLightColor = AppColors.getPrimaryLightColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);

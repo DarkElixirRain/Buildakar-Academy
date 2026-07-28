@@ -607,7 +607,6 @@ class _ContinueLearningState extends State<ContinueLearning> {
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
-    final errorColor = AppColors.getErrorColor(brightness);
     final successColor = AppColors.getSuccessColor(brightness);
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
@@ -831,9 +830,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : const Color(0xFF0F172A).withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
               offset: const Offset(0, 2),
               blurRadius: 6,
             ),
@@ -1056,9 +1053,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
                               borderRadius: BorderRadius.circular(2),
                               child: LinearProgressIndicator(
                                 value: progressValue,
-                                backgroundColor: isDark
-                                    ? const Color(0xFF334155)
-                                    : const Color(0xFFE5E7EB),
+                                backgroundColor: backgroundSelectedColor.withValues(alpha: 0.5),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   progressColor,
                                 ),
@@ -1150,9 +1145,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
                 Container(
                   height: cardHeight * 0.40,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF2E3135)
-                        : const Color(0xFFE5E7EB),
+                  color: backgroundSelectedColor.withValues(alpha: 0.5),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(14),
                       topRight: Radius.circular(14),
@@ -1170,9 +1163,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
                           height: 14,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2E3135)
-                                : const Color(0xFFE5E7EB),
+                            color: backgroundSelectedColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -1181,9 +1172,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
                           height: 10,
                           width: 80,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2E3135)
-                                : const Color(0xFFE5E7EB),
+                            color: backgroundSelectedColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -1192,9 +1181,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
                           height: 4,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2E3135)
-                                : const Color(0xFFE5E7EB),
+                            color: backgroundSelectedColor,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -1203,9 +1190,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
                           height: 28,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF2E3135)
-                                : const Color(0xFFE5E7EB),
+                            color: backgroundSelectedColor,
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),

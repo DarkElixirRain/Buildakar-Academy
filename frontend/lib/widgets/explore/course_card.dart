@@ -38,6 +38,7 @@ class CourseCard extends StatelessWidget {
 
 /// ---------------------------------------------------------------------
 /// Vertical card: image on top, details below. Used in grid layouts.
+/// Matches the design from Featured / Recommended / Popular sections.
 /// ---------------------------------------------------------------------
 class _GridCard extends StatelessWidget {
   final Map<String, dynamic> course;
@@ -48,170 +49,222 @@ class _GridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get theme from provider
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    
+
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
-    final backgroundColor = AppColors.getBackgroundColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
+    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
-    final bool isBookmarked = course['isBookmarked'] == true;
-    final double? oldPrice = (course['oldPrice'] as num?)?.toDouble();
-    final double price = (course['price'] as num?)?.toDouble() ?? 0;
+    final rating = (course['rating'] as num?)?.toDouble() ?? 0.0;
+    final students = (course['students'] as num?)?.toInt() ?? 0;
+    final price = (course['price'] as num?)?.toDouble() ?? 0.0;
+    final discountPrice = (course['discountPrice'] as num?)?.toDouble() ?? 0.0;
+    final hasDiscount = discountPrice > 0;
+    final priceDisplay = course['priceDisplay']?.toString() ?? (price == 0 ? 'Free' : 'रू $price');
+    final badge = course['badge']?.toString() ?? '📚 Course';
+    final level = course['level']?.toString() ?? 'Beginner';
+    final instructor = course['instructor']?.toString() ?? 'Unknown Instructor';
+    final thumbnail = course['thumbnail']?.toString() ?? course['image']?.toString() ?? '';
 
-    return InkWell(
+    final screenWidth = MediaQuery.of(context).size.width;
+    final fontSizeBadge = screenWidth < 380 ? 9.0 : 10.0;
+    final fontSizeTitle = screenWidth < 380 ? 13.0 : 14.5;
+    final fontSizeSubtitle = screenWidth < 380 ? 11.0 : 12.5;
+    final paddingSize = screenWidth < 380 ? 8.0 : 10.0;
+    final imageHeight = 110.0;
+
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
       child: Container(
         decoration: BoxDecoration(
           color: backgroundElementColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: ExploreColors.border(brightness)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: backgroundSelectedColor, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+              offset: const Offset(0, 2),
+              blurRadius: 6,
             ),
           ],
         ),
-        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ---- Thumbnail ----
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    course['thumbnail'] ?? course['image'] ?? '',
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(color: backgroundColor);
-                    },
-                    errorBuilder: (_, __, ___) => Container(
-                      color: backgroundColor,
-                      child: Icon(Icons.image_not_supported_outlined, color: textSecondaryColor),
-                    ),
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
                   ),
-                  if (course['level'] != null)
-                    Positioned(top: 10, left: 10, child: LevelBadge(level: course['level'])),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: _BookmarkButton(
-                      isBookmarked: isBookmarked,
-                      onTap: onBookmarkTap,
-                      brightness: brightness,
-                    ),
-                  ),
-                  if (oldPrice != null && oldPrice > price)
-                    Positioned(
-                      bottom: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent,
-                          borderRadius: BorderRadius.circular(8),
+                  child: thumbnail.isNotEmpty
+                      ? Image.network(
+                          thumbnail,
+                          height: imageHeight,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: imageHeight,
+                              width: double.infinity,
+                              color: primaryColor.withValues(alpha: 0.1),
+                              child: Icon(Icons.image_outlined, size: 30, color: textSecondaryColor),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: imageHeight,
+                              width: double.infinity,
+                              color: backgroundSelectedColor,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 24, height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          height: imageHeight,
+                          width: double.infinity,
+                          color: primaryColor.withValues(alpha: 0.1),
+                          child: Icon(Icons.school_outlined, size: 30, color: textSecondaryColor),
                         ),
-                        child: Text(
-                          '${(((oldPrice - price) / oldPrice) * 100).round()}% OFF',
-                          style: GoogleFonts.inter(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                ),
+                Positioned(
+                  top: 8, left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.red.shade700, Colors.orange.shade700],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(color: Colors.white, fontSize: fontSizeBadge, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 8, right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (hasDiscount)
+                          Text(
+                            'रू ${price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: fontSizeBadge,
+                              decoration: TextDecoration.lineThrough,
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // ---- Details ----
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (course['category'] != null)
-                    Text(
-                      (course['category'] is String
-                          ? course['category'] as String
-                          : (course['category'] as Map)['name'] as String? ?? ''
-                      ).toUpperCase(),
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: primaryColor,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  const SizedBox(height: 4),
-                  Text(
-                    course['title'] ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _getInstructorName(course),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 12.5,
-                      color: textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      if (course['rating'] != null) ...[
-                        RatingPill(rating: (course['rating'] as num).toDouble()),
-                        const SizedBox(width: 6),
+                        if (hasDiscount) const SizedBox(width: 4),
                         Text(
-                          '(${course['students'] ?? 0})',
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            color: textSecondaryColor,
+                          priceDisplay,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: fontSizeBadge + 1,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
-                      const Spacer(),
-                      if (oldPrice != null && oldPrice > price)
-                        Text(
-                          'रु ${oldPrice.toStringAsFixed(0)}',
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            color: textSecondaryColor,
-                            decoration: TextDecoration.lineThrough,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 8, left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      level,
+                      style: TextStyle(color: Colors.white, fontSize: fontSizeBadge, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(paddingSize),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      course['title'] ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: fontSizeTitle,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline_rounded, size: fontSizeSubtitle - 2, color: textSecondaryColor),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            instructor,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: fontSizeSubtitle - 1,
+                              color: textSecondaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      const SizedBox(width: 4),
-                      Text(
-                        price == 0 ? 'Free' : 'रु ${price.toStringAsFixed(0)}',
-                        style: GoogleFonts.inter(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w800,
-                          color: primaryColor,
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Colors.amber, size: fontSizeSubtitle + 2),
+                        const SizedBox(width: 4),
+                        Text(
+                          rating.toStringAsFixed(1),
+                          style: TextStyle(fontSize: fontSizeSubtitle, color: textColor, fontWeight: FontWeight.w600),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$students students',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: fontSizeSubtitle - 2, color: textSecondaryColor),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -223,7 +276,7 @@ class _GridCard extends StatelessWidget {
 
 /// ---------------------------------------------------------------------
 /// Horizontal card: thumbnail on the left, details on the right.
-/// Great for dense phone-width lists.
+/// Matches the design from Featured / Recommended / Popular sections.
 /// ---------------------------------------------------------------------
 class _ListCard extends StatelessWidget {
   final Map<String, dynamic> course;
@@ -234,19 +287,25 @@ class _ListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get theme from provider
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    
+
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
-    final primaryColor = AppColors.getPrimaryColor(brightness);
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
-    
-    final bool isBookmarked = course['isBookmarked'] == true;
-    final double price = (course['price'] as num?)?.toDouble() ?? 0;
+
+    final rating = (course['rating'] as num?)?.toDouble() ?? 0.0;
+    final students = (course['students'] as num?)?.toInt() ?? 0;
+    final price = (course['price'] as num?)?.toDouble() ?? 0.0;
+    final badge = course['badge']?.toString() ?? '📚 Course';
+    final instructor = course['instructor']?.toString() ?? 'Unknown Instructor';
+    final priceDisplay = course['priceDisplay']?.toString() ?? (price == 0 ? 'Free' : 'रू $price');
+    final thumbnail = course['thumbnail']?.toString() ?? course['image']?.toString() ?? '';
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final fontSizeSubtitle = screenWidth < 380 ? 11.0 : 12.0;
 
     return InkWell(
       onTap: onTap,
@@ -256,7 +315,7 @@ class _ListCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundElementColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ExploreColors.border(brightness)),
+          border: Border.all(color: AppColors.getBackgroundSelectedColor(brightness)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,13 +325,49 @@ class _ListCard extends StatelessWidget {
               child: SizedBox(
                 width: 96,
                 height: 96,
-                child: Image.network(
-                  course['thumbnail'] ?? course['image'] ?? '',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: backgroundColor,
-                    child: Icon(Icons.image_not_supported_outlined, color: textSecondaryColor),
-                  ),
+                child: Stack(
+                  children: [
+                    Image.network(
+                      thumbnail,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: backgroundColor,
+                        child: Icon(Icons.image_not_supported_outlined, color: textSecondaryColor),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4, left: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.red.shade700, Colors.orange.shade700],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 4, right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          priceDisplay,
+                          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -281,7 +376,8 @@ class _ListCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (course['level'] != null) LevelBadge(level: course['level']),
+                  if (course['level'] != null)
+                    LevelBadge(level: course['level'], brightness: brightness),
                   const SizedBox(height: 6),
                   Text(
                     course['title'] ?? '',
@@ -295,79 +391,46 @@ class _ListCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    _getInstructorName(course),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      if (course['rating'] != null)
-                        RatingPill(rating: (course['rating'] as num).toDouble()),
-                      const Spacer(),
-                      Text(
-                        price == 0 ? 'Free' : 'रु ${price.toStringAsFixed(0)}',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: primaryColor,
+                      Icon(Icons.person_outline_rounded, size: fontSizeSubtitle - 2, color: textSecondaryColor),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          instructor,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: fontSizeSubtitle - 1,
+                            color: textSecondaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Colors.amber, size: fontSizeSubtitle + 2),
+                      const SizedBox(width: 4),
+                      Text(
+                        rating.toStringAsFixed(1),
+                        style: TextStyle(fontSize: fontSizeSubtitle, color: textColor, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$students students',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: fontSizeSubtitle - 2, color: textSecondaryColor),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            _BookmarkButton(
-              isBookmarked: isBookmarked,
-              onTap: onBookmarkTap,
-              small: true,
-              brightness: brightness,
-            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BookmarkButton extends StatelessWidget {
-  final bool isBookmarked;
-  final VoidCallback? onTap;
-  final bool small;
-  final Brightness brightness;
-
-  const _BookmarkButton({
-    required this.isBookmarked,
-    this.onTap,
-    this.small = false,
-    required this.brightness,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = AppColors.getPrimaryColor(brightness);
-    final backgroundColor = AppColors.getBackgroundColor(brightness);
-    
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: small ? 30 : 32,
-        height: small ? 30 : 32,
-        decoration: BoxDecoration(
-          color: small ? backgroundColor : Colors.black.withValues(alpha: 0.35),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-          size: 17,
-          color: isBookmarked ? primaryColor : (small ? primaryColor : Colors.white),
         ),
       ),
     );
@@ -404,28 +467,12 @@ class CourseGrid extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
 
-        if (width < 480) {
-          // Single-column dense list on small phones.
-          return ListView.separated(
-            shrinkWrap: shrinkWrap,
-            physics: physics ?? const NeverScrollableScrollPhysics(),
-            itemCount: courses.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, i) {
-              final c = courses[i];
-              return CourseCard(
-                course: c,
-                style: CourseCardStyle.list,
-                onTap: () => onCoursePress?.call(c['id'] ?? c['courseId'] ?? ''),
-                onBookmarkTap: () => onBookmarkToggle?.call(c['id'] ?? c['courseId'] ?? ''),
-              );
-            },
-          );
-        }
-
         int columns;
         double aspectRatio;
-        if (width < 780) {
+        if (width < 480) {
+          columns = 2;
+          aspectRatio = 0.66;
+        } else if (width < 780) {
           columns = 2;
           aspectRatio = 0.66;
         } else if (width < 1100) {
@@ -470,17 +517,4 @@ class CourseGrid extends StatelessWidget {
       },
     );
   }
-}
-
-String _getInstructorName(Map<String, dynamic> course) {
-  final instructor = course['instructor'] ?? course['instructorName'];
-  if (instructor is String) return instructor;
-  if (instructor is Map) {
-    final firstName = instructor['firstName'] as String? ?? '';
-    final lastName = instructor['lastName'] as String? ?? '';
-    final name = instructor['name'] as String? ?? '';
-    if (name.isNotEmpty) return name;
-    return '${firstName} ${lastName}'.trim();
-  }
-  return '';
 }

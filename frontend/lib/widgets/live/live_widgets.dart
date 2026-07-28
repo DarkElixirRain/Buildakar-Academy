@@ -8,15 +8,16 @@ import '../../providers/theme_provider.dart';
 
 class LiveColors {
   static Color surface(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF1C1F26) : Colors.white;
+      AppColors.getBackgroundElementColor(b);
 
   static Color background(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF121417) : const Color(0xFFF7F8FA);
+      AppColors.getBackgroundColor(b);
 
   static Color border(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF2A2E37) : const Color(0xFFE7E9EC);
+      AppColors.getBackgroundSelectedColor(b);
 
-  static const Color live = Color(0xFFE11D48);
+  static Color live(Brightness b) =>
+      AppColors.getErrorColor(b);
 }
 
 /// ---------------------------------------------------------------------
@@ -170,8 +171,8 @@ class LiveTabSelector extends StatelessWidget {
                       Container(
                         width: isSmallScreen ? 5 : 7,
                         height: isSmallScreen ? 5 : 7,
-                        decoration: const BoxDecoration(
-                          color: LiveColors.live,
+                        decoration: BoxDecoration(
+                          color: LiveColors.live(brightness),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -185,7 +186,7 @@ class LiveTabSelector extends StatelessWidget {
                           fontSize: isSmallScreen ? 10 : 12.5,
                           fontWeight: FontWeight.w700,
                           color: selected
-                              ? (isLiveTab ? LiveColors.live : primaryColor)
+                              ? (isLiveTab ? LiveColors.live(brightness) : primaryColor)
                               : textSecondaryColor,
                         ),
                       ),
@@ -243,6 +244,7 @@ class _PulsingLiveBadgeState extends State<PulsingLiveBadge> with SingleTickerPr
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 400;
+    final brightness = Theme.of(context).brightness;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -250,7 +252,7 @@ class _PulsingLiveBadgeState extends State<PulsingLiveBadge> with SingleTickerPr
         vertical: isSmallScreen ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: LiveColors.live,
+        color: LiveColors.live(brightness),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -295,6 +297,7 @@ class JoinButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 400;
+    final brightness = Theme.of(context).brightness;
 
     return SizedBox(
       width: expand ? double.infinity : null,
@@ -313,7 +316,7 @@ class JoinButton extends StatelessWidget {
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: LiveColors.live,
+          backgroundColor: LiveColors.live(brightness),
           foregroundColor: Colors.white,
           elevation: 0,
           padding: EdgeInsets.symmetric(

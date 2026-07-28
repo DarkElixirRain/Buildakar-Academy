@@ -103,7 +103,7 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(response.message ?? 'Follow status updated'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -113,7 +113,7 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(response.error ?? 'Failed to update follow status'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -124,7 +124,7 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -251,7 +251,7 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     
@@ -747,7 +747,7 @@ class _InstructorsScreenState extends State<InstructorsScreen> {
               children: [
                 Icon(
                   Icons.star, 
-                  color: Colors.amber, 
+                  color: AppColors.getWarningColor(brightness), 
                   size: fontSizeRating,
                 ),
                 const SizedBox(width: 2),

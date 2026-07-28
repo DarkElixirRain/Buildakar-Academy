@@ -19,7 +19,7 @@ class SearchResultsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     // Filter out empty sections
@@ -79,17 +79,18 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildSearchInfo(BuildContext context, bool isDark) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[800] : Colors.grey[100],
+        color: AppColors.getBackgroundElementColor(brightness),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Icon(
             Icons.search,
-            color: isDark ? Colors.grey[400] : Colors.grey[600],
+            color: AppColors.getTextSecondaryColor(brightness),
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -102,14 +103,14 @@ class SearchResultsWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white : Colors.black87,
+                    color: AppColors.getTextColor(brightness),
                   ),
                 ),
                 Text(
                   '${results.meta.totalResults} results found',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    color: AppColors.getTextSecondaryColor(brightness),
                   ),
                 ),
               ],
@@ -121,13 +122,14 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title, bool isDark) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Row(
       children: [
         Container(
           width: 4,
           height: 20,
           decoration: BoxDecoration(
-            color: AppColors.getPrimaryColor(isDark ? Brightness.light : Brightness.dark),
+            color: AppColors.getPrimaryColor(brightness),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -137,7 +139,7 @@ class SearchResultsWidget extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
+            color: AppColors.getTextColor(brightness),
           ),
         ),
       ],
@@ -145,6 +147,7 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -152,7 +155,7 @@ class SearchResultsWidget extends StatelessWidget {
           Icon(
             Icons.search_off,
             size: 80,
-            color: isDark ? Colors.grey[600] : Colors.grey[400],
+            color: AppColors.getTextSecondaryColor(brightness),
           ),
           const SizedBox(height: 16),
           Text(
@@ -160,7 +163,7 @@ class SearchResultsWidget extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+              color: AppColors.getTextColor(brightness),
             ),
           ),
           const SizedBox(height: 8),
@@ -168,7 +171,7 @@ class SearchResultsWidget extends StatelessWidget {
             'Try adjusting your search terms',
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              color: AppColors.getTextSecondaryColor(brightness),
             ),
           ),
         ],
@@ -199,7 +202,7 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildCategoryCard(BuildContext context, CategorySearchResult category) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return InkWell(
@@ -208,10 +211,10 @@ class SearchResultsWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[800] : Colors.white,
+          color: AppColors.getBackgroundElementColor(brightness),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+            color: AppColors.getBackgroundSelectedColor(brightness),
             width: 1,
           ),
         ),
@@ -241,7 +244,7 @@ class SearchResultsWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: AppColors.getTextColor(brightness),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -250,7 +253,7 @@ class SearchResultsWidget extends StatelessWidget {
                     '${category.courseCount} courses',
                     style: TextStyle(
                       fontSize: 11,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      color: AppColors.getTextSecondaryColor(brightness),
                     ),
                   ),
                 ],
@@ -280,7 +283,7 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildCourseCard(BuildContext context, CourseSearchResult course) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return InkWell(
@@ -289,10 +292,10 @@ class SearchResultsWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[800] : Colors.white,
+          color: AppColors.getBackgroundElementColor(brightness),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+            color: AppColors.getBackgroundSelectedColor(brightness),
             width: 1,
           ),
         ),
@@ -304,7 +307,7 @@ class SearchResultsWidget extends StatelessWidget {
               child: Container(
                 width: 80,
                 height: 60,
-                color: isDark ? Colors.grey[700] : Colors.grey[200],
+                color: AppColors.getBackgroundSelectedColor(brightness),
                 child: course.thumbnail != null && course.thumbnail!.isNotEmpty
                     ? Image.network(
                         course.thumbnail!,
@@ -312,13 +315,13 @@ class SearchResultsWidget extends StatelessWidget {
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons.school,
-                            color: isDark ? Colors.grey[500] : Colors.grey[400],
+                            color: AppColors.getTextSecondaryColor(brightness),
                           );
                         },
                       )
                     : Icon(
                         Icons.school,
-                        color: isDark ? Colors.grey[500] : Colors.grey[400],
+                        color: AppColors.getTextSecondaryColor(brightness),
                       ),
               ),
             ),
@@ -334,7 +337,7 @@ class SearchResultsWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                      color: AppColors.getTextColor(brightness),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -346,7 +349,7 @@ class SearchResultsWidget extends StatelessWidget {
                         course.instructor.fullName,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          color: AppColors.getTextSecondaryColor(brightness),
                         ),
                       ),
                       const Spacer(),
@@ -354,7 +357,7 @@ class SearchResultsWidget extends StatelessWidget {
                         Icon(
                           Icons.star,
                           size: 14,
-                          color: Colors.amber[600],
+                          color: AppColors.getWarningColor(brightness),
                         ),
                         const SizedBox(width: 2),
                         Text(
@@ -362,7 +365,7 @@ class SearchResultsWidget extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black87,
+                            color: AppColors.getTextColor(brightness),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -370,7 +373,7 @@ class SearchResultsWidget extends StatelessWidget {
                           width: 3,
                           height: 3,
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.grey[500] : Colors.grey[400],
+                            color: AppColors.getTextSecondaryColor(brightness),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -379,7 +382,7 @@ class SearchResultsWidget extends StatelessWidget {
                           '${course.studentsCount} students',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            color: AppColors.getTextSecondaryColor(brightness),
                           ),
                         ),
                       ],
@@ -412,7 +415,7 @@ class SearchResultsWidget extends StatelessWidget {
   }
 
   Widget _buildInstructorCard(BuildContext context, InstructorSearchResult instructor) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return InkWell(
@@ -421,10 +424,10 @@ class SearchResultsWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey[800] : Colors.white,
+          color: AppColors.getBackgroundElementColor(brightness),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+            color: AppColors.getBackgroundSelectedColor(brightness),
             width: 1,
           ),
         ),
@@ -436,14 +439,14 @@ class SearchResultsWidget extends StatelessWidget {
               backgroundImage: instructor.photo.isNotEmpty
                   ? NetworkImage(instructor.photo)
                   : null,
-              backgroundColor: isDark ? Colors.grey[700] : Colors.grey[200],
+              backgroundColor: AppColors.getBackgroundSelectedColor(brightness),
               child: instructor.photo.isEmpty
                   ? Text(
                       instructor.firstName.isNotEmpty ? instructor.firstName[0] : '?',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        color: AppColors.getTextSecondaryColor(brightness),
                       ),
                     )
                   : null,
@@ -462,7 +465,7 @@ class SearchResultsWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87,
+                          color: AppColors.getTextColor(brightness),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -470,7 +473,7 @@ class SearchResultsWidget extends StatelessWidget {
                         Icon(
                           Icons.verified,
                           size: 16,
-                          color: Colors.blue[400],
+                          color: AppColors.getPrimaryColor(brightness),
                         ),
                     ],
                   ),
@@ -479,7 +482,7 @@ class SearchResultsWidget extends StatelessWidget {
                     instructor.expertise,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      color: AppColors.getTextSecondaryColor(brightness),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -488,28 +491,28 @@ class SearchResultsWidget extends StatelessWidget {
                       Icon(
                         Icons.people_outline,
                         size: 14,
-                        color: isDark ? Colors.grey[500] : Colors.grey[400],
+                        color: AppColors.getTextSecondaryColor(brightness),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${instructor.studentsCount} students',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          color: AppColors.getTextSecondaryColor(brightness),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Icon(
                         Icons.school_outlined,
                         size: 14,
-                        color: isDark ? Colors.grey[500] : Colors.grey[400],
+                        color: AppColors.getTextSecondaryColor(brightness),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${instructor.coursesCount} courses',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          color: AppColors.getTextSecondaryColor(brightness),
                         ),
                       ),
                     ],

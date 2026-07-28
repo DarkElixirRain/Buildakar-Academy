@@ -71,7 +71,7 @@ class CourseReviews extends StatelessWidget {
                                 ? Icons.star
                                 : Icons.star_border,
                             size: isSmallScreen ? 14 : 18,
-                            color: const Color(0xFFF59E0B),
+                            color: AppColors.getWarningColor(brightness),
                           );
                         }),
                       ),
@@ -154,7 +154,7 @@ class CourseReviews extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          const Icon(Icons.star, size: 12, color: Color(0xFFF59E0B)),
+                          Icon(Icons.star, size: 12, color: AppColors.getWarningColor(brightness)),
           const SizedBox(width: 8),
           Expanded(
             child: Container(
@@ -236,7 +236,7 @@ class CourseReviews extends StatelessWidget {
                                 ? Icons.star
                                 : Icons.star_border,
                             size: 14,
-                            color: const Color(0xFFF59E0B),
+                            color: AppColors.getWarningColor(brightness),
                           );
                         }),
                         const SizedBox(width: 8),

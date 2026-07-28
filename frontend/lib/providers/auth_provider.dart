@@ -260,6 +260,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Force logout (called when session expires from BaseApiService)
+  void forceLogout() {
+    _currentUser = null;
+    _error = 'Session expired. Please login again.';
+    notifyListeners();
+  }
+
   /// Clear error message
   void clearError() {
     _error = null;

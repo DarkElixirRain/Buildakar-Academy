@@ -449,7 +449,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
     final screenWidth = size.width;
@@ -465,8 +465,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     final gridConfig = _getGridConfig(screenWidth, isTablet, isPhone, isSmallPhone);
     
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    final surfaceColor = isDark ? const Color(0xFF1C1F23) : Colors.white;
-    final cardBorderColor = isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB);
+    final surfaceColor = AppColors.getBackgroundElementColor(brightness);
+    final cardBorderColor = AppColors.getBackgroundSelectedColor(brightness);
 
     final filtered = _filteredCourses;
 
@@ -746,7 +746,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _searchFocused ? _accentColor : borderColor, width: _searchFocused ? 1.5 : 1),
         boxShadow: [
-          BoxShadow(color: (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: AppColors.getTextColor(b).withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
@@ -817,9 +817,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: selected ? _accentColor : (isDark ? const Color(0xFF1C1F23) : const Color(0xFFF3F4F6)),
+                      color: selected ? _accentColor : (AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light)),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: selected ? _accentColor : (isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB))),
+                      border: Border.all(color: selected ? _accentColor : (AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light))),
                     ),
                     child: Text(
                       level,
@@ -851,9 +851,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   height: 32,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C1F23) : const Color(0xFFF3F4F6),
+                    color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB)),
+                    border: Border.all(color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -890,9 +890,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: selected ? _accentColor : (isDark ? const Color(0xFF1C1F23) : const Color(0xFFF3F4F6)),
+                      color: selected ? _accentColor : (AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light)),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: selected ? _accentColor : (isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB))),
+                      border: Border.all(color: selected ? _accentColor : (AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light))),
                     ),
                     child: Text(
                       level,
@@ -923,9 +923,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1F23) : const Color(0xFFF3F4F6),
+              color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB)),
+              border: Border.all(color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1217,8 +1217,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     required _GridConfig gridConfig,
     required Color surfaceColor,
   }) {
-    final baseColor = isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB);
-    final highlightColor = isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB);
+    final baseColor = AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light);
+    final highlightColor = AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light);
     final isListStyle = gridConfig.columns == 1;
     final itemCount = isListStyle ? 4 : gridConfig.columns * 2;
 
@@ -1364,7 +1364,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B), 
+                  color: AppColors.getWarningColor(isDark ? Brightness.dark : Brightness.light), 
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -1415,7 +1415,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.star_rounded, size: 15, color: Color(0xFFF59E0B)),
+                  Icon(Icons.star_rounded, size: 15, color: AppColors.getWarningColor(b)),
                   const SizedBox(width: 2),
                   Text(
                     rating.toStringAsFixed(1), 
@@ -1470,12 +1470,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 ],
               ),
               if (isFree)
-                const Text(
+                Text(
                   'FREE', 
                   style: TextStyle(
                     fontSize: 13, 
                     fontWeight: FontWeight.bold, 
-                    color: Color(0xFF10B981),
+                    color: AppColors.getSuccessColor(b),
                   ),
                 )
               else
@@ -1523,7 +1523,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           border: Border.all(color: cardBorderColor),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : Colors.grey).withValues(alpha: 0.06), 
+              color: AppColors.getTextColor(b).withValues(alpha: 0.06), 
               blurRadius: 10, 
               offset: const Offset(0, 4),
             ),
@@ -1571,16 +1571,16 @@ class _RoundIconButton extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           color: filled 
-              ? (isDark ? const Color(0xFF1C1F23) : const Color(0xFFF3F4F6)) 
+              ? (AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light)) 
               : Colors.black.withValues(alpha: 0.28),
           shape: BoxShape.circle,
           border: filled 
-              ? Border.all(color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB)) 
+              ? Border.all(color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light)) 
               : null,
         ),
         child: Icon(
           icon, 
-          color: filled ? (isDark ? Colors.white : Colors.black87) : Colors.white, 
+          color: filled ? AppColors.getTextColor(isDark ? Brightness.dark : Brightness.light) : Colors.white, 
           size: size * 0.5,
         ),
       ),
@@ -1605,8 +1605,8 @@ class _SortSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDark ? const Color(0xFF1C1F23) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light);
+    final textColor = AppColors.getTextColor(isDark ? Brightness.dark : Brightness.light);
 
     return Container(
       decoration: BoxDecoration(
@@ -1621,7 +1621,7 @@ class _SortSheet extends StatelessWidget {
             width: 40, 
             height: 4, 
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.4), 
+              color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.4), 
               borderRadius: BorderRadius.circular(2),
             ),
           ),

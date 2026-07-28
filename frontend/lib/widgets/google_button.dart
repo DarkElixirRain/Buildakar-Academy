@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
+import '../constants/colors.dart';
 
 class GoogleButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isLoading;
-  final bool isDark;
   final bool isSmallDevice;
 
   const GoogleButton({
     Key? key,
     required this.onPressed,
     this.isLoading = false,
-    this.isDark = false,
     this.isSmallDevice = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: isDark 
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.white,
-          foregroundColor: isDark ? Colors.white : Colors.black,
+          backgroundColor: brightness == Brightness.dark
+              ? AppColors.getTextColor(brightness).withValues(alpha: 0.05)
+              : AppColors.getBackgroundColor(brightness),
+          foregroundColor: AppColors.getTextColor(brightness),
           padding: EdgeInsets.symmetric(
             vertical: isSmallDevice ? 12 : 14,
           ),
@@ -32,14 +32,14 @@ class GoogleButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           side: BorderSide(
-            color: isDark 
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.3),
+            color: brightness == Brightness.dark
+                ? AppColors.getTextColor(brightness).withValues(alpha: 0.1)
+                : AppColors.getTextSecondaryColor(brightness).withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 height: 18,
                 width: 18,
                 child: CircularProgressIndicator(
@@ -63,7 +63,7 @@ class GoogleButton extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: isSmallDevice ? 13 : 15,
-                      color: isDark ? Colors.white : Colors.black,
+                      color: AppColors.getTextColor(brightness),
                     ),
                   ),
                 ],

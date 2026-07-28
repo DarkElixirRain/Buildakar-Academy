@@ -383,12 +383,12 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: profileImage == null
-                                ? const LinearGradient(
+                                ? LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Color(0xFF2563EB),
-                                      Color(0xFF7C3AED),
+                                      AppColors.getPrimaryColor(brightness),
+                                      AppColors.getPrimaryLightColor(brightness),
                                     ],
                                   )
                                 : null,
@@ -534,9 +534,9 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                             child: SizedBox(
                               width: isTablet ? 12 : 10,
                               height: isTablet ? 12 : 10,
-                              child: const CircularProgressIndicator(
+                              child: CircularProgressIndicator(
                                 strokeWidth: 1.5,
-                                color: Colors.grey,
+                                color: textSecondaryColor,
                               ),
                             ),
                           ),
@@ -627,7 +627,7 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: Colors.red,
+                                        color: AppColors.getErrorColor(brightness),
                                         width: 2,
                                       ),
                                     ),
@@ -680,7 +680,7 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                           ),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          disabledBackgroundColor: isDark ? Colors.grey[700] : Colors.grey[400],
+                          disabledBackgroundColor: isDark ? AppColors.getBackgroundSelectedColor(brightness) : AppColors.getBackgroundElementColor(brightness),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

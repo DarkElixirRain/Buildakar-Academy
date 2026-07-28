@@ -1,63 +1,58 @@
 import 'package:flutter/material.dart';
+import '../theme/stitch_colors.dart';
 
 class AppColors {
-  // Light theme colors
-  static const Color lightText = Color(0xFF000000);
-  static const Color lightBackground = Color(0xFFFFFFFF);
-  static const Color lightBackgroundElement = Color(0xFFF0F0F3);
-  static const Color lightBackgroundSelected = Color(0xFFE0E1E6);
-  static const Color lightTextSecondary = Color(0xFF60646C);
-  static const Color lightPrimary = Color(0xFF2563EB);
-  static const Color lightPrimaryLight = Color(0xFF60A5FA);
-  static const Color lightError = Color(0xFFEF4444);
-  static const Color lightSuccess = Color(0xFF22C55E);
-  static const Color lightWarning = Color(0xFFF59E0B);
-  static const Color lightInfo = Color(0xFF3B82F6);
+  // These now delegate to StitchColors for design system consistency
 
-  // Dark theme colors
-  static const Color darkText = Color(0xFFFFFFFF);
-  static const Color darkBackground = Color(0xFF000000);
-  static const Color darkBackgroundElement = Color(0xFF212225);
-  static const Color darkBackgroundSelected = Color(0xFF2E3135);
-  static const Color darkTextSecondary = Color(0xFFB0B4BA);
-  static const Color darkPrimary = Color(0xFF60A5FA);
-  static const Color darkPrimaryLight = Color(0xFF93C5FD);
-  static const Color darkError = Color(0xFFF87171);
-  static const Color darkSuccess = Color(0xFF34D399);
-  static const Color darkWarning = Color(0xFFFBBF24);
-  static const Color darkInfo = Color(0xFF60A5FA);
-
-  // Theme getters
   static Color getTextColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightText : darkText;
+      StitchColors.textPrimary(brightness);
 
   static Color getBackgroundColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightBackground : darkBackground;
+      StitchColors.surface(brightness);
 
   static Color getBackgroundElementColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightBackgroundElement : darkBackgroundElement;
+      StitchColors.surfaceContainerLowest(brightness);
 
   static Color getBackgroundSelectedColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightBackgroundSelected : darkBackgroundSelected;
+      StitchColors.border(brightness);
 
   static Color getTextSecondaryColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightTextSecondary : darkTextSecondary;
+      StitchColors.textSecondary(brightness);
 
   static Color getPrimaryColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightPrimary : darkPrimary;
+      StitchColors.primary(brightness);
 
   static Color getPrimaryLightColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightPrimaryLight : darkPrimaryLight;
+      StitchColors.primaryContainer(brightness);
 
   static Color getErrorColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightError : darkError;
+      StitchColors.error(brightness);
 
   static Color getSuccessColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightSuccess : darkSuccess;
+      StitchColors.success(brightness);
 
   static Color getWarningColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightWarning : darkWarning;
+      StitchColors.warning(brightness);
 
   static Color getInfoColor(Brightness brightness) =>
-      brightness == Brightness.light ? lightInfo : darkInfo;
+      StitchColors.primary(brightness);
+
+  // Legacy direct references - kept for backward compatibility
+  static const Color lightPrimary = StitchColors.primaryLight;
+  static const Color lightBackground = StitchColors.surfaceLight;
+  static const Color lightBackgroundElement = StitchColors.surfaceContainerLowestLight;
+  static const Color lightText = StitchColors.textPrimaryLight;
+  static const Color lightTextSecondary = StitchColors.textSecondaryLight;
+  static const Color lightError = StitchColors.errorLight;
+  static const Color lightSuccess = StitchColors.successLight;
+  static const Color lightWarning = StitchColors.warningLight;
+
+  static const Color darkPrimary = StitchColors.primaryDark;
+  static const Color darkBackground = StitchColors.surfaceDark;
+  static const Color darkBackgroundElement = StitchColors.surfaceContainerLowestDark;
+  static const Color darkText = StitchColors.textPrimaryDark;
+  static const Color darkTextSecondary = StitchColors.textSecondaryDark;
+  static const Color darkError = StitchColors.errorDark;
+  static const Color darkSuccess = StitchColors.successDark;
+  static const Color darkWarning = StitchColors.warningDark;
 }

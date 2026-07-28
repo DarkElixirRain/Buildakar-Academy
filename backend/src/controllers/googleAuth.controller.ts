@@ -40,6 +40,8 @@ export class GoogleAuthController {
           user: result.user,
           accessToken: result.accessToken,
           accessTokenExpiresAt: result.accessTokenExpiresAt,
+          refreshToken: result.refreshToken,
+          refreshTokenExpiresAt: result.refreshTokenExpiresAt,
         },
       });
     } catch (error) {

@@ -1,29 +1,22 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../config/app_config.dart';
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
 class CourseApiService extends BaseApiService {
+  // ── Public (no auth) endpoints ──
+
   Future<ApiResponse<List<Map<String, dynamic>>>> getFeaturedCourses({int limit = 5}) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/featured?limit=$limit'),
-        headers: await getHeaders(requireAuth: false),
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
-        final List<dynamic> courses = data['data'] ?? [];
+      final response = await get('/courses/featured?limit=$limit', requireAuth: false);
+      if (response.success && response.data != null) {
+        final List<dynamic> courses = response.data is List ? response.data : (response.data['data'] ?? []);
         return ApiResponse.success(
           courses.map((e) => e as Map<String, dynamic>).toList(),
-          message: data['message'],
+          message: response.message,
         );
       }
-
-      return ApiResponse.error(data['message'] ?? 'Failed to fetch featured courses');
+      return ApiResponse.error(response.error ?? 'Failed to fetch featured courses');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
@@ -32,22 +25,15 @@ class CourseApiService extends BaseApiService {
   Future<ApiResponse<List<Map<String, dynamic>>>> getRecommendedCourses({int limit = 10}) async {
     try {
       final token = await getToken();
-      final headers = await getHeaders(requireAuth: token != null);
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/public'),
-        headers: headers,
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
-        final List<dynamic> courses = data['data'] ?? [];
+      final response = await get('/courses/public', requireAuth: token != null);
+      if (response.success && response.data != null) {
+        final List<dynamic> courses = response.data is List ? response.data : (response.data['data'] ?? []);
         return ApiResponse.success(
           courses.map((e) => e as Map<String, dynamic>).toList(),
-          message: data['message'],
+          message: response.message,
         );
       }
-
-      return ApiResponse.error(data['message'] ?? 'Failed to fetch recommended courses');
+      return ApiResponse.error(response.error ?? 'Failed to fetch recommended courses');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
@@ -55,17 +41,11 @@ class CourseApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> getCourseById(String id) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$id'),
-        headers: await getHeaders(requireAuth: false),
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
-        return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
+      final response = await get('/courses/$id', requireAuth: false);
+      if (response.success && response.data != null) {
+        return ApiResponse.success(response.data as Map<String, dynamic>, message: response.message);
       }
-
-      return ApiResponse.error(data['message'] ?? 'Failed to fetch course');
+      return ApiResponse.error(response.error ?? 'Failed to fetch course');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
@@ -75,24 +55,31 @@ class CourseApiService extends BaseApiService {
     int page = 1,
     int limit = 20,
     String? categoryId,
+    String? instructorId,
     String? search,
     String? sortBy = 'popular',
     String? level,
   }) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/public'),
-        headers: await getHeaders(requireAuth: false),
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (categoryId != null) 'categoryId': categoryId,
+        if (instructorId != null) 'instructorId': instructorId,
+        if (search != null) 'search': search,
+        if (sortBy != null) 'sortBy': sortBy,
+        if (level != null) 'level': level,
+      };
+      final queryString = queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+      final response = await get('/courses/public?$queryString', requireAuth: false);
+      if (response.success) {
+        final courses = response.data is List ? response.data as List<dynamic> : [];
         return ApiResponse.success(
-          {'data': data['data'] ?? [], 'pagination': data['pagination'] ?? {}},
-          message: data['message'],
+          {'data': courses, 'pagination': {}},
+          message: response.message,
         );
       }
-      return ApiResponse.error(data['message'] ?? 'Failed to fetch courses');
+      return ApiResponse.error(response.error ?? 'Failed to fetch courses');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
@@ -104,23 +91,21 @@ class CourseApiService extends BaseApiService {
     String timeRange = 'week',
   }) async {
     try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/public'),
-        headers: await getHeaders(requireAuth: false),
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
+      final response = await get('/courses/public', requireAuth: false);
+      if (response.success) {
+        final data = response.data as Map<String, dynamic>? ?? {};
         return ApiResponse.success(
           {'data': data['data'] ?? [], 'pagination': data['pagination'] ?? {}},
-          message: data['message'],
+          message: response.message,
         );
       }
-      return ApiResponse.error(data['message'] ?? 'Failed to fetch popular courses');
+      return ApiResponse.error(response.error ?? 'Failed to fetch popular courses');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
   }
+
+  // ── Authenticated endpoints (use sendAuthenticatedRequest for 401 retry) ──
 
   Future<ApiResponse<Map<String, dynamic>>> getInstructorCourses({
     int page = 1,
@@ -143,8 +128,8 @@ class CourseApiService extends BaseApiService {
         'sortBy': sortBy ?? 'newest',
       };
 
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/courses').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: true));
+      final queryString = queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: '/courses?$queryString');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -167,10 +152,7 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final response = await http.get(
-        Uri.parse('${AppConfig.apiBaseUrl}/instructors/stats'),
-        headers: await getHeaders(requireAuth: true),
-      );
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: '/instructors/stats');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -190,10 +172,7 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final response = await http.delete(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId'),
-        headers: await getHeaders(requireAuth: true),
-      );
+      final response = await sendAuthenticatedRequest(method: 'DELETE', endpoint: '/courses/$courseId');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
@@ -212,10 +191,10 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final response = await http.patch(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/status'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode({'status': status}),
+      final response = await sendAuthenticatedRequest(
+        method: 'PATCH',
+        endpoint: '/courses/$courseId/status',
+        body: {'status': status},
       );
       final data = jsonDecode(response.body);
 
@@ -235,10 +214,10 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final response = await http.put(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId'),
-        headers: await getHeaders(requireAuth: true),
-        body: jsonEncode(data),
+      final response = await sendAuthenticatedRequest(
+        method: 'PUT',
+        endpoint: '/courses/$courseId',
+        body: data,
       );
       final result = jsonDecode(response.body);
 
@@ -258,10 +237,7 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/courses/$courseId/duplicate'),
-        headers: await getHeaders(requireAuth: true),
-      );
+      final response = await sendAuthenticatedRequest(method: 'POST', endpoint: '/courses/$courseId/duplicate');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 201 && data['success'] == true) {
@@ -280,45 +256,19 @@ class CourseApiService extends BaseApiService {
         return ApiResponse.error('User not authenticated');
       }
 
-      final queryParams = <String, String>{if (courseId != null && courseId.isNotEmpty) 'courseId': courseId};
-      final uri = Uri.parse('${AppConfig.apiBaseUrl}/instructors/analytics').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: await getHeaders(requireAuth: true));
+      final queryParams = <String, String>{};
+      if (courseId != null && courseId.isNotEmpty) {
+        queryParams['courseId'] = courseId;
+      }
+      final queryString = queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+      final suffix = queryString.isNotEmpty ? '?$queryString' : '';
+      final response = await sendAuthenticatedRequest(method: 'GET', endpoint: '/instructors/analytics$suffix');
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         return ApiResponse.success(data['data'] as Map<String, dynamic>, message: data['message']);
       }
       return ApiResponse.error(data['message'] ?? 'Failed to fetch course analytics');
-    } catch (e) {
-      return ApiResponse.error(e.toString());
-    }
-  }
-
-  Future<ApiResponse<Map<String, dynamic>>> getInstructorPublicCourses({
-    required String instructorId,
-    int page = 1,
-    int limit = 20,
-    String? search,
-    String? sortBy = 'newest',
-  }) async {
-    try {
-      final queryParams = <String, String>{
-        'page': page.toString(),
-        'limit': limit.toString(),
-        'instructorId': instructorId,
-        if (search != null && search.isNotEmpty) 'search': search,
-        'sortBy': sortBy ?? 'newest',
-      };
-
-      final queryString = queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
-      final response = await get('/courses?$queryString', requireAuth: true);
-      if (response.success) {
-        return ApiResponse.success(
-          {'data': response.data['data'] ?? [], 'pagination': response.data['pagination'] ?? {}},
-          message: response.message,
-        );
-      }
-      return ApiResponse.error('Failed to fetch instructor courses');
     } catch (e) {
       return ApiResponse.error(e.toString());
     }

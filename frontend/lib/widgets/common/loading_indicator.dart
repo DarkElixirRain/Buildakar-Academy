@@ -10,7 +10,7 @@ class LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final indicatorColor = color ?? AppColors.getPrimaryColor(brightness);
 
     return SizedBox(

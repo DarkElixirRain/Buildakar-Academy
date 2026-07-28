@@ -235,6 +235,7 @@ export class CourseController {
       const result = await courseService.getPublishedCourses({
         ...filters,
         categoryId: req.query.categoryId as string,
+        instructorId: req.query.instructorId as string,
         search: req.query.search as string,
         sortBy: req.query.sortBy as any,
         level: req.query.level as any,

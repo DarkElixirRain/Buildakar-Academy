@@ -13,25 +13,6 @@ import '../../constants/colors.dart';
 import '../../providers/theme_provider.dart';
 
 /// ---------------------------------------------------------------------
-/// Local color helpers.
-/// If your AppColors class already exposes surface/card/border getters,
-/// swap these out for AppColors.getSurfaceColor(brightness) etc.
-/// ---------------------------------------------------------------------
-class ExploreColors {
-  static Color surface(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF1C1F26) : Colors.white;
-
-  static Color background(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF121417) : const Color(0xFFF7F8FA);
-
-  static Color border(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF2A2E37) : const Color(0xFFE7E9EC);
-
-  static Color chipUnselected(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFF1C1F26) : Colors.white;
-}
-
-/// ---------------------------------------------------------------------
 /// Search bar with an attached filter button. Tapping the field opens
 /// (or navigates to) a full search flow via [onTap]; typing triggers
 /// [onChanged] for live filtering. The filter icon opens [onFilterTap].
@@ -68,9 +49,9 @@ class ExploreSearchBar extends StatelessWidget {
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              color: ExploreColors.surface(brightness),
+              color: AppColors.getBackgroundElementColor(brightness),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: ExploreColors.border(brightness)),
+              border: Border.all(color: AppColors.getBackgroundSelectedColor(brightness)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
@@ -115,10 +96,10 @@ class ExploreSearchBar extends StatelessWidget {
                 height: 52,
                 width: 52,
                 decoration: BoxDecoration(
-                  color: hasActiveFilters ? primaryColor : ExploreColors.surface(brightness),
+                  color: hasActiveFilters ? primaryColor : AppColors.getBackgroundElementColor(brightness),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: hasActiveFilters ? primaryColor : ExploreColors.border(brightness),
+                    color: hasActiveFilters ? primaryColor : AppColors.getBackgroundSelectedColor(brightness),
                   ),
                 ),
                 child: Icon(
@@ -138,7 +119,7 @@ class ExploreSearchBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.redAccent,
                     shape: BoxShape.circle,
-                    border: Border.all(color: ExploreColors.background(brightness), width: 2),
+                    border: Border.all(color: AppColors.getBackgroundColor(brightness), width: 2),
                   ),
                 ),
               ),
@@ -191,10 +172,10 @@ class CategoryChips extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: selected ? primaryColor : ExploreColors.chipUnselected(brightness),
+                color: selected ? primaryColor : AppColors.getBackgroundElementColor(brightness),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: selected ? primaryColor : ExploreColors.border(brightness),
+                  color: selected ? primaryColor : AppColors.getBackgroundSelectedColor(brightness),
                 ),
               ),
               child: Row(
@@ -231,18 +212,19 @@ class CategoryChips extends StatelessWidget {
 /// ---------------------------------------------------------------------
 class LevelBadge extends StatelessWidget {
   final String level;
-  const LevelBadge({Key? key, required this.level}) : super(key: key);
+  final Brightness brightness;
+  const LevelBadge({Key? key, required this.level, required this.brightness}) : super(key: key);
 
   Color _color() {
     switch (level.toLowerCase()) {
       case 'beginner':
-        return const Color(0xFF16A34A);
+        return AppColors.getSuccessColor(brightness);
       case 'intermediate':
-        return const Color(0xFFD97706);
+        return AppColors.getWarningColor(brightness);
       case 'advanced':
-        return const Color(0xFFDC2626);
+        return AppColors.getErrorColor(brightness);
       default:
-        return const Color(0xFF2563EB);
+        return AppColors.getPrimaryColor(brightness);
     }
   }
 
@@ -282,7 +264,7 @@ class RatingPill extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.star_rounded, size: 15, color: Color(0xFFFFB020)),
+        Icon(Icons.star_rounded, size: 15, color: AppColors.getWarningColor(brightness)),
         const SizedBox(width: 2),
         Text(
           rating.toStringAsFixed(1),
@@ -391,7 +373,7 @@ class _SortFilterSheetState extends State<SortFilterSheet> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: ExploreColors.border(brightness),
+                      color: AppColors.getBackgroundSelectedColor(brightness),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -452,10 +434,10 @@ class _SortFilterSheetState extends State<SortFilterSheet> {
                       selected: selected,
                       onSelected: (_) => setState(() => _sort = opt),
                       selectedColor: primaryColor,
-                      backgroundColor: ExploreColors.background(brightness),
+                      backgroundColor: AppColors.getBackgroundColor(brightness),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: selected ? primaryColor : ExploreColors.border(brightness)),
+                        side: BorderSide(color: selected ? primaryColor : AppColors.getBackgroundSelectedColor(brightness)),
                       ),
                     );
                   }).toList(),
@@ -487,10 +469,10 @@ class _SortFilterSheetState extends State<SortFilterSheet> {
                       selected: selected,
                       onSelected: (v) => setState(() => v ? _levels.add(lvl) : _levels.remove(lvl)),
                       selectedColor: primaryColor,
-                      backgroundColor: ExploreColors.background(brightness),
+                      backgroundColor: AppColors.getBackgroundColor(brightness),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(color: selected ? primaryColor : ExploreColors.border(brightness)),
+                        side: BorderSide(color: selected ? primaryColor : AppColors.getBackgroundSelectedColor(brightness)),
                       ),
                     );
                   }).toList(),

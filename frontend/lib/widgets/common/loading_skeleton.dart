@@ -6,7 +6,7 @@ class LoadingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
+    final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     return Scaffold(
@@ -21,27 +21,27 @@ class LoadingSkeleton extends StatelessWidget {
               // Header skeleton
               Row(
                 children: [
-                  _buildSkeletonCircle(40),
+                  _buildSkeletonCircle(40, brightness),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSkeletonBox(80, 12),
+                        _buildSkeletonBox(80, 12, brightness),
                         const SizedBox(height: 4),
-                        _buildSkeletonBox(120, 16),
+                        _buildSkeletonBox(120, 16, brightness),
                       ],
                     ),
                   ),
-                  _buildSkeletonCircle(40),
+                  _buildSkeletonCircle(40, brightness),
                 ],
               ),
               const SizedBox(height: 16),
               // Search bar skeleton
-              _buildSkeletonBox(double.infinity, 48),
+              _buildSkeletonBox(double.infinity, 48, brightness),
               const SizedBox(height: 24),
               // Section title skeleton
-              _buildSkeletonBox(150, 20),
+              _buildSkeletonBox(150, 20, brightness),
               const SizedBox(height: 12),
               // Horizontal scroll skeleton
               SizedBox(
@@ -53,14 +53,14 @@ class LoadingSkeleton extends StatelessWidget {
                     return Container(
                       width: 280,
                       margin: const EdgeInsets.only(right: 12),
-                      child: _buildSkeletonBox(double.infinity, 120),
+                      child: _buildSkeletonBox(double.infinity, 120, brightness),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 24),
               // Another section
-              _buildSkeletonBox(150, 20),
+              _buildSkeletonBox(150, 20, brightness),
               const SizedBox(height: 12),
               SizedBox(
                 height: 200,
@@ -71,14 +71,14 @@ class LoadingSkeleton extends StatelessWidget {
                     return Container(
                       width: 280,
                       margin: const EdgeInsets.only(right: 12),
-                      child: _buildSkeletonBox(double.infinity, 200),
+                      child: _buildSkeletonBox(double.infinity, 200, brightness),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 24),
               // Grid skeleton
-              _buildSkeletonBox(120, 20),
+              _buildSkeletonBox(120, 20, brightness),
               const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
@@ -91,7 +91,7 @@ class LoadingSkeleton extends StatelessWidget {
                 ),
                 itemCount: 6,
                 itemBuilder: (context, index) {
-                  return _buildSkeletonBox(double.infinity, double.infinity);
+                  return _buildSkeletonBox(double.infinity, double.infinity, brightness);
                 },
               ),
               const SizedBox(height: 24),
@@ -102,25 +102,25 @@ class LoadingSkeleton extends StatelessWidget {
     );
   }
 
-  Widget _buildSkeletonBox(double width, double height) {
+  Widget _buildSkeletonBox(double width, double height, Brightness brightness) {
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: AppColors.getBackgroundElementColor(brightness),
         borderRadius: BorderRadius.circular(12),
       ),
       child: const SizedBox(),
     );
   }
 
-  Widget _buildSkeletonCircle(double size) {
+  Widget _buildSkeletonCircle(double size, Brightness brightness) {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.grey,
+        color: AppColors.getTextSecondaryColor(brightness),
       ),
     );
   }

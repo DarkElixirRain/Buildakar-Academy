@@ -244,9 +244,9 @@ class _CategoriesState extends State<Categories> {
     final textColor = AppColors.getTextColor(brightness);
     final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
     final primaryColor = AppColors.getPrimaryColor(brightness);
-    final errorColor = AppColors.getErrorColor(brightness);
     final backgroundColor = AppColors.getBackgroundColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
+    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
     // Responsive sizing
     double cardWidth;
@@ -320,7 +320,7 @@ class _CategoriesState extends State<Categories> {
                   height: screenWidth < 380 ? 20.0 : 24.0,
                   width: screenWidth < 380 ? 80.0 : 100.0,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                    color: backgroundSelectedColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -328,7 +328,7 @@ class _CategoriesState extends State<Categories> {
                   height: screenWidth < 380 ? 14.0 : 18.0,
                   width: screenWidth < 380 ? 50.0 : 60.0,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                    color: backgroundSelectedColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -347,7 +347,7 @@ class _CategoriesState extends State<Categories> {
                   height: cardHeight,
                   margin: EdgeInsets.only(right: gap),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF2E3135) : const Color(0xFFE5E7EB),
+                    color: backgroundSelectedColor,
                     borderRadius: BorderRadius.circular(borderRadius),
                   ),
                   child: Column(
@@ -355,7 +355,7 @@ class _CategoriesState extends State<Categories> {
                       Container(
                         height: imageHeight,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                          color: backgroundSelectedColor.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.only(
                             topLeft: Radius.circular(borderRadius),
                             topRight: Radius.circular(borderRadius),
@@ -373,7 +373,7 @@ class _CategoriesState extends State<Categories> {
                                 height: 12.0,
                                 width: double.infinity,
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                                  color: backgroundSelectedColor.withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -381,7 +381,7 @@ class _CategoriesState extends State<Categories> {
                                 height: 10.0,
                                 width: 80.0,
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF3D4045) : const Color(0xFFD1D5DB),
+                                  color: backgroundSelectedColor.withValues(alpha: 0.7),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),

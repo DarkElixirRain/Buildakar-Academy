@@ -1006,32 +1006,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       
                       // Edit Button
-                      ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Edit Profile coming soon!')),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: backgroundElementColor,
-                          foregroundColor: textColor,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: backgroundSelectedColor,
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: ElevatedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Edit Profile coming soon!')),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: backgroundElementColor,
+                              foregroundColor: textColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: backgroundSelectedColor,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        child: Text(
-                          'Edit',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                            child: Text(
+                              'Edit',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                       ),
+                    ),
                     ],
                   ),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/colors.dart';
 
 class AppErrorBanner extends StatelessWidget {
   final String message;
@@ -7,32 +8,29 @@ class AppErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = Theme.of(context).brightness;
+    final errorColor = AppColors.getErrorColor(brightness);
 
     return Container(
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.red.withValues(alpha: 0.12)
-            : const Color(0xFFFEF2F2),
+        color: errorColor.withValues(alpha: 0.1),
         border: Border.all(
-          color: isDark
-              ? Colors.red.withValues(alpha: 0.25)
-              : const Color(0xFFFECACA),
+          color: errorColor.withValues(alpha: 0.2),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 20),
+          Icon(Icons.error_outline, color: errorColor, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                color: Color(0xFFEF4444),
+              style: TextStyle(
+                color: errorColor,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
