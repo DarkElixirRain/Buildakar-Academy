@@ -51,6 +51,20 @@ class CourseApiService extends BaseApiService {
     }
   }
 
+  Future<ApiResponse<Map<String, dynamic>>> getCourseByIdAuthenticated(String id) async {
+    try {
+      final authHeaders = await getAuthHeadersWithValidation();
+      final response = await get('/courses/$id',
+          headers: authHeaders ?? {}, requireAuth: false);
+      if (response.success && response.data != null) {
+        return ApiResponse.success(response.data as Map<String, dynamic>, message: response.message);
+      }
+      return ApiResponse.error(response.error ?? 'Failed to fetch course');
+    } catch (e) {
+      return ApiResponse.error(e.toString());
+    }
+  }
+
   Future<ApiResponse<Map<String, dynamic>>> getPublicCourses({
     int page = 1,
     int limit = 20,

@@ -234,7 +234,7 @@ class InstructorCourseProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final cr = await _api.getCourseById(courseId);
+      final cr = await _api.getCourseByIdAuthenticated(courseId);
       if (cr.success && cr.data != null) {
         _currentCourseData = cr.data;
       }

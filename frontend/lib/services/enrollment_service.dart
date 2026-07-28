@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-
 import '../services/base_api_service.dart';
 import '../types/api_response.dart';
 
@@ -16,33 +15,34 @@ class EnrollmentApiService extends BaseApiService {
       if (response.statusCode == 200 && data['success'] == true) {
         final List<dynamic> enrollments = data['data'] ?? [];
         final courses = enrollments.map((e) {
-          final course = e['course'] as Map<String, dynamic>? ?? {};
           return {
             'id': e['id']?.toString() ?? '',
-            'courseId': e['courseId']?.toString() ?? course['id']?.toString() ?? '',
-            'title': course['title'] ?? 'Untitled Course',
-            'description': course['description'] ?? '',
-            'thumbnail': _getThumbnail(course),
-            'instructor': _getInstructorName(course),
-            'instructorId': _getInstructorId(course),
-            'instructorAvatar': _getInstructorAvatar(course),
+            'courseId': e['courseId']?.toString() ?? '',
+            'title': e['title'] ?? 'Untitled Course',
+            'description': e['description'] ?? '',
+            'thumbnail': e['thumbnail']?.toString()?.isNotEmpty == true
+                ? e['thumbnail'].toString()
+                : 'https://via.placeholder.com/400x225/4F46E5/FFFFFF?text=Course',
+            'instructor': e['instructor'] ?? 'Unknown Instructor',
+            'instructorId': e['instructorId']?.toString() ?? '',
+            'instructorAvatar': e['instructorAvatar']?.toString() ?? '',
             'progress': _toDouble(e['progress']),
             'remainingTime': _calculateRemainingTime(_toDouble(e['progress']), e['isCompleted'] ?? false),
             'isCompleted': e['isCompleted'] ?? false,
-            'level': course['level'] ?? 'Beginner',
-            'category': _getCategoryName(course),
-            'price': _toDouble(course['price']),
-            'originalPrice': _toDouble(course['originalPrice']),
-            'rating': _toDouble(course['rating']),
-            'reviewsCount': _toInt(course['reviewsCount']),
-            'studentsCount': _toInt(course['studentsCount']),
-            'language': course['language'] ?? 'English',
+            'level': e['level'] ?? 'Beginner',
+            'category': e['category'] ?? 'General',
+            'price': _toDouble(e['price']),
+            'originalPrice': _toDouble(e['originalPrice']),
+            'rating': _toDouble(e['rating']),
+            'reviewsCount': _toInt(e['reviewsCount']),
+            'studentsCount': _toInt(e['studentsCount']),
+            'language': e['language'] ?? 'English',
             'lastAccessedAt': e['lastAccessedAt'],
-            'sections': course['sections'] ?? [],
-            'learningObjectives': course['learningObjectives'] ?? [],
-            'requirements': course['requirements'] ?? [],
-            'studyMaterials': course['studyMaterials'] ?? [],
-            'whatYouWillLearn': course['whatYouWillLearn'] ?? [],
+            'sections': e['sections'] ?? [],
+            'learningObjectives': e['learningObjectives'] ?? [],
+            'requirements': e['requirements'] ?? [],
+            'studyMaterials': e['studyMaterials'] ?? [],
+            'whatYouWillLearn': e['whatYouWillLearn'] ?? [],
           };
         }).toList();
         return ApiResponse.success(courses, message: data['message']);
@@ -168,49 +168,6 @@ class EnrollmentApiService extends BaseApiService {
     } catch (e) {
       return ApiResponse.error(e.toString());
     }
-  }
-
-  static String _getThumbnail(Map<String, dynamic> course) {
-    final thumbnail = course['thumbnail'] ?? course['thumbnailUrl'] ?? course['coverImage'] ?? course['image'] ?? '';
-    return thumbnail.toString().isNotEmpty ? thumbnail.toString() : 'https://via.placeholder.com/400x225/4F46E5/FFFFFF?text=Course';
-  }
-
-  static String _getInstructorName(Map<String, dynamic> course) {
-    final instructor = course['instructor'];
-    if (instructor is Map<String, dynamic>) {
-      return instructor['name'] ?? '${instructor['firstName'] ?? ''} ${instructor['lastName'] ?? ''}'.trim() ?? 'Unknown Instructor';
-    }
-    if (instructor is String) {
-      return instructor;
-    }
-    return 'Unknown Instructor';
-  }
-
-  static String _getInstructorAvatar(Map<String, dynamic> course) {
-    final instructor = course['instructor'];
-    if (instructor is Map<String, dynamic>) {
-      return instructor['photo'] ?? instructor['avatar'] ?? '';
-    }
-    return '';
-  }
-
-  static String _getInstructorId(Map<String, dynamic> course) {
-    final instructor = course['instructor'];
-    if (instructor is Map<String, dynamic>) {
-      return instructor['id']?.toString() ?? '';
-    }
-    return '';
-  }
-
-  static String _getCategoryName(Map<String, dynamic> course) {
-    final category = course['category'];
-    if (category is Map<String, dynamic>) {
-      return category['name'] ?? category['title'] ?? 'General';
-    }
-    if (category is String) {
-      return category;
-    }
-    return 'General';
   }
 
   static double _toDouble(dynamic value) {

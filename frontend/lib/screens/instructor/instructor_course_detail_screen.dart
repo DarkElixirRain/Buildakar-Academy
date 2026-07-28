@@ -16,7 +16,6 @@ enum CourseTab {
   content,
   reviews,
   qa,
-  analytics,
 }
 
 class InstructorCourseDetailScreen extends StatefulWidget {
@@ -48,7 +47,6 @@ class _InstructorCourseDetailScreenState
   Map<String, dynamic> _courseData = {};
   List<Map<String, dynamic>> _reviews = [];
   List<Map<String, dynamic>> _qaQuestions = [];
-  Map<String, dynamic> _analytics = {};
   List<Map<String, dynamic>> _sections = [];
   List<Map<String, dynamic>> _activities = [];
 
@@ -63,7 +61,7 @@ class _InstructorCourseDetailScreenState
     super.initState();
     _courseProvider = Provider.of<InstructorCourseProvider>(context, listen: false);
     _tabController = TabController(
-      length: 5,
+      length: 4,
       vsync: this,
     );
     _loadCourseData();
@@ -82,8 +80,7 @@ class _InstructorCourseDetailScreenState
     });
 
     try {
-      // Load course details
-      final courseResponse = await _apiService.getCourseById(widget.courseId);
+      final courseResponse = await _apiService.getCourseByIdAuthenticated(widget.courseId);
       if (courseResponse.success && courseResponse.data != null) {
         final data = courseResponse.data!;
         setState(() {
@@ -112,11 +109,9 @@ class _InstructorCourseDetailScreenState
         throw Exception(courseResponse.error ?? 'Failed to load course');
       }
 
-      // Load sections with lessons
       final sectionsResponse = await _apiService.getCourseSections(widget.courseId);
       if (sectionsResponse.success && sectionsResponse.data != null) {
         final sectionsData = sectionsResponse.data!;
-        print('✅ Sections loaded: ${sectionsData.length}');
         setState(() {
           _sections = sectionsData.map((section) {
             final lessons = (section['lessons'] as List? ?? []).map((lesson) {
@@ -139,18 +134,14 @@ class _InstructorCourseDetailScreenState
             };
           }).toList();
         });
-      } else {
-        print('❌ Failed to load sections: ${sectionsResponse.error}');
       }
 
-      // Load reviews
       final reviewsResponse = await _apiService.getCourseReviews(
         courseId: widget.courseId,
         limit: 50,
       );
       if (reviewsResponse.success && reviewsResponse.data != null) {
         final reviewsData = reviewsResponse.data!['data'] as List? ?? [];
-        print('✅ Reviews loaded: ${reviewsData.length}');
         setState(() {
           _reviews = reviewsData.map((review) {
             final student = review['student'] as Map<String, dynamic>? ?? {};
@@ -169,102 +160,14 @@ class _InstructorCourseDetailScreenState
             };
           }).toList();
         });
-      } else {
-        print('❌ Failed to load reviews: ${reviewsResponse.error}');
       }
 
-      // Load analytics
-      final analyticsResponse = await _apiService.getCourseAnalytics(
-        courseId: widget.courseId,
-      );
-      if (analyticsResponse.success && analyticsResponse.data != null) {
-        setState(() {
-          _analytics = analyticsResponse.data!;
-        });
-      } else {
-        // Use calculated analytics if API fails
-        setState(() {
-          _analytics = {
-            'totalStudents': _courseData['studentsCount'] ?? 0,
-            'totalRevenue': (_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0),
-            'avgRating': _courseData['rating'] ?? 0.0,
-            'totalReviews': _courseData['reviewsCount'] ?? 0,
-            'completionRate': 72,
-            'engagement': 85,
-            'monthlyGrowth': 12,
-            'retentionRate': 89,
-            'topPerformingSection': _sections.isNotEmpty ? _sections[0]['title'] : 'N/A',
-            'avgQuizScore': 84,
-            'totalCertificates': (_courseData['studentsCount'] ?? 0) ~/ 2,
-          };
-        });
-      }
-
-      // Load Q&A (will be replaced with real API when available)
       setState(() {
-        _qaQuestions = [
-          {
-            'id': 'q1',
-            'student': {
-              'id': 's1',
-              'name': 'Sarah Johnson',
-              'avatar': 'https://ui-avatars.com/api/?name=Sarah+Johnson&size=150&background=6366F1&color=fff',
-            },
-            'question': 'How long does it typically take to complete this course?',
-            'answer': 'The course is designed to be completed in 4-6 weeks if you dedicate 3-4 hours per week.',
-            'answered': true,
-            'answeredAt': '2024-06-14',
-            'date': '2024-06-10',
-            'likes': 15,
-          },
-          {
-            'id': 'q2',
-            'student': {
-              'id': 's5',
-              'name': 'James Wilson',
-              'avatar': 'https://ui-avatars.com/api/?name=James+Wilson&size=150&background=F59E0B&color=fff',
-            },
-            'question': 'Do I need prior experience to take this course?',
-            'answer': null,
-            'answered': false,
-            'answeredAt': null,
-            'date': '2024-06-16',
-            'likes': 5,
-          },
-        ];
+        _qaQuestions = [];
+        _activities = [];
+        _isLoading = false;
       });
-
-      // Activities (dummy data)
-      setState(() {
-        _activities = [
-          {
-            'icon': Icons.person_add_rounded,
-            'color': Colors.green,
-            'title': 'New Enrollment',
-            'description': 'A new student enrolled in your course',
-            'time': '2 hours ago',
-          },
-          {
-            'icon': Icons.star_rounded,
-            'color': Colors.amber,
-            'title': 'New Review',
-            'description': 'A student left a 5-star review',
-            'time': '5 hours ago',
-          },
-          {
-            'icon': Icons.question_answer_rounded,
-            'color': Colors.blue,
-            'title': 'New Question',
-            'description': 'A student asked a question',
-            'time': '1 day ago',
-          },
-        ];
-      });
-
-      setState(() => _isLoading = false);
     } catch (e, stackTrace) {
-      print('❌ Error loading course data: $e');
-      print(stackTrace);
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -316,7 +219,7 @@ class _InstructorCourseDetailScreenState
             backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
           ),
         );
-        await _refreshData(); // Refresh to update counts
+        await _refreshData();
       } else {
         throw Exception(response.error ?? 'Failed to delete review');
       }
@@ -335,74 +238,11 @@ class _InstructorCourseDetailScreenState
   // ============================================
 
   Future<void> _answerQuestion(String questionId) async {
-    final TextEditingController answerController = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Answer Question'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _qaQuestions.firstWhere((q) => q['id'] == questionId)['question'],
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: answerController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'Write your answer...',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (answerController.text.trim().isNotEmpty) {
-                Navigator.pop(context, true);
-              }
-            },
-            child: const Text('Post Answer'),
-          ),
-        ],
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No questions to answer'),
       ),
     );
-
-    if (result == true && answerController.text.trim().isNotEmpty) {
-      try {
-        // TODO: Implement answer API
-        setState(() {
-          final index = _qaQuestions.indexWhere(
-            (q) => q['id'] == questionId,
-          );
-          if (index != -1) {
-            _qaQuestions[index]['answer'] = answerController.text.trim();
-            _qaQuestions[index]['answered'] = true;
-            _qaQuestions[index]['answeredAt'] = DateTime.now().toIso8601String();
-          }
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Answer posted successfully!'),
-            backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
-          ),
-        );
-      }
-    }
   }
 
   // ============================================
@@ -626,10 +466,15 @@ class _InstructorCourseDetailScreenState
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
-              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, true);
+              }
             },
             child: const Text('Create'),
           ),
@@ -657,7 +502,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Section created'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Section created'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -666,7 +514,10 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       } finally {
@@ -693,23 +544,34 @@ class _InstructorCourseDetailScreenState
             children: [
               TextFormField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: 'Section Title', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Section Title',
+                  border: OutlineInputBorder(),
+                ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: descController,
-                decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
                 maxLines: 3,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
-              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, true);
+              }
             },
             child: const Text('Save'),
           ),
@@ -735,7 +597,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Section updated'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Section updated'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -744,7 +609,10 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       } finally {
@@ -762,10 +630,15 @@ class _InstructorCourseDetailScreenState
         title: const Text('Delete Section'),
         content: Text('Delete "${section['title']}" and all its lessons?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -783,7 +656,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Section deleted'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Section deleted'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -792,7 +668,10 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       } finally {
@@ -802,7 +681,7 @@ class _InstructorCourseDetailScreenState
   }
 
   // ============================================
-  // LESSON CRUD
+  // LESSON CRUD - FULLY RESPONSIVE WITH KEYBOARD FIX
   // ============================================
 
   Future<void> _showAddLessonDialog(String sectionId) async {
@@ -813,46 +692,64 @@ class _InstructorCourseDetailScreenState
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Lesson'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Lesson Title', border: OutlineInputBorder()),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+      barrierDismissible: false,
+      useSafeArea: true,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Add Lesson'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Lesson Title',
+                      hintText: 'e.g. Introduction to Flutter',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: descController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: durationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Duration (optional)',
+                      hintText: 'e.g. 10:30',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: durationController,
-                decoration: const InputDecoration(
-                  labelText: 'Duration (optional)',
-                  hintText: 'e.g. 10:30',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(ctx, true);
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
     );
 
     if (result == true) {
@@ -886,7 +783,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lesson created'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Lesson created successfully'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -895,15 +795,18 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       } finally {
         if (mounted) {
           setState(() {
-          _isProcessingLesson = false;
-          _processingSectionId = null;
-        });
+            _isProcessingLesson = false;
+            _processingSectionId = null;
+          });
         }
       }
     }
@@ -920,42 +823,63 @@ class _InstructorCourseDetailScreenState
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Lesson'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Lesson Title', border: OutlineInputBorder()),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+      barrierDismissible: false,
+      useSafeArea: true,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Edit Lesson'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Lesson Title',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Title is required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: descController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: durationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Duration',
+                      hintText: 'e.g. 10:30',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: descController,
-                decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: durationController,
-                decoration: const InputDecoration(labelText: 'Duration', hintText: 'e.g. 10:30', border: OutlineInputBorder()),
-              ),
-            ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(ctx, true);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
 
     if (result == true) {
@@ -983,7 +907,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lesson updated'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Lesson updated successfully'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -992,7 +919,10 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       } finally {
@@ -1011,10 +941,15 @@ class _InstructorCourseDetailScreenState
         title: const Text('Delete Lesson'),
         content: Text('Delete "${lesson['title']}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -1037,7 +972,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lesson deleted'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Lesson deleted successfully'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -1046,7 +984,10 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       } finally {
@@ -1073,7 +1014,10 @@ class _InstructorCourseDetailScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking video: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+          SnackBar(
+            content: Text('Error picking video: ${e.toString()}'),
+            backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+          ),
         );
       }
     }
@@ -1174,10 +1118,15 @@ class _InstructorCourseDetailScreenState
         title: const Text('Delete Video'),
         content: Text('Remove video from "${lesson['title']}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -1191,7 +1140,10 @@ class _InstructorCourseDetailScreenState
           await _loadCourseData();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Video deleted'), backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness)),
+              SnackBar(
+                content: Text('Video deleted successfully'),
+                backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
+              ),
             );
           }
         } else {
@@ -1200,7 +1152,10 @@ class _InstructorCourseDetailScreenState
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness)),
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppColors.getErrorColor(Theme.of(context).brightness),
+            ),
           );
         }
       }
@@ -1235,7 +1190,7 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Reply feature coming soon!')),
+                  const SnackBar(content: Text('Reply feature coming soon!')),
                 );
               },
             ),
@@ -1319,7 +1274,7 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Exporting course data...')),
+                  const SnackBar(content: Text('Exporting course data...')),
                 );
               },
             ),
@@ -1333,7 +1288,7 @@ class _InstructorCourseDetailScreenState
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Course archived!')),
+                  const SnackBar(content: Text('Course archived!')),
                 );
               },
             ),
@@ -1494,19 +1449,27 @@ class _InstructorCourseDetailScreenState
             onPressed: _showMoreOptions,
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: primaryColor,
-          unselectedLabelColor: textSecondaryColor,
-          indicatorColor: primaryColor,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Content'),
-            Tab(text: 'Reviews'),
-            Tab(text: 'Q&A'),
-            Tab(text: 'Analytics'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Column(
+            children: [
+              TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                labelColor: primaryColor,
+                unselectedLabelColor: textSecondaryColor,
+                indicatorColor: primaryColor,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+                tabs: const [
+                  Tab(text: 'Overview'),
+                  Tab(text: 'Content'),
+                  Tab(text: 'Reviews'),
+                  Tab(text: 'Q&A'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       body: RefreshIndicator(
@@ -1525,9 +1488,6 @@ class _InstructorCourseDetailScreenState
               brightness, textColor, textSecondaryColor, cardColor, primaryColor,
             ),
             _buildQATab(
-              brightness, textColor, textSecondaryColor, cardColor, primaryColor,
-            ),
-            _buildAnalyticsTab(
               brightness, textColor, textSecondaryColor, cardColor, primaryColor,
             ),
           ],
@@ -1552,13 +1512,15 @@ class _InstructorCourseDetailScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Course Status and Actions
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                    color: _statusColor(_courseData['status'] ?? 'DRAFT', brightness).withValues(alpha: 0.1),
+                  color: _statusColor(_courseData['status'] ?? 'DRAFT', brightness).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1570,7 +1532,6 @@ class _InstructorCourseDetailScreenState
                   ),
                 ),
               ),
-              const Spacer(),
               if (_courseData['status'] == 'PUBLISHED')
                 ElevatedButton.icon(
                   onPressed: _isSubmitting ? null : _unpublishCourse,
@@ -1607,7 +1568,7 @@ class _InstructorCourseDetailScreenState
                   icon: const Icon(Icons.visibility, size: 18),
                   label: const Text('Under Review'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.getPrimaryColor(brightness).withValues(alpha: 0.5),
+                    backgroundColor: AppColors.getPrimaryColor(brightness).withOpacity(0.5),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1615,57 +1576,124 @@ class _InstructorCourseDetailScreenState
           ),
           const SizedBox(height: 16),
 
-          // Course Stats Cards
-          Row(
-            children: [
-              _buildStatCard(
-                'Students',
-                '${_courseData['studentsCount'] ?? 0}',
-                Icons.people_rounded,
-                AppColors.getPrimaryColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-              ),
-              const SizedBox(width: 12),
-              _buildStatCard(
-                'Rating',
-                '${_courseData['rating'] ?? 0.0} ⭐',
-                Icons.star_rounded,
-                AppColors.getWarningColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildStatCard(
-                'Lessons',
-                '${_courseData['lessonCount'] ?? 0}',
-                Icons.play_circle_rounded,
-                AppColors.getPrimaryLightColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-              ),
-              const SizedBox(width: 12),
-              _buildStatCard(
-                'Revenue',
-                'रु ${(_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0)}',
-                Icons.attach_money_rounded,
-                AppColors.getSuccessColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 400;
+              return isSmall
+                  ? Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Students',
+                                '${_courseData['studentsCount'] ?? 0}',
+                                Icons.people_rounded,
+                                AppColors.getPrimaryColor(brightness),
+                                cardColor,
+                                textColor,
+                                textSecondaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Rating',
+                                '${_courseData['rating'] ?? 0.0} ⭐',
+                                Icons.star_rounded,
+                                AppColors.getWarningColor(brightness),
+                                cardColor,
+                                textColor,
+                                textSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Lessons',
+                                '${_courseData['lessonCount'] ?? 0}',
+                                Icons.play_circle_rounded,
+                                AppColors.getPrimaryLightColor(brightness),
+                                cardColor,
+                                textColor,
+                                textSecondaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Revenue',
+                                'रु ${(_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0)}',
+                                Icons.attach_money_rounded,
+                                AppColors.getSuccessColor(brightness),
+                                cardColor,
+                                textColor,
+                                textSecondaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'Students',
+                            '${_courseData['studentsCount'] ?? 0}',
+                            Icons.people_rounded,
+                            AppColors.getPrimaryColor(brightness),
+                            cardColor,
+                            textColor,
+                            textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Rating',
+                            '${_courseData['rating'] ?? 0.0} ⭐',
+                            Icons.star_rounded,
+                            AppColors.getWarningColor(brightness),
+                            cardColor,
+                            textColor,
+                            textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Lessons',
+                            '${_courseData['lessonCount'] ?? 0}',
+                            Icons.play_circle_rounded,
+                            AppColors.getPrimaryLightColor(brightness),
+                            cardColor,
+                            textColor,
+                            textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Revenue',
+                            'रु ${(_courseData['studentsCount'] ?? 0) * (_courseData['price'] ?? 0)}',
+                            Icons.attach_money_rounded,
+                            AppColors.getSuccessColor(brightness),
+                            cardColor,
+                            textColor,
+                            textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    );
+            },
           ),
           const SizedBox(height: 24),
 
-          // Course Description
           Text(
             'Description',
             style: GoogleFonts.inter(
@@ -1684,7 +1712,6 @@ class _InstructorCourseDetailScreenState
           ),
           const SizedBox(height: 24),
 
-          // What You'll Learn
           if (_courseData['whatYouWillLearn'] != null &&
               (_courseData['whatYouWillLearn'] as List).isNotEmpty)
             Column(
@@ -1723,7 +1750,6 @@ class _InstructorCourseDetailScreenState
               ],
             ),
 
-          // Course Info
           Text(
             'Course Information',
             style: GoogleFonts.inter(
@@ -1753,16 +1779,14 @@ class _InstructorCourseDetailScreenState
     Color textColor,
     Color textSecondaryColor,
   ) {
-    return Expanded(
-      child: AppStatCard(
-        icon: icon,
-        value: value,
-        label: label,
-        color: color,
-        cardColor: cardColor,
-        textColor: textColor,
-        textSecondaryColor: textSecondaryColor,
-      ),
+    return AppStatCard(
+      icon: icon,
+      value: value,
+      label: label,
+      color: color,
+      cardColor: cardColor,
+      textColor: textColor,
+      textSecondaryColor: textSecondaryColor,
     );
   }
 
@@ -1802,7 +1826,7 @@ class _InstructorCourseDetailScreenState
   }
 
   // ============================================
-  // CONTENT TAB - Using Real Section Data
+  // CONTENT TAB
   // ============================================
 
   Widget _buildContentTab(
@@ -1817,48 +1841,53 @@ class _InstructorCourseDetailScreenState
 
     if (_sections.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.folder_outlined,
-              size: 64,
-              color: textSecondaryColor.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              courseStatus == 'PENDING_APPROVAL' ? 'Waiting for Approval' : 'No Content Yet',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: textColor,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.folder_outlined,
+                size: 64,
+                color: textSecondaryColor.withOpacity(0.5),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              courseStatus == 'PENDING_APPROVAL'
-                  ? 'This course is pending admin approval. You will be able to add content once it is approved.'
-                  : 'Add sections and lessons to build your course.',
-              style: GoogleFonts.inter(
-                color: textSecondaryColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (!canEditContent && courseStatus == 'PENDING_APPROVAL')
-              Icon(Icons.lock_outline, size: 32, color: textSecondaryColor.withValues(alpha: 0.5))
-            else if (_isProcessingSection)
-              const CircularProgressIndicator()
-            else
-              ElevatedButton.icon(
-                onPressed: _showAddSectionDialog,
-                icon: const Icon(Icons.add),
-                label: const Text('Add Section'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
+              const SizedBox(height: 16),
+              Text(
+                courseStatus == 'PENDING_APPROVAL' ? 'Waiting for Approval' : 'No Content Yet',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
                 ),
+                textAlign: TextAlign.center,
               ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                courseStatus == 'PENDING_APPROVAL'
+                    ? 'This course is pending admin approval. You will be able to add content once it is approved.'
+                    : 'Add sections and lessons to build your course.',
+                style: GoogleFonts.inter(
+                  color: textSecondaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              if (!canEditContent && courseStatus == 'PENDING_APPROVAL')
+                Icon(Icons.lock_outline, size: 32, color: textSecondaryColor.withOpacity(0.5))
+              else if (_isProcessingSection)
+                const CircularProgressIndicator()
+              else
+                ElevatedButton.icon(
+                  onPressed: _showAddSectionDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Section'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     }
@@ -1870,27 +1899,27 @@ class _InstructorCourseDetailScreenState
         if (index == 0) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   'Course Content (${_sections.length} sections)',
                   style: GoogleFonts.inter(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: textColor,
                   ),
                 ),
-                _isProcessingSection
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : canEditContent
-                        ? TextButton.icon(
-                            onPressed: _showAddSectionDialog,
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add Section'),
-                            style: TextButton.styleFrom(foregroundColor: primaryColor),
-                          )
-                        : const SizedBox.shrink(),
+                if (!_isProcessingSection && canEditContent)
+                  TextButton.icon(
+                    onPressed: _showAddSectionDialog,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Section'),
+                    style: TextButton.styleFrom(foregroundColor: primaryColor),
+                  )
+                else if (_isProcessingSection)
+                  const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
               ],
             ),
           );
@@ -2029,36 +2058,36 @@ class _InstructorCourseDetailScreenState
                     constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   ),
                 PopupMenuButton<String>(
-            color: cardColor,
-            onSelected: (value) {
-              if (value == 'edit') {
-                _showEditLessonDialog(lesson);
-              } else if (value == 'delete') {
-                _deleteLessonConfirm(lesson);
-              } else if (value == 'upload_video') {
-                _showVideoUploadDialog(lesson);
-              } else if (value == 'delete_video') {
-                _deleteVideoConfirm(lesson);
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit Lesson')),
-              if (!hasVideo)
-                const PopupMenuItem(value: 'upload_video', child: Text('Upload Video'))
-              else ...[
-                const PopupMenuItem(value: 'upload_video', child: Text('Change Video')),
-                PopupMenuItem(
-                  value: 'delete_video',
-                  child: Text('Remove Video', style: TextStyle(color: AppColors.getWarningColor(brightness))),
+                  color: cardColor,
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _showEditLessonDialog(lesson);
+                    } else if (value == 'delete') {
+                      _deleteLessonConfirm(lesson);
+                    } else if (value == 'upload_video') {
+                      _showVideoUploadDialog(lesson);
+                    } else if (value == 'delete_video') {
+                      _deleteVideoConfirm(lesson);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit Lesson')),
+                    if (!hasVideo)
+                      const PopupMenuItem(value: 'upload_video', child: Text('Upload Video'))
+                    else ...[
+                      const PopupMenuItem(value: 'upload_video', child: Text('Change Video')),
+                      PopupMenuItem(
+                        value: 'delete_video',
+                        child: Text('Remove Video', style: TextStyle(color: AppColors.getWarningColor(brightness))),
+                      ),
+                    ],
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete Lesson', style: TextStyle(color: AppColors.getErrorColor(brightness))),
+                    ),
+                  ],
+                  child: Icon(Icons.more_vert, color: textSecondaryColor, size: 18),
                 ),
-              ],
-              PopupMenuItem(
-                value: 'delete',
-                child: Text('Delete Lesson', style: TextStyle(color: AppColors.getErrorColor(brightness))),
-              ),
-            ],
-            child: Icon(Icons.more_vert, color: textSecondaryColor, size: 18),
-          ),
               ],
             ),
           ),
@@ -2068,7 +2097,7 @@ class _InstructorCourseDetailScreenState
   }
 
   // ============================================
-  // REVIEWS TAB - Using Real Review Data
+  // REVIEWS TAB
   // ============================================
 
   Widget _buildReviewsTab(
@@ -2089,7 +2118,7 @@ class _InstructorCourseDetailScreenState
             Icon(
               Icons.star_outline_rounded,
               size: 64,
-              color: textSecondaryColor.withValues(alpha: 0.5),
+              color: textSecondaryColor.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -2106,6 +2135,7 @@ class _InstructorCourseDetailScreenState
               style: GoogleFonts.inter(
                 color: textSecondaryColor,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -2114,58 +2144,109 @@ class _InstructorCourseDetailScreenState
 
     return Column(
       children: [
-        // Rating Summary
         AppCard(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.all(16),
           borderRadius: 12,
-          child: Row(
-            children: [
-              Column(
-                children: [
-                  Text(
-                    avgRating.toStringAsFixed(1),
-                    style: GoogleFonts.inter(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  Row(
-                    children: List.generate(5, (i) {
-                      return Icon(
-                        i < avgRating.floor() ? Icons.star : Icons.star_border,
-                        color: AppColors.getWarningColor(brightness),
-                        size: 20,
-                      );
-                    }),
-                  ),
-                  Text(
-                    '$totalReviews reviews',
-                    style: GoogleFonts.inter(
-                      color: textSecondaryColor,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildRatingBar(5, 45, textSecondaryColor, brightness),
-                    _buildRatingBar(4, 30, textSecondaryColor, brightness),
-                    _buildRatingBar(3, 15, textSecondaryColor, brightness),
-                    _buildRatingBar(2, 7, textSecondaryColor, brightness),
-                    _buildRatingBar(1, 3, textSecondaryColor, brightness),
-                  ],
-                ),
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 400;
+              return isSmall
+                  ? Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Column(
+                              children: [
+                                Text(
+                                  avgRating.toStringAsFixed(1),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: textColor,
+                                  ),
+                                ),
+                                Row(
+                                  children: List.generate(5, (i) {
+                                    return Icon(
+                                      i < avgRating.floor() ? Icons.star : Icons.star_border,
+                                      color: AppColors.getWarningColor(brightness),
+                                      size: 20,
+                                    );
+                                  }),
+                                ),
+                                Text(
+                                  '$totalReviews reviews',
+                                  style: GoogleFonts.inter(
+                                    color: textSecondaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Column(
+                          children: [
+                            _buildRatingBar(5, 45, textSecondaryColor, brightness),
+                            _buildRatingBar(4, 30, textSecondaryColor, brightness),
+                            _buildRatingBar(3, 15, textSecondaryColor, brightness),
+                            _buildRatingBar(2, 7, textSecondaryColor, brightness),
+                            _buildRatingBar(1, 3, textSecondaryColor, brightness),
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Column(
+                          children: [
+                            Text(
+                              avgRating.toStringAsFixed(1),
+                              style: GoogleFonts.inter(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                            Row(
+                              children: List.generate(5, (i) {
+                                return Icon(
+                                  i < avgRating.floor() ? Icons.star : Icons.star_border,
+                                  color: AppColors.getWarningColor(brightness),
+                                  size: 20,
+                                );
+                              }),
+                            ),
+                            Text(
+                              '$totalReviews reviews',
+                              style: GoogleFonts.inter(
+                                color: textSecondaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _buildRatingBar(5, 45, textSecondaryColor, brightness),
+                              _buildRatingBar(4, 30, textSecondaryColor, brightness),
+                              _buildRatingBar(3, 15, textSecondaryColor, brightness),
+                              _buildRatingBar(2, 7, textSecondaryColor, brightness),
+                              _buildRatingBar(1, 3, textSecondaryColor, brightness),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+            },
           ),
         ),
         
-        // Reviews List
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2182,6 +2263,7 @@ class _InstructorCourseDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CircleAvatar(
                           radius: 20,
@@ -2232,7 +2314,9 @@ class _InstructorCourseDetailScreenState
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 8,
                       children: [
                         TextButton.icon(
                           onPressed: () {
@@ -2248,7 +2332,6 @@ class _InstructorCourseDetailScreenState
                             foregroundColor: primaryColor,
                           ),
                         ),
-                        const Spacer(),
                         TextButton.icon(
                           onPressed: () {
                             _showReviewActions(review);
@@ -2324,426 +2407,60 @@ class _InstructorCourseDetailScreenState
     Color cardColor,
     Color primaryColor,
   ) {
-    final unansweredCount = _qaQuestions.where((q) => !q['answered']).length;
-
-    return Column(
-      children: [
-        // Header
-        AppCard(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-          child: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Q&A',
-                    style: GoogleFonts.inter(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  Text(
-                    '${_qaQuestions.length} total questions • $unansweredCount unanswered',
-                    style: GoogleFonts.inter(
-                      color: textSecondaryColor,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              if (unansweredCount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.getWarningColor(brightness).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$unansweredCount Pending',
-                    style: GoogleFonts.inter(
-                      color: AppColors.getWarningColor(brightness),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        
-        // Questions List
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _qaQuestions.length,
-            itemBuilder: (context, index) {
-              final qa = _qaQuestions[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: qa['answered']
-                        ? AppColors.getSuccessColor(brightness).withValues(alpha: 0.3)
-                        : AppColors.getWarningColor(brightness).withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundImage: NetworkImage(
-                            qa['student']['avatar'] ?? 
-                            'https://ui-avatars.com/api/?name=User&size=150&background=4F46E5&color=fff',
-                          ),
-                          onBackgroundImageError: (_, __) {},
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                qa['student']['name'] ?? 'Anonymous',
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.w600,
-                                  color: textColor,
-                                ),
-                              ),
-                              Text(
-                                qa['date'] ?? 'Recently',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: textSecondaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: qa['answered']
-                                ? AppColors.getSuccessColor(brightness).withValues(alpha: 0.1)
-                                : AppColors.getWarningColor(brightness).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            qa['answered'] ? 'Answered' : 'Pending',
-                            style: GoogleFonts.inter(
-                              color: qa['answered'] ? AppColors.getSuccessColor(brightness) : AppColors.getWarningColor(brightness),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      qa['question'],
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: textColor,
-                      ),
-                    ),
-                    if (qa['answer'] != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.getSuccessColor(brightness).withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.getSuccessColor(brightness).withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.check_circle, color: AppColors.getSuccessColor(brightness), size: 16),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Your Answer',
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.getSuccessColor(brightness),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  qa['answeredAt'] ?? '',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: textSecondaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              qa['answer']!,
-                              style: GoogleFonts.inter(
-                                color: textColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    if (!qa['answered'])
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _answerQuestion(qa['id']),
-                          icon: const Icon(Icons.reply, size: 18),
-                          label: const Text('Answer'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryColor,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================
-  // ANALYTICS TAB
-  // ============================================
-
-  Widget _buildAnalyticsTab(
-    Brightness brightness,
-    Color textColor,
-    Color textSecondaryColor,
-    Color cardColor,
-    Color primaryColor,
-  ) {
-    final analytics = _analytics;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(
+            Icons.question_answer_outlined,
+            size: 64,
+            color: textSecondaryColor.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Course Performance',
-            style: GoogleFonts.inter(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Track your course metrics and student engagement',
-            style: GoogleFonts.inter(
-              color: textSecondaryColor,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Analytics Grid
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-            children: [
-              _buildAnalyticsCard(
-                'Students',
-                '${analytics['totalStudents'] ?? 0}',
-                Icons.people_rounded,
-                AppColors.getPrimaryColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-                '+${analytics['monthlyGrowth'] ?? 0}%',
-              ),
-              _buildAnalyticsCard(
-                'Revenue',
-                'रु ${analytics['totalRevenue']?.toStringAsFixed(0) ?? '0'}',
-                Icons.attach_money_rounded,
-                AppColors.getSuccessColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-                'Lifetime',
-              ),
-              _buildAnalyticsCard(
-                'Rating',
-                '${analytics['avgRating'] ?? 0} ⭐',
-                Icons.star_rounded,
-                AppColors.getWarningColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-                '${analytics['totalReviews'] ?? 0} reviews',
-              ),
-              _buildAnalyticsCard(
-                'Completion',
-                '${analytics['completionRate'] ?? 0}%',
-                Icons.trending_up_rounded,
-                AppColors.getWarningColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-                'Rate',
-              ),
-              _buildAnalyticsCard(
-                'Engagement',
-                '${analytics['engagement'] ?? 0}%',
-                Icons.insights_rounded,
-                AppColors.getPrimaryLightColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-                'Active',
-              ),
-              _buildAnalyticsCard(
-                'Retention',
-                '${analytics['retentionRate'] ?? 0}%',
-                Icons.people_alt_rounded,
-                AppColors.getSuccessColor(brightness),
-                cardColor,
-                textColor,
-                textSecondaryColor,
-                'Rate',
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Additional Stats
-          AppCard(
-            padding: const EdgeInsets.all(16),
-            borderRadius: 12,
-            child: Column(
-              children: [
-                _buildAnalyticsInfoRow(
-                  'Top Performing Section',
-                  analytics['topPerformingSection'] ?? 'N/A',
-                  Icons.trending_up_rounded,
-                  AppColors.getSuccessColor(brightness),
-                  textColor,
-                  textSecondaryColor,
-                ),
-                const Divider(),
-                _buildAnalyticsInfoRow(
-                  'Average Quiz Score',
-                  '${analytics['avgQuizScore'] ?? 0}%',
-                  Icons.quiz_outlined,
-                  AppColors.getWarningColor(brightness),
-                  textColor,
-                  textSecondaryColor,
-                ),
-                const Divider(),
-                _buildAnalyticsInfoRow(
-                  'Total Certificates',
-                  '${analytics['totalCertificates'] ?? 0}',
-                  Icons.emoji_events_rounded,
-                  AppColors.getWarningColor(brightness),
-                  textColor,
-                  textSecondaryColor,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Recent Activity
-          Text(
-            'Recent Activity',
+            'No Questions Yet',
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
           ),
-          const SizedBox(height: 12),
-          AppCard(
-            padding: const EdgeInsets.all(16),
-            borderRadius: 12,
-            child: Column(
-              children: _activities.map((activity) {
-                return _buildActivityItem(
-                  activity['icon'],
-                  activity['color'],
-                  activity['title'],
-                  activity['description'],
-                  activity['time'],
-                  textColor,
-                  textSecondaryColor,
-                );
-              }).toList(),
+          const SizedBox(height: 8),
+          Text(
+            'Students will ask questions here when they need clarification.',
+            style: GoogleFonts.inter(
+              color: textSecondaryColor,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-
-          // Export Button
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Exporting analytics data...'),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.download_outlined),
-              label: const Text('Export Analytics Data'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(color: primaryColor),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
         ],
       ),
     );
   }
+}
 
-  Widget _buildAnalyticsCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    Color cardColor,
-    Color textColor,
-    Color textSecondaryColor,
-    String subtitle,
-  ) {
+class AppStatCard extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+  final Color cardColor;
+  final Color textColor;
+  final Color textSecondaryColor;
+
+  const AppStatCard({
+    super.key,
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+    required this.cardColor,
+    required this.textColor,
+    required this.textSecondaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -2752,14 +2469,13 @@ class _InstructorCourseDetailScreenState
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 4),
           Text(
             value,
             style: GoogleFonts.inter(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: textColor,
             ),
@@ -2769,110 +2485,11 @@ class _InstructorCourseDetailScreenState
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 10,
+              fontSize: 11,
               color: textSecondaryColor,
             ),
-          ),
-          Text(
-            subtitle,
-            style: GoogleFonts.inter(
-              fontSize: 9,
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnalyticsInfoRow(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    Color textColor,
-    Color textSecondaryColor,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                color: textSecondaryColor,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              color: textColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityItem(
-    IconData icon,
-    Color color,
-    String title,
-    String description,
-    String time,
-    Color textColor,
-    Color textSecondaryColor,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: color.withValues(alpha: 0.1),
-            child: Icon(
-              icon,
-              size: 18,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  description,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: textSecondaryColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            time,
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              color: textSecondaryColor,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

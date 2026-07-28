@@ -155,7 +155,7 @@ class AuthApiService extends BaseApiService {
     }
   }
 
-  // Get current user - FIXED
+  // Get current user
   Future<User> getMe() async {
     try {
       print('📡 AuthApiService: Getting current user');
@@ -173,17 +173,13 @@ class AuthApiService extends BaseApiService {
         throw Exception('No user data received');
       }
       
-      // The backend returns user data directly in the 'data' field
-      // response.data is already the user object
       if (response.data is Map) {
         final userData = response.data as Map<String, dynamic>;
         
-        // If it has an 'id' field, it's the user object
         if (userData.containsKey('id')) {
           print('✅ AuthApiService: User found with id: ${userData['id']}');
           return User.fromJson(userData);
         } 
-        // If it has a 'data' field (nested), use that
         else if (userData.containsKey('data') && userData['data'] is Map) {
           print('✅ AuthApiService: User found in nested data');
           return User.fromJson(userData['data']);
@@ -212,7 +208,6 @@ class AuthApiService extends BaseApiService {
       
       final rawData = response.data as Map<String, dynamic>;
       
-      // Check if user is in 'data' field or directly
       if (rawData.containsKey('data') && rawData['data'] is Map) {
         return User.fromJson(rawData['data']);
       } else {
@@ -344,6 +339,24 @@ class AuthService {
     }
   }
   
+  /// Get stored refresh token
+  Future<String?> getRefreshToken() async {
+    try {
+      return await _storage.read(key: _keyRefreshToken);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  /// Get stored token expiry
+  Future<String?> getTokenExpiry() async {
+    try {
+      return await _storage.read(key: _keyTokenExpiry);
+    } catch (e) {
+      return null;
+    }
+  }
+  
   /// Login user
   Future<bool> login(String email, String password) async {
     try {
@@ -468,7 +481,7 @@ class AuthService {
     }
   }
   
-  /// Refresh user data
+  /// Refresh user data - FIXED to not clear session on failure
   Future<bool> refreshUser() async {
     try {
       print('🔄 AuthService: Refresh user attempt');
@@ -480,12 +493,20 @@ class AuthService {
         return false;
       }
       
+      // Try to refresh token if needed
+      final newToken = await _authApiService.refreshAccessToken();
+      if (newToken == null || newToken.isEmpty) {
+        print('⚠️ AuthService: Token refresh failed, but continuing with existing token');
+        // Don't logout - just try to get user with existing token
+      }
+      
       final user = await _authApiService.getMe();
       await saveUser(user.toJson());
       print('✅ AuthService: User refreshed successfully');
       return true;
     } catch (e) {
-      print('❌ AuthService: Refresh user error: $e');
+      print('⚠️ AuthService: Refresh user error: $e');
+      // Don't clear session - just return false
       return false;
     }
   }
@@ -507,7 +528,7 @@ class AuthService {
     }
   }
   
-  /// Clear session
+  /// Clear session - Only call this when user explicitly logs out
   Future<void> clearSession() async {
     await _storage.deleteAll();
     _currentUser = null;
@@ -516,8 +537,18 @@ class AuthService {
   
   /// Check if user is authenticated
   Future<bool> isAuthenticated() async {
-    final token = await _storage.read(key: _keyToken);
-    return token != null && token.isNotEmpty;
+    try {
+      final token = await _storage.read(key: _keyToken);
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+      
+      // Try to refresh token if needed - but don't fail if it doesn't work
+      // Just return true if we have a token
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
   
   /// Get stored user
@@ -537,9 +568,101 @@ class AuthService {
     }
   }
   
+  /// Refresh token proactively
+  Future<bool> refreshTokenIfNeeded() async {
+    try {
+      final expiryStr = await getTokenExpiry();
+      if (expiryStr == null) {
+        return true;
+      }
+      
+      final expiry = DateTime.parse(expiryStr);
+      final timeUntilExpiry = expiry.difference(DateTime.now());
+      
+      // Refresh if token expires in less than 5 minutes
+      if (timeUntilExpiry.inMinutes <= 5) {
+        print('🔄 AuthService: Token expires in ${timeUntilExpiry.inMinutes} minutes, refreshing...');
+        final newToken = await _authApiService.refreshAccessToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          return true;
+        }
+        print('⚠️ AuthService: Token refresh failed, but continuing');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      print('⚠️ AuthService: Error checking token expiry: $e');
+      return true;
+    }
+  }
+  
+  /// Get user with automatic token refresh - MAIN ENTRY POINT
+  Future<User?> getAuthenticatedUser() async {
+    try {
+      // First check if we have a token
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        return null;
+      }
+      
+      // Refresh token if needed
+      await refreshTokenIfNeeded();
+      
+      // Get user
+      final user = await getUser();
+      if (user != null) {
+        return user;
+      }
+      
+      // If no user but token exists, try to fetch user
+      return await _fetchAndSaveUser();
+    } catch (e) {
+      print('❌ AuthService: Error getting authenticated user: $e');
+      return null;
+    }
+  }
+  
+  /// Fetch user from server and save locally
+  Future<User?> _fetchAndSaveUser() async {
+    try {
+      print('🔄 AuthService: Fetching user from server');
+      final user = await _authApiService.getMe();
+      await saveUser(user.toJson());
+      return user;
+    } catch (e) {
+      print('❌ AuthService: Error fetching user: $e');
+      return null;
+    }
+  }
+  
+  /// Check token validity and refresh if needed - SILENT
+  Future<bool> ensureValidToken() async {
+    try {
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+      
+      final newToken = await _authApiService.refreshAccessToken();
+      if (newToken != null && newToken.isNotEmpty) {
+        print('✅ AuthService: Token refreshed silently');
+        return true;
+      }
+      
+      // Token is still valid or refresh failed silently
+      return true;
+    } catch (e) {
+      print('⚠️ AuthService: Token validation error: $e');
+      return true; // Don't fail - let the request handle it
+    }
+  }
+  
   /// Debug method to check token
   Future<void> debugToken() async {
     final token = await getToken();
+    final refreshToken = await getRefreshToken();
+    final expiry = await getTokenExpiry();
+    
     print('🔍 DEBUG - Token exists: ${token != null}');
     if (token != null) {
       print('🔍 DEBUG - Token preview: ${token.substring(0, token.length > 10 ? 10 : token.length)}...');
@@ -547,5 +670,8 @@ class AuthService {
     } else {
       print('🔍 DEBUG - No token found');
     }
+    
+    print('🔍 DEBUG - Refresh Token exists: ${refreshToken != null}');
+    print('🔍 DEBUG - Token Expiry: $expiry');
   }
 }

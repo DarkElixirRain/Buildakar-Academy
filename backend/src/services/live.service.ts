@@ -7,6 +7,8 @@ import {
 import { prisma } from '../lib/prisma';
 import { generateRoomName } from "../utils/generateRoomName";
 import { notifyLiveClassCancelled, notifyLiveClassScheduled, notifyLiveClassStarted, notifyLiveClassUpdated } from "./notification.service";
+import fs from 'fs';
+import jwt from 'jsonwebtoken';
 
 interface CreateLiveClassData {
   title: string;
@@ -808,8 +810,6 @@ export async function getAllStudentLiveClasses(studentId: string) {
 
 // ==================== JITSI INTEGRATION ====================
 
-
-
 export async function joinLiveClass(
   id: string,
   userId: string
@@ -874,19 +874,15 @@ export async function joinLiveClass(
   const jaasKid = process.env.JAAS_KID;
   const jaasPrivateKeyPath = process.env.JAAS_PRIVATE_KEY_PATH;
   const jitsiJwtSecret = process.env.JITSI_JWT_SECRET;
-
-  // For JAAS mobile SDK, use base 8x8.vc URL
-  // Room name in JWT already includes the appId prefix: <appId>/<roomName>
-  const jitsiServerUrl = 'https://8x8.vc';
+  const jitsiServerUrl = process.env.JITSI_SERVER_URL || 'https://8x8.vc';
 
   let token = null;
-  let tokenError = null;
 
-  if (jaasAppId && jaasKid && jaasPrivateKeyPath) {
+  const keyFileExists = jaasPrivateKeyPath ? fs.existsSync(jaasPrivateKeyPath) : false;
+
+  if (jaasAppId && jaasKid && keyFileExists) {
     try {
-      const fs = require('fs');
-      const jwt = require('jsonwebtoken');
-      const privateKey = fs.readFileSync(jaasPrivateKeyPath, 'utf8');
+      const privateKey = fs.readFileSync(jaasPrivateKeyPath!, 'utf8');
       const now = Math.floor(Date.now() / 1000);
       const isModerator = user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || isInstructor;
 
@@ -920,14 +916,13 @@ export async function joinLiveClass(
 
       token = jwt.sign(payload, privateKey, {
         algorithm: 'RS256',
-        header: { kid: jaasKid, typ: 'JWT' },
-      });
+        header: { alg: 'RS256', kid: jaasKid, typ: 'JWT' },
+      } as jwt.SignOptions);
       } catch (error) {
       throw new Error('Failed to generate authentication token');
     }
   } else if (jitsiJwtSecret && jitsiJwtSecret.length > 0) {
     try {
-      const jwt = require('jsonwebtoken');
       const now = Math.floor(Date.now() / 1000);
       const jitsiAppId = process.env.JITSI_APP_ID || 'dev-app';
       const jitsiDomain = process.env.JITSI_DOMAIN || 'meet.jit.si';
@@ -955,9 +950,7 @@ export async function joinLiveClass(
       } catch (error) {
       throw new Error('Failed to generate authentication token');
     }
-  } else {
-    }
-
+  }
 
   const isModerator = user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || isInstructor;
 

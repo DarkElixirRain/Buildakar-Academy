@@ -67,7 +67,7 @@ class AuthProvider extends ChangeNotifier {
       final success = await _authService.login(email, password);
       
       if (success) {
-        _currentUser = _authService.currentUser;
+        _currentUser = await _authService.getUser();
         _error = null;
         print('✅ AuthProvider: Login successful for: ${_currentUser?.displayName}');
         notifyListeners();
@@ -100,13 +100,13 @@ class AuthProvider extends ChangeNotifier {
       final success = await _authService.signInWithGoogle();
       
       if (success) {
-        _currentUser = _authService.currentUser;
+        _currentUser = await _authService.getUser();
         _error = null;
         print('✅ AuthProvider: Google sign in successful');
         notifyListeners();
         return true;
       } else {
-        _error = 'Google sign in failed';
+        _error = 'Google sign in failed. Please try again.';
         print('❌ AuthProvider: Google sign in failed');
         notifyListeners();
         return false;
@@ -133,13 +133,13 @@ class AuthProvider extends ChangeNotifier {
       final success = await _authService.register(request);
       
       if (success) {
-        _currentUser = _authService.currentUser;
+        _currentUser = await _authService.getUser();
         _error = null;
         print('✅ AuthProvider: Register successful');
         notifyListeners();
         return true;
       } else {
-        _error = 'Registration failed';
+        _error = 'Registration failed. Please try again.';
         print('❌ AuthProvider: Register failed');
         notifyListeners();
         return false;
@@ -170,6 +170,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = _getErrorMessage(e);
       print('❌ AuthProvider: Logout error: $e');
+      // Even if logout fails, clear local session
       await _authService.clearSession();
       _currentUser = null;
     } finally {
@@ -189,13 +190,13 @@ class AuthProvider extends ChangeNotifier {
       final success = await _authService.updateRole(role);
       
       if (success) {
-        _currentUser = _authService.currentUser;
+        _currentUser = await _authService.getUser();
         _error = null;
         print('✅ AuthProvider: Role updated successfully');
         notifyListeners();
         return true;
       } else {
-        _error = 'Failed to update role';
+        _error = 'Failed to update role. Please try again.';
         print('❌ AuthProvider: Update role failed');
         notifyListeners();
         return false;
@@ -225,7 +226,7 @@ class AuthProvider extends ChangeNotifier {
       if (token == null || token.isEmpty) {
         print('❌ AuthProvider: No token to refresh');
         _isLoading = false;
-        _error = 'No session found';
+        _error = 'No session found. Please login again.';
         notifyListeners();
         return false;
       }
@@ -233,7 +234,7 @@ class AuthProvider extends ChangeNotifier {
       final success = await _authService.refreshUser();
       
       if (success) {
-        _currentUser = _authService.currentUser;
+        _currentUser = await _authService.getUser();
         _error = null;
         print('✅ AuthProvider: User refreshed successfully');
         notifyListeners();
@@ -261,10 +262,39 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Force logout (called when session expires from BaseApiService)
+  /// This is called from BaseApiService.onSessionExpired callback
   void forceLogout() {
+    print('🚨 AuthProvider: Force logout called - session expired');
+    // Clear current user
     _currentUser = null;
-    _error = 'Session expired. Please login again.';
+    _error = 'Your session has expired. Please login again.';
+    
+    // Also clear tokens via AuthService
+    _authService.clearSession().then((_) {
+      print('✅ AuthProvider: Session cleared during force logout');
+    }).catchError((e) {
+      print('⚠️ AuthProvider: Error clearing session during force logout: $e');
+    });
+    
     notifyListeners();
+  }
+
+  /// Clear session (called during normal logout or session cleanup)
+  Future<void> clearSession() async {
+    try {
+      print('🧹 AuthProvider: Clearing session');
+      await _authService.clearSession();
+      _currentUser = null;
+      _error = null;
+      notifyListeners();
+      print('✅ AuthProvider: Session cleared successfully');
+    } catch (e) {
+      print('❌ AuthProvider: Error clearing session: $e');
+      // Even if error, clear local state
+      _currentUser = null;
+      _error = 'Failed to clear session. Please try again.';
+      notifyListeners();
+    }
   }
 
   /// Clear error message
@@ -288,6 +318,20 @@ class AuthProvider extends ChangeNotifier {
   /// Get user's role
   String? get role => _currentUser?.role;
 
+  /// Check if user has a specific role
+  bool hasRole(String role) {
+    return _currentUser?.role?.toLowerCase() == role.toLowerCase();
+  }
+
+  /// Check if user is instructor
+  bool get isInstructor => hasRole('instructor') || hasRole('teacher');
+
+  /// Check if user is student
+  bool get isStudent => hasRole('student') || _currentUser?.role == null;
+
+  /// Check if user is admin
+  bool get isAdmin => hasRole('admin') || hasRole('administrator');
+
   /// Helper method to extract readable error messages
   String _getErrorMessage(Object error) {
     final errorString = error.toString();
@@ -296,18 +340,45 @@ class AuthProvider extends ChangeNotifier {
     String message = errorString.replaceFirst('Exception: ', '');
     
     // Handle specific error messages from backend
-    if (message.toLowerCase().contains('invalid')) {
-      return 'Invalid email or password';
+    if (message.toLowerCase().contains('invalid') || 
+        message.toLowerCase().contains('incorrect')) {
+      return 'Invalid email or password. Please try again.';
     } else if (message.toLowerCase().contains('not found')) {
-      return 'User not found';
-    } else if (message.toLowerCase().contains('already')) {
-      return 'User already exists';
+      return 'User not found. Please check your email.';
+    } else if (message.toLowerCase().contains('already exists') ||
+               message.toLowerCase().contains('already used')) {
+      return 'This email is already registered. Please login instead.';
     } else if (message.toLowerCase().contains('unauthorized')) {
       return 'Unauthorized. Please login again.';
-    } else if (message.toLowerCase().contains('network')) {
-      return 'Network error. Please check your connection.';
+    } else if (message.toLowerCase().contains('network') ||
+               message.toLowerCase().contains('connection') ||
+               message.toLowerCase().contains('timeout')) {
+      return 'Network error. Please check your internet connection.';
+    } else if (message.toLowerCase().contains('session expired')) {
+      return 'Your session has expired. Please login again.';
+    } else if (message.toLowerCase().contains('token')) {
+      return 'Authentication error. Please login again.';
+    } else if (message.toLowerCase().contains('password')) {
+      return 'Invalid password. Please try again.';
+    } else if (message.toLowerCase().contains('email')) {
+      return 'Invalid email address. Please check and try again.';
+    } else if (message.toLowerCase().contains('weak')) {
+      return 'Password is too weak. Please use a stronger password.';
+    } else if (message.toLowerCase().contains('required')) {
+      return 'Please fill in all required fields.';
+    }
+    
+    // Return a user-friendly message if error is long
+    if (message.length > 100) {
+      return 'An error occurred. Please try again.';
     }
     
     return message;
+  }
+
+  @override
+  void dispose() {
+    // Clean up any resources if needed
+    super.dispose();
   }
 }

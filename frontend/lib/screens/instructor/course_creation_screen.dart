@@ -68,12 +68,6 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
 
   Future<void> _pickThumbnail() async {
     try {
-      // Check if we have permission on Android
-      if (Platform.isAndroid) {
-        // For Android 13+, we need READ_MEDIA_IMAGES permission
-        // The image_picker package handles this automatically
-      }
-
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
@@ -86,13 +80,12 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
         setState(() {
           _thumbnailFile = File(image.path);
         });
-        // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Thumbnail selected successfully!'),
               backgroundColor: AppColors.getSuccessColor(Theme.of(context).brightness),
-              duration: Duration(seconds: 1),
+              duration: const Duration(seconds: 1),
             ),
           );
         }
@@ -238,204 +231,230 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thumbnail
-              _buildThumbnailSection(
-                brightness: brightness,
-                cardColor: cardColor,
-                primaryColor: primaryColor,
-                textColor: textColor,
-              ),
-              const SizedBox(height: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 400;
+            final padding = isSmallScreen ? 12.0 : 16.0;
+            
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(padding),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - kToolbarHeight - 48,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Thumbnail
+                      _buildThumbnailSection(
+                        brightness: brightness,
+                        cardColor: cardColor,
+                        primaryColor: primaryColor,
+                        textColor: textColor,
+                        isSmallScreen: isSmallScreen,
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 24),
 
-              // Title
-              _buildTextField(
-                controller: _titleController,
-                label: 'Course Title',
-                hint: 'e.g. Complete Flutter Development Bootcamp',
-                textColor: textColor,
-                cardColor: cardColor,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a course title';
-                  }
-                  if (value.trim().length < 5) {
-                    return 'Title should be at least 5 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
+                      // Title
+                      _buildTextField(
+                        controller: _titleController,
+                        label: 'Course Title',
+                        hint: 'e.g. Complete Flutter Development Bootcamp',
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        isSmallScreen: isSmallScreen,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a course title';
+                          }
+                          if (value.trim().length < 5) {
+                            return 'Title should be at least 5 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Subtitle
-              _buildTextField(
-                controller: _subtitleController,
-                label: 'Subtitle',
-                hint: 'e.g. Learn Flutter from scratch to advanced',
-                textColor: textColor,
-                cardColor: cardColor,
-                maxLines: 2,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a subtitle';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
+                      // Subtitle
+                      _buildTextField(
+                        controller: _subtitleController,
+                        label: 'Subtitle',
+                        hint: 'e.g. Learn Flutter from scratch to advanced',
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        maxLines: 2,
+                        isSmallScreen: isSmallScreen,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a subtitle';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Description
-              _buildTextField(
-                controller: _descriptionController,
-                label: 'Description',
-                hint: 'What will students learn in this course?',
-                textColor: textColor,
-                cardColor: cardColor,
-                maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  if (value.trim().length < 20) {
-                    return 'Description should be at least 20 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
+                      // Description
+                      _buildTextField(
+                        controller: _descriptionController,
+                        label: 'Description',
+                        hint: 'What will students learn in this course?',
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        maxLines: 5,
+                        isSmallScreen: isSmallScreen,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a description';
+                          }
+                          if (value.trim().length < 20) {
+                            return 'Description should be at least 20 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Category Dropdown
-              _buildDropdown(
-                label: 'Category',
-                value: _selectedCategory,
-                items: _categories.map((cat) {
-                  return DropdownMenuItem<String>(
-                    value: cat['id'].toString(),
-                    child: Text(
-                      cat['name'] ?? 'Unknown',
-                      style: GoogleFonts.inter(color: textColor),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedCategory = value!);
-                },
-                textColor: textColor,
-                cardColor: cardColor,
-              ),
-              const SizedBox(height: 20),
+                      // Category Dropdown
+                      _buildDropdown(
+                        label: 'Category',
+                        value: _selectedCategory,
+                        items: _categories.map((cat) {
+                          return DropdownMenuItem<String>(
+                            value: cat['id'].toString(),
+                            child: Text(
+                              cat['name'] ?? 'Unknown',
+                              style: GoogleFonts.inter(color: textColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedCategory = value!);
+                        },
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        isSmallScreen: isSmallScreen,
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Level Dropdown
-              _buildDropdown(
-                label: 'Level',
-                value: _selectedLevel,
-                items: _levels.map((level) {
-                  return DropdownMenuItem<String>(
-                    value: level,
-                    child: Text(
-                      level.replaceAll('_', ' ').toUpperCase(),
-                      style: GoogleFonts.inter(color: textColor),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedLevel = value!);
-                },
-                textColor: textColor,
-                cardColor: cardColor,
-              ),
-              const SizedBox(height: 20),
+                      // Level Dropdown
+                      _buildDropdown(
+                        label: 'Level',
+                        value: _selectedLevel,
+                        items: _levels.map((level) {
+                          return DropdownMenuItem<String>(
+                            value: level,
+                            child: Text(
+                              level.replaceAll('_', ' ').toUpperCase(),
+                              style: GoogleFonts.inter(color: textColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedLevel = value!);
+                        },
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        isSmallScreen: isSmallScreen,
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Language Dropdown
-              _buildDropdown(
-                label: 'Language',
-                value: _selectedLanguage,
-                items: _languages.map((lang) {
-                  return DropdownMenuItem<String>(
-                    value: lang,
-                    child: Text(
-                      lang,
-                      style: GoogleFonts.inter(color: textColor),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedLanguage = value!);
-                },
-                textColor: textColor,
-                cardColor: cardColor,
-              ),
-              const SizedBox(height: 20),
+                      // Language Dropdown
+                      _buildDropdown(
+                        label: 'Language',
+                        value: _selectedLanguage,
+                        items: _languages.map((lang) {
+                          return DropdownMenuItem<String>(
+                            value: lang,
+                            child: Text(
+                              lang,
+                              style: GoogleFonts.inter(color: textColor),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedLanguage = value!);
+                        },
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        isSmallScreen: isSmallScreen,
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Price
-              _buildTextField(
-                controller: _priceController,
-                label: 'Price (USD)',
-                hint: '0.00',
-                textColor: textColor,
-                cardColor: cardColor,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefixText: 'रु ',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a price';
-                  }
-                  final parsed = double.tryParse(value.trim());
-                  if (parsed == null || parsed < 0) {
-                    return 'Enter a valid price';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
+                      // Price - Changed from USD to NRS
+                      _buildTextField(
+                        controller: _priceController,
+                        label: 'Price (NRS)',
+                        hint: '0.00',
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        prefixText: 'रु ',
+                        isSmallScreen: isSmallScreen,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a price';
+                          }
+                          final parsed = double.tryParse(value.trim());
+                          if (parsed == null || parsed < 0) {
+                            return 'Enter a valid price';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Discount Price (Optional)
-              _buildTextField(
-                controller: _discountPriceController,
-                label: 'Discount Price (Optional)',
-                hint: '0.00',
-                textColor: textColor,
-                cardColor: cardColor,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                prefixText: 'रु ',
-                validator: (value) {
-                  if (value != null && value.trim().isNotEmpty) {
-                    final parsed = double.tryParse(value.trim());
-                    if (parsed == null || parsed < 0) {
-                      return 'Enter a valid discount price';
-                    }
-                    final price = double.tryParse(_priceController.text.trim()) ?? 0;
-                    if (parsed >= price) {
-                      return 'Discount price must be less than regular price';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
+                      // Discount Price (Optional) - Changed from USD to NRS
+                      _buildTextField(
+                        controller: _discountPriceController,
+                        label: 'Discount Price (Optional)',
+                        hint: '0.00',
+                        textColor: textColor,
+                        cardColor: cardColor,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        prefixText: 'रु ',
+                        isSmallScreen: isSmallScreen,
+                        validator: (value) {
+                          if (value != null && value.trim().isNotEmpty) {
+                            final parsed = double.tryParse(value.trim());
+                            if (parsed == null || parsed < 0) {
+                              return 'Enter a valid discount price';
+                            }
+                            final price = double.tryParse(_priceController.text.trim()) ?? 0;
+                            if (parsed >= price && price > 0) {
+                              return 'Discount price must be less than regular price';
+                            }
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: isSmallScreen ? 24 : 32),
 
-              // Submit Button
-              AppButton(
-                title: 'Create Course',
-                onPressed: _createCourse,
-                isLoading: _isUploading,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Your course will be saved as a draft. You can publish it later after adding lessons.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  color: textSecondaryColor,
-                  fontSize: 12,
+                      // Submit Button
+                      AppButton(
+                        title: 'Create Course',
+                        onPressed: _createCourse,
+                        isLoading: _isUploading,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Your course will be saved as a draft. You can publish it later after adding lessons.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -446,17 +465,20 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     required Color cardColor,
     required Color primaryColor,
     required Color textColor,
+    required bool isSmallScreen,
   }) {
+    final height = isSmallScreen ? 140.0 : 180.0;
+    
     return GestureDetector(
       onTap: _pickThumbnail,
       child: Container(
-        height: 180,
+        height: height,
         width: double.infinity,
         decoration: BoxDecoration(
           color: cardColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: primaryColor.withValues(alpha: 0.2),
+            color: primaryColor.withOpacity(0.2),
             width: 1.5,
           ),
           image: _thumbnailFile != null
@@ -472,15 +494,15 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
                 children: [
                   Icon(
                     Icons.add_photo_alternate_outlined,
-                    size: 48,
-                    color: primaryColor.withValues(alpha: 0.5),
+                    size: isSmallScreen ? 36 : 48,
+                    color: primaryColor.withOpacity(0.5),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Add Course Thumbnail',
                     style: GoogleFonts.inter(
-                      color: textColor.withValues(alpha: 0.5),
-                      fontSize: 16,
+                      color: textColor.withOpacity(0.5),
+                      fontSize: isSmallScreen ? 14 : 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -488,8 +510,8 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
                   Text(
                     'Tap to select an image',
                     style: GoogleFonts.inter(
-                      color: textColor.withValues(alpha: 0.3),
-                      fontSize: 12,
+                      color: textColor.withOpacity(0.3),
+                      fontSize: isSmallScreen ? 10 : 12,
                     ),
                   ),
                 ],
@@ -503,7 +525,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
                     right: 8,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: IconButton(
@@ -531,11 +553,16 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     required String hint,
     required Color textColor,
     required Color cardColor,
+    required bool isSmallScreen,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     String? prefixText,
     String? Function(String?)? validator,
   }) {
+    final fontSize = isSmallScreen ? 13.0 : 14.0;
+    final verticalPadding = isSmallScreen ? 8.0 : 12.0;
+    final horizontalPadding = isSmallScreen ? 12.0 : 16.0;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -543,7 +570,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           label,
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: fontSize,
             color: textColor,
           ),
         ),
@@ -552,20 +579,25 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          style: GoogleFonts.inter(color: textColor),
+          style: GoogleFonts.inter(
+            color: textColor,
+            fontSize: fontSize,
+          ),
           decoration: InputDecoration(
             prefixText: prefixText,
             hintText: hint,
             hintStyle: GoogleFonts.inter(
-              color: textColor.withValues(alpha: 0.5),
+              color: textColor.withOpacity(0.5),
+              fontSize: fontSize,
             ),
             border: const OutlineInputBorder(),
             filled: true,
             fillColor: cardColor,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
             ),
+            isDense: true,
           ),
           validator: validator,
         ),
@@ -580,7 +612,10 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
     required Function(String?) onChanged,
     required Color textColor,
     required Color cardColor,
+    required bool isSmallScreen,
   }) {
+    final fontSize = isSmallScreen ? 13.0 : 14.0;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -588,7 +623,7 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
           label,
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
-            fontSize: 14,
+            fontSize: fontSize,
             color: textColor,
           ),
         ),
@@ -598,20 +633,24 @@ class _CourseCreationScreenState extends State<CourseCreationScreen> {
             color: cardColor,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: textColor.withValues(alpha: 0.2),
+              color: textColor.withOpacity(0.2),
             ),
           ),
           child: DropdownButtonFormField<String>(
             initialValue: value,
-            style: GoogleFonts.inter(color: textColor),
+            style: GoogleFonts.inter(
+              color: textColor,
+              fontSize: fontSize,
+            ),
             dropdownColor: cardColor,
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
             items: items,
             onChanged: onChanged,
             icon: Icon(Icons.arrow_drop_down, color: textColor),
+            isExpanded: true,
           ),
         ),
       ],

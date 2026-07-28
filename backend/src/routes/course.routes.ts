@@ -10,6 +10,8 @@ import courseController from '../controllers/course.controller';
 
 const router = express.Router();
 
+const instructorOrAdmin = roleMiddleware([Role.INSTRUCTOR, Role.ADMIN]);
+
 // ============================================
 // ✅ PUBLIC ROUTES - No authentication required
 // ============================================
@@ -19,6 +21,22 @@ router.get(
   '/public',
   courseController.getPublicCourses
 );
+
+// ============================================
+// ✅ SPECIFIC ROUTES - Must be before /:id to avoid shadowing
+// ============================================
+
+// GET /api/courses/stats - Get instructor stats (authenticated)
+router.get(
+  '/stats',
+  authenticate,
+  instructorOrAdmin,
+  courseController.getInstructorStats
+);
+
+// ============================================
+// ✅ PUBLIC PARAMETERIZED ROUTE - No auth required
+// ============================================
 
 // GET /api/courses/:id - Get course by ID (Public for published, authenticated for draft)
 router.get(
@@ -31,10 +49,7 @@ router.get(
 // 🔒 PROTECTED ROUTES - Authentication required
 // ============================================
 
-// All routes below require authentication
 router.use(authenticate);
-
-const instructorOrAdmin = roleMiddleware([Role.INSTRUCTOR, Role.ADMIN]);
 
 // POST /api/courses - Create course (Instructor)
 router.post(
@@ -49,13 +64,6 @@ router.get(
   '/',
   instructorOrAdmin,
   courseController.getCourses
-);
-
-// GET /api/courses/stats - Get instructor stats
-router.get(
-  '/stats',
-  instructorOrAdmin,
-  courseController.getInstructorStats
 );
 
 // PATCH /api/courses/:id - Update course

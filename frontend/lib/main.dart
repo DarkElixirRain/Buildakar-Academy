@@ -92,6 +92,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   bool _lastKnownAuthState = false;
+  Timer? _tokenRefreshTimer;
 
   @override
   void initState() {
@@ -103,12 +104,11 @@ class _MyAppState extends State<MyApp> {
       FirebaseMessaging.instance.getInitialMessage().then((message) {});
     }
 
-    BaseApiService.onSessionExpired = () {
-      final context = _navigatorKey.currentContext;
-      if (context == null) return;
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.forceLogout();
-    };
+    // Setup session expiry handler - only called when refresh token is truly invalid
+    BaseApiService.onSessionExpired = _handleSessionExpired;
+
+    // Start automatic token refresh timer
+    _startTokenRefreshTimer();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -116,18 +116,81 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _startTokenRefreshTimer() {
+    // Refresh token every 4 minutes (proactively)
+    _tokenRefreshTimer = Timer.periodic(const Duration(minutes: 4), (timer) async {
+      try {
+        final baseApiService = BaseApiService();
+        final token = await baseApiService.getToken();
+        final expiryStr = await baseApiService.getTokenExpiry();
+        
+        if (token != null && expiryStr != null) {
+          final expiry = DateTime.parse(expiryStr);
+          final timeUntilExpiry = expiry.difference(DateTime.now());
+          
+          // Only refresh if token expires in less than 5 minutes
+          if (timeUntilExpiry.inMinutes < 5) {
+            print('🔄 Proactive token refresh from timer');
+            await baseApiService.refreshAccessToken();
+          }
+        }
+      } catch (e) {
+        // Silent fail - don't disrupt user
+        print('⚠️ Proactive token refresh failed: $e');
+      }
+    });
+  }
+
+  void _handleSessionExpired() {
+    print('🔄 Session expired - clearing session...');
+    
+    // This should only be called when the refresh token is truly invalid
+    // Show a dialog asking user to login again
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _navigatorKey.currentContext;
+      if (context == null) return;
+
+      // Show dialog before logging out
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Session Expired'),
+          content: const Text('Your session has expired. Please login again to continue.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // Clear session and navigate to login
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                authProvider.clearSession();
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              },
+              child: const Text('Login Again'),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
   void _onAuthChanged() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final isAuth = authProvider.isAuthenticated;
 
+    // Only handle manual logout or login changes
     if (_lastKnownAuthState && !isAuth) {
-      _navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+      // User logged out manually - navigate to login
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/login', 
+        (route) => false,
+      );
     }
     _lastKnownAuthState = isAuth;
   }
 
   @override
   void dispose() {
+    _tokenRefreshTimer?.cancel();
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       authProvider.removeListener(_onAuthChanged);

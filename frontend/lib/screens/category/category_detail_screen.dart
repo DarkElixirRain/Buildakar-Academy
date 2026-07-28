@@ -148,7 +148,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     });
 
     try {
-      // First get category details using the slug endpoint
       final response = await _apiService.getCategoryBySlug(
         widget.categorySlug,
         includeCourses: true,
@@ -162,29 +161,30 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       if (response.success) {
         final Map<String, dynamic> payload = response.data ?? {};
         
+        // Update category info
+        if (payload['name'] != null && payload['name'].toString().isNotEmpty) {
+          _categoryName = payload['name'];
+        }
+        if (payload['image'] != null && payload['image'].toString().isNotEmpty) {
+          _categoryImage = payload['image'];
+        }
+        if (payload['description'] != null && payload['description'].toString().isNotEmpty) {
+          _categoryDescription = payload['description'];
+        }
+        if (payload['_count'] != null && payload['_count']['courses'] != null) {
+          _courseCountFromApi = payload['_count']['courses'];
+        }
+        
+        final List<dynamic> rawCourses = (payload['courses'] as List?) ??
+            (payload['Course'] as List?) ??
+            (payload['data'] as List?) ??
+            [];
+
+        final transformed = rawCourses
+            .map((c) => _transformCourseData(c as Map<String, dynamic>))
+            .toList();
+
         setState(() {
-          if (payload['name'] != null && payload['name'].toString().isNotEmpty) {
-            _categoryName = payload['name'];
-          }
-          if (payload['image'] != null && payload['image'].toString().isNotEmpty) {
-            _categoryImage = payload['image'];
-          }
-          if (payload['description'] != null && payload['description'].toString().isNotEmpty) {
-            _categoryDescription = payload['description'];
-          }
-          if (payload['_count'] != null && payload['_count']['courses'] != null) {
-            _courseCountFromApi = payload['_count']['courses'];
-          }
-          
-          final List<dynamic> rawCourses = (payload['courses'] as List?) ??
-              (payload['Course'] as List?) ??
-              (payload['data'] as List?) ??
-              [];
-
-          final transformed = rawCourses
-              .map((c) => _transformCourseData(c as Map<String, dynamic>))
-              .toList();
-
           _allCourses = transformed;
           _hasMore = transformed.length >= _limit;
           _isLoading = false;
@@ -207,36 +207,39 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       if (response.success) {
         final Map<String, dynamic> payload = response.data ?? {};
         
-        setState(() async {
-          if (payload['name'] != null && payload['name'].toString().isNotEmpty) {
-            _categoryName = payload['name'];
-          }
-          if (payload['image'] != null && payload['image'].toString().isNotEmpty) {
-            _categoryImage = payload['image'];
-          }
-          if (payload['description'] != null && payload['description'].toString().isNotEmpty) {
-            _categoryDescription = payload['description'];
-          }
-          if (payload['_count'] != null && payload['_count']['courses'] != null) {
-            _courseCountFromApi = payload['_count']['courses'];
-          }
-          
-          final List<dynamic> rawCourses = (payload['courses'] as List?) ??
-              (payload['Course'] as List?) ??
-              (payload['data'] as List?) ??
-              [];
+        // Update category info
+        if (payload['name'] != null && payload['name'].toString().isNotEmpty) {
+          _categoryName = payload['name'];
+        }
+        if (payload['image'] != null && payload['image'].toString().isNotEmpty) {
+          _categoryImage = payload['image'];
+        }
+        if (payload['description'] != null && payload['description'].toString().isNotEmpty) {
+          _categoryDescription = payload['description'];
+        }
+        if (payload['_count'] != null && payload['_count']['courses'] != null) {
+          _courseCountFromApi = payload['_count']['courses'];
+        }
+        
+        final List<dynamic> rawCourses = (payload['courses'] as List?) ??
+            (payload['Course'] as List?) ??
+            (payload['data'] as List?) ??
+            [];
 
-          if (rawCourses.isNotEmpty) {
-            final transformed = rawCourses
-                .map((c) => _transformCourseData(c as Map<String, dynamic>))
-                .toList();
+        if (rawCourses.isNotEmpty) {
+          final transformed = rawCourses
+              .map((c) => _transformCourseData(c as Map<String, dynamic>))
+              .toList();
+          setState(() {
             _allCourses = transformed;
             _hasMore = transformed.length >= _limit;
-          } else {
-            // If no courses in category response, fetch public courses
-            await _fetchPublicCourses();
-          }
-          
+          });
+        } else {
+          // If no courses in category response, fetch public courses
+          await _fetchPublicCourses();
+        }
+        
+        setState(() {
           _isLoading = false;
         });
       } else {
@@ -269,17 +272,27 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         final Map<String, dynamic> data = response.data ?? {};
         final List<dynamic> coursesData = data['data'] ?? [];
         
+        final transformed = coursesData
+            .map((c) => _transformCourseData(c as Map<String, dynamic>))
+            .toList();
+            
         setState(() {
-          final transformed = coursesData
-              .map((c) => _transformCourseData(c as Map<String, dynamic>))
-              .toList();
           _allCourses = transformed;
           _hasMore = transformed.length >= _limit;
           _isLoading = false;
         });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _error = 'No courses found';
+        });
       }
     } catch (e) {
-      print('Error fetching public courses: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Failed to load courses';
+      });
     }
   }
 
@@ -342,7 +355,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     final price = _toDouble(c['price']);
     final originalPrice = _toDouble(c['originalPrice'] ?? c['price']);
     
-    // Get instructor name
     String instructorName = 'Unknown Instructor';
     if (c['instructor'] != null) {
       if (c['instructor'] is Map) {
@@ -359,7 +371,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       }
     }
     
-    // Get thumbnail
     String thumbnail = '';
     for (final key in ['thumbnail', 'thumbnailUrl', 'image', 'coverImage']) {
       final v = c[key];
@@ -572,7 +583,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   // =====================================================================
-  // SLIVER HEADER - FIXED OVERFLOW
+  // SLIVER HEADER
   // =====================================================================
   Widget _buildSliverHeader(BuildContext context, bool isDark, bool isSmallPhone, double screenWidth) {
     final imageUrl = _categoryImage ?? '';
@@ -591,6 +602,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         child: _RoundIconButton(
           icon: Icons.arrow_back_rounded,
           onTap: () => Navigator.of(context).maybePop(),
+          isDark: isDark,
         ),
       ),
       actions: [
@@ -599,6 +611,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           child: _RoundIconButton(
             icon: Icons.share_outlined,
             onTap: () {},
+            isDark: isDark,
           ),
         ),
       ],
@@ -652,7 +665,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               top: 10,
               child: Icon(_accentIcon, size: 140, color: Colors.white.withValues(alpha: 0.08)),
             ),
-            // FIXED: Use Flexible and proper constraints to prevent overflow
             Positioned(
               left: isSmallScreen ? 12 : 20,
               right: isSmallScreen ? 12 : 20,

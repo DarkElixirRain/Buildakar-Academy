@@ -107,6 +107,9 @@ class ApiService extends BaseApiService {
 
   Future<ApiResponse<Map<String, dynamic>>> getCourseById(String id) => _courseService.getCourseById(id);
 
+  Future<ApiResponse<Map<String, dynamic>>> getCourseByIdAuthenticated(String id) =>
+      _courseService.getCourseByIdAuthenticated(id);
+
   Future<ApiResponse<Map<String, dynamic>>> getPublicCourses({
     int page = 1,
     int limit = 20,

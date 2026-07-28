@@ -1,3 +1,5 @@
+// lib/widgets/live_class/live_classes.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -68,15 +70,27 @@ class LiveClasses extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 8, height: 8,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.getErrorColor(brightness)),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.getErrorColor(brightness),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.video_camera_front, size: screenWidth < 380 ? 18 : 20, color: primaryColor),
+                    Icon(
+                      Icons.video_camera_front,
+                      size: screenWidth < 380 ? 18 : 20,
+                      color: primaryColor,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Live Classes',
-                      style: TextStyle(fontSize: screenWidth < 380 ? 18 : 20, fontWeight: FontWeight.bold, color: textColor),
+                      style: TextStyle(
+                        fontSize: screenWidth < 380 ? 18 : 20,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -86,7 +100,11 @@ class LiveClasses extends StatelessWidget {
                 onTap: onSeeAll,
                 child: Text(
                   'See All',
-                  style: TextStyle(fontSize: screenWidth < 380 ? 12 : 14, fontWeight: FontWeight.w600, color: primaryColor),
+                  style: TextStyle(
+                    fontSize: screenWidth < 380 ? 12 : 14,
+                    fontWeight: FontWeight.w600,
+                    color: primaryColor,
+                  ),
                 ),
               ),
             ],
@@ -102,7 +120,15 @@ class LiveClasses extends StatelessWidget {
             itemBuilder: (context, index) {
               final classItem = classes[index];
               final isLast = index == classes.length - 1;
-              return _buildClassCard(context, classItem, isLast, cardWidth, cardHeight, isDark, brightness);
+              return _buildClassCard(
+                context,
+                classItem,
+                isLast,
+                cardWidth,
+                cardHeight,
+                isDark,
+                brightness,
+              );
             },
           ),
         ),
@@ -125,7 +151,7 @@ class LiveClasses extends StatelessWidget {
     final backgroundColor = AppColors.getBackgroundColor(brightness);
 
     final status = (classItem['status'] as String?)?.toLowerCase() ?? 'upcoming';
-    final isLive = status == 'live';
+    final isLive = status == 'live' || status == 'started' || status == 'active';
     final isOwnClass = currentUserId != null && classItem['instructorId'] == currentUserId;
 
     final title = classItem['title']?.toString() ?? 'Untitled Class';
@@ -135,6 +161,7 @@ class LiveClasses extends StatelessWidget {
     final participants = classItem['participantsCount'] ?? classItem['attendees'] ?? 0;
     final maxParticipants = classItem['maxParticipants'] ?? 0;
     final scheduledTime = classItem['scheduledTime'];
+    final classId = classItem['id']?.toString() ?? '';
 
     String timeString = 'Time TBD';
     if (scheduledTime != null) {
@@ -157,6 +184,8 @@ class LiveClasses extends StatelessWidget {
     String statusText;
     switch (status) {
       case 'live':
+      case 'started':
+      case 'active':
         statusColor = AppColors.getSuccessColor(brightness);
         statusText = 'LIVE';
         break;
@@ -186,10 +215,13 @@ class LiveClasses extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: textSecondaryColor.withAlpha(30), width: 1),
+        border: Border.all(
+          color: textSecondaryColor.withValues(alpha: 0.12),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 40 : 10),
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
             offset: const Offset(0, 2),
             blurRadius: 8,
           ),
@@ -213,66 +245,107 @@ class LiveClasses extends StatelessWidget {
                         errorBuilder: (_, __, ___) => _fallback(primaryColor),
                       )
                     : _fallback(primaryColor),
-                // Status badge - top left
+                // Status badge
                 Positioned(
-                  top: 8, left: 8,
+                  top: 8,
+                  left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(190),
+                      color: Colors.black.withValues(alpha: 0.75),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withAlpha(120), width: 1),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.47),
+                        width: 1,
+                      ),
                     ),
                     child: Text(
                       statusText,
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: statusColor, letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: statusColor,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
-                // "Your Class" badge for own classes
+                // "Your Class" badge
                 if (isOwnClass)
                   Positioned(
-                    top: 8, right: 8,
+                    top: 8,
+                    right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.blue.withAlpha(220), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.86),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.school_rounded, size: 10, color: Colors.white),
                           const SizedBox(width: 2),
-                          Text('Your Class', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w600, color: Colors.white)),
+                          Text(
+                            'Your Class',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                // Category - bottom left
+                // Category badge
                 Positioned(
-                  bottom: 8, left: 8,
+                  bottom: 8,
+                  left: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: primaryColor.withAlpha(220), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.86),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Text(
                       category,
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.white),
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
-                // Participants count - bottom right
+                // Participants count
                 Positioned(
-                  bottom: 8, right: 8,
+                  bottom: 8,
+                  right: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.black.withAlpha(190), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.75),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.people_rounded, size: 12, color: Colors.white.withAlpha(220)),
+                        Icon(
+                          Icons.people_rounded,
+                          size: 12,
+                          color: Colors.white.withValues(alpha: 0.86),
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           '$participants/${maxParticipants > 0 ? maxParticipants : '\u221E'}',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.white.withAlpha(220)),
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.86),
+                          ),
                         ),
                       ],
                     ),
@@ -289,19 +362,33 @@ class LiveClasses extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor, height: 1.2),
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.person_outline_rounded, size: 12, color: textSecondaryColor.withAlpha(130)),
+                    Icon(
+                      Icons.person_outline_rounded,
+                      size: 12,
+                      color: textSecondaryColor.withValues(alpha: 0.51),
+                    ),
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
                         instructor,
-                        style: TextStyle(fontSize: 11, color: textSecondaryColor),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: textSecondaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -309,13 +396,21 @@ class LiveClasses extends StatelessWidget {
                 const SizedBox(height: 1),
                 Row(
                   children: [
-                    Icon(Icons.schedule_rounded, size: 12, color: textSecondaryColor.withAlpha(130)),
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 12,
+                      color: textSecondaryColor.withValues(alpha: 0.51),
+                    ),
                     const SizedBox(width: 3),
                     Flexible(
                       child: Text(
                         timeString,
-                        style: TextStyle(fontSize: 11, color: textSecondaryColor),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: textSecondaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -328,29 +423,40 @@ class LiveClasses extends StatelessWidget {
                       flex: 1,
                       child: OutlinedButton(
                         onPressed: isOwnClass && isLive
-                            ? () => onEndPress?.call(classItem['id']?.toString() ?? '')
+                            ? () => onEndPress?.call(classId)
                             : null,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          side: BorderSide(
-                            color: isOwnClass && isLive ? Colors.red.withAlpha(100) : textSecondaryColor.withAlpha(50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          foregroundColor: isOwnClass && isLive ? Colors.red : textSecondaryColor,
+                          side: BorderSide(
+                            color: isOwnClass && isLive
+                                ? Colors.red.withValues(alpha: 0.39)
+                                : textSecondaryColor.withValues(alpha: 0.2),
+                          ),
+                          foregroundColor: isOwnClass && isLive
+                              ? Colors.red
+                              : textSecondaryColor,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isOwnClass && isLive ? Icons.stop_circle_outlined : Icons.notifications_off_rounded,
+                              isOwnClass && isLive
+                                  ? Icons.stop_circle_outlined
+                                  : Icons.notifications_off_rounded,
                               size: 12,
                             ),
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
                                 isOwnClass && isLive ? 'End' : 'Remind',
-                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -359,31 +465,52 @@ class LiveClasses extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    // Join button
+                    // JOIN NOW button - Just calls onJoinPress like See All
                     Expanded(
                       flex: 2,
                       child: ElevatedButton(
-                        onPressed: isLive ? () => onJoinPress(classItem['id']?.toString() ?? '') : null,
+                        onPressed: isLive
+                            ? () {
+                                // Just call the callback - parent handles navigation
+                                onJoinPress(classId);
+                              }
+                            : null,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          backgroundColor: isLive ? Colors.green : textSecondaryColor.withAlpha(50),
-                          foregroundColor: isLive ? Colors.white : textSecondaryColor,
-                          disabledBackgroundColor: textSecondaryColor.withAlpha(30),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          backgroundColor: isLive
+                              ? Colors.green
+                              : textSecondaryColor.withValues(alpha: 0.2),
+                          foregroundColor: isLive
+                              ? Colors.white
+                              : textSecondaryColor,
+                          disabledBackgroundColor:
+                              textSecondaryColor.withValues(alpha: 0.12),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isLive ? Icons.play_arrow_rounded : Icons.meeting_room_rounded,
+                              isLive
+                                  ? Icons.play_arrow_rounded
+                                  : Icons.meeting_room_rounded,
                               size: 12,
                             ),
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
-                                isLive ? 'Join' : status == 'upcoming' ? 'Soon' : 'Ended',
-                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700),
+                                isLive
+                                    ? 'Join Now'
+                                    : status == 'upcoming'
+                                        ? 'Soon'
+                                        : 'Ended',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -407,12 +534,17 @@ class LiveClasses extends StatelessWidget {
       height: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withAlpha(50), color.withAlpha(20)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.08)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
       child: Center(
-        child: Icon(Icons.videocam_rounded, size: 32, color: color.withAlpha(100)),
+        child: Icon(
+          Icons.videocam_rounded,
+          size: 32,
+          color: color.withValues(alpha: 0.39),
+        ),
       ),
     );
   }
@@ -434,15 +566,27 @@ class LiveClasses extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 8, height: 8,
-                decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red,
+                ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.video_camera_front, size: 20, color: primaryColor),
+              Icon(
+                Icons.video_camera_front,
+                size: 20,
+                color: primaryColor,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Live Classes',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
               ),
             ],
           ),
@@ -452,21 +596,34 @@ class LiveClasses extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundElementColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: backgroundSelectedColor, width: 1),
+            border: Border.all(
+              color: backgroundSelectedColor,
+              width: 1,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.video_camera_front_outlined, size: 48, color: textSecondaryColor),
+              Icon(
+                Icons.video_camera_front_outlined,
+                size: 48,
+                color: textSecondaryColor,
+              ),
               const SizedBox(height: 8),
               Text(
                 'No live classes available',
-                style: TextStyle(fontSize: 14, color: textSecondaryColor),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: textSecondaryColor,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Check back later for upcoming sessions',
-                style: TextStyle(fontSize: 12, color: textSecondaryColor.withAlpha(180)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: textSecondaryColor.withValues(alpha: 0.71),
+                ),
               ),
             ],
           ),

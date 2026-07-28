@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { config } from './config';
@@ -55,9 +54,11 @@ app.use(helmet({
         "'self'",
         "https://accounts.google.com",
         "https://www.googleapis.com",
+        "https://8x8.vc",
+        "https://*.8x8.vc",
       ],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      frameSrc: ["'self'", "https://meet.jit.si"],
+      frameSrc: ["'self'", "https://meet.jit.si", "https://8x8.vc", "https://*.8x8.vc"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
     },
@@ -74,19 +75,10 @@ app.use(helmet({
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.setHeader(
     'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), notifications=(), payment=(), display-capture=(), autoplay=(self)'
+    'camera=(self), microphone=(self), geolocation=(), notifications=(), payment=(), display-capture=(), autoplay=(self)'
   );
   next();
 });
-
-// Rate limiting — global (lenient)
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many requests, please try again later.' },
-}));
 
 // CORS configuration - ACCEPT ANY ORIGIN (development)
 app.use(cors({

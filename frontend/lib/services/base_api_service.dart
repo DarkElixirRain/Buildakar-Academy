@@ -27,6 +27,7 @@ class BaseApiService {
     try {
       await _secureStorage.write(key: 'token', value: token);
     } catch (e) {
+      // Log error
     }
   }
 
@@ -34,6 +35,7 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'token');
     } catch (e) {
+      // Log error
     }
   }
 
@@ -50,6 +52,7 @@ class BaseApiService {
     try {
       await _secureStorage.write(key: 'refreshToken', value: token);
     } catch (e) {
+      // Log error
     }
   }
 
@@ -57,6 +60,7 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'refreshToken');
     } catch (e) {
+      // Log error
     }
   }
 
@@ -73,6 +77,7 @@ class BaseApiService {
     try {
       await _secureStorage.write(key: 'tokenExpiresAt', value: expiry);
     } catch (e) {
+      // Log error
     }
   }
 
@@ -80,6 +85,7 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'tokenExpiresAt');
     } catch (e) {
+      // Log error
     }
   }
 
@@ -91,6 +97,7 @@ class BaseApiService {
         value: jsonEncode(userData),
       );
     } catch (e) {
+      // Log error
     }
   }
 
@@ -108,6 +115,7 @@ class BaseApiService {
     try {
       await _secureStorage.delete(key: 'user');
     } catch (e) {
+      // Log error
     }
   }
 
@@ -124,19 +132,25 @@ class BaseApiService {
     await clearSession();
   }
 
-  // ----- token refresh (internal, no 401 loop) -----
+  // ==================== REFRESH TOKEN ROTATION ====================
+  
   static bool _refreshInProgress = false;
   static Completer<String?>? _refreshCompleter;
+  static int _refreshAttempts = 0;
+  static const int _maxRefreshAttempts = 3;
 
-  /// Proactively check if the access token is expired or about to expire
-  /// and refresh it before making a request.
+  /// Check if token is about to expire and refresh if needed
   Future<bool> _ensureValidToken() async {
     try {
       final expiryStr = await getTokenExpiry();
       if (expiryStr == null) return true;
 
       final expiry = DateTime.parse(expiryStr);
-      if (DateTime.now().isAfter(expiry.subtract(const Duration(minutes: 2)))) {
+      final timeUntilExpiry = expiry.difference(DateTime.now());
+      
+      // Refresh if token expires in 5 minutes or less
+      if (timeUntilExpiry.inMinutes <= 5) {
+        print('🔄 Token expires in ${timeUntilExpiry.inMinutes} minutes, refreshing proactively...');
         final newToken = await refreshAccessToken();
         return newToken != null;
       }
@@ -146,85 +160,226 @@ class BaseApiService {
     }
   }
 
-  /// Attempt to refresh the access token by calling POST /auth/refresh
-  /// with the stored refresh token.  Uses a lock so only one refresh
-  /// runs at a time; concurrent callers await the same result.
+  /// Attempt to refresh the access token with rotation
   Future<String?> refreshAccessToken() async {
+    // If a refresh is already in progress, wait for it
     if (_refreshInProgress) {
       return _refreshCompleter?.future;
     }
 
     _refreshInProgress = true;
     _refreshCompleter = Completer<String?>();
+    _refreshAttempts = 0;
 
     try {
-      final refreshToken = await getRefreshToken();
+      String? refreshToken = await getRefreshToken();
+      
       if (refreshToken == null || refreshToken.isEmpty) {
-        await clearSession();
-        onSessionExpired?.call();
+        print('❌ No refresh token available');
         _refreshCompleter!.complete(null);
         return null;
       }
 
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh');
-      final response = await _client.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': refreshToken}),
-      );
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-        // Try to parse using AuthData.fromJson which handles multiple formats
+      while (_refreshAttempts < _maxRefreshAttempts) {
+        _refreshAttempts++;
+        print('🔄 Refresh attempt $_refreshAttempts/$_maxRefreshAttempts');
+        
         try {
-          final authData = AuthData.fromJson(jsonResponse);
-          if (authData.token != null && authData.token!.isNotEmpty) {
-            await saveToken(authData.token!);
-            if (authData.refreshToken != null) {
-              await saveRefreshToken(authData.refreshToken!);
+          final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh');
+          final response = await _client.post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': refreshToken}),
+          );
+
+          print('📡 Refresh response status: ${response.statusCode}');
+
+          if (response.statusCode == 200) {
+            final result = await _handleRefreshResponse(response);
+            if (result != null) {
+              _refreshCompleter!.complete(result);
+              return result;
             }
-            if (authData.expiresAt != null) {
-              await saveTokenExpiry(authData.expiresAt!);
+          } 
+          else if (response.statusCode == 401) {
+            // Refresh token itself is expired or invalid
+            print('⚠️ Refresh token is invalid/expired, attempting to get new one...');
+            
+            // Try to get a new refresh token using the old one if server supports rotation
+            final refreshResult = await _attemptRefreshTokenRotation();
+            if (refreshResult != null) {
+              _refreshCompleter!.complete(refreshResult);
+              return refreshResult;
             }
-            _refreshCompleter!.complete(authData.token);
-            return authData.token;
+            
+            // If rotation fails, we need to log out
+            print('❌ Refresh token rotation failed');
+            await _handleRefreshFailure();
+            return null;
+          }
+          else if (response.statusCode >= 500) {
+            // Server error, wait and retry
+            print('⚠️ Server error, waiting before retry...');
+            await Future.delayed(Duration(seconds: _refreshAttempts * 2));
+            continue;
+          }
+          else {
+            // Other errors
+            print('❌ Refresh failed with status: ${response.statusCode}');
+            await _handleRefreshFailure();
+            return null;
           }
         } catch (e) {
-          // Fallback to original parsing if AuthData.fromJson fails
-          final data = jsonResponse['data'] as Map<String, dynamic>?;
-          if (data != null) {
-            final newToken = data['accessToken'] as String?;
-            final newRefreshToken = data['refreshToken'] as String?;
-            final newExpiresAt = data['accessTokenExpiresAt'] as String?;
-
-            if (newToken != null && newToken.isNotEmpty) {
-              await saveToken(newToken);
-              if (newRefreshToken != null) {
-                await saveRefreshToken(newRefreshToken);
-              }
-              if (newExpiresAt != null) {
-                await saveTokenExpiry(newExpiresAt);
-              }
-              _refreshCompleter!.complete(newToken);
-              return newToken;
-            }
+          print('⚠️ Refresh attempt $_refreshAttempts failed: $e');
+          if (_refreshAttempts < _maxRefreshAttempts) {
+            await Future.delayed(Duration(seconds: _refreshAttempts));
+            continue;
           }
+          await _handleRefreshFailure();
+          return null;
         }
       }
 
-      // If we reach here, the refresh failed
-      await clearSession();
-      onSessionExpired?.call();
-      _refreshCompleter!.complete(null);
+      // All attempts exhausted
+      await _handleRefreshFailure();
       return null;
+      
     } catch (e) {
-      await clearSession();
-      onSessionExpired?.call();
-      _refreshCompleter!.complete(null);
+      print('❌ Refresh token error: $e');
+      await _handleRefreshFailure();
       return null;
     } finally {
       _refreshInProgress = false;
+      _refreshAttempts = 0;
       _refreshCompleter = null;
+    }
+  }
+
+  /// Handle the refresh response and extract tokens
+  Future<String?> _handleRefreshResponse(http.Response response) async {
+    try {
+      final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+      
+      // Try multiple response formats
+      String? newToken;
+      String? newRefreshToken;
+      String? newExpiresAt;
+
+      // Format 1: Direct response with token
+      if (jsonResponse.containsKey('token')) {
+        newToken = jsonResponse['token'] as String?;
+        newRefreshToken = jsonResponse['refreshToken'] as String?;
+        newExpiresAt = jsonResponse['expiresAt'] as String?;
+      }
+      // Format 2: Response with data wrapper
+      else if (jsonResponse.containsKey('data')) {
+        final data = jsonResponse['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          newToken = data['accessToken'] as String? ?? data['token'] as String?;
+          newRefreshToken = data['refreshToken'] as String?;
+          newExpiresAt = data['accessTokenExpiresAt'] as String? ?? data['expiresAt'] as String?;
+        }
+      }
+      // Format 3: Try AuthData.fromJson
+      else {
+        try {
+          final authData = AuthData.fromJson(jsonResponse);
+          newToken = authData.token;
+          newRefreshToken = authData.refreshToken;
+          newExpiresAt = authData.expiresAt;
+        } catch (e) {
+          print('⚠️ AuthData.fromJson parsing failed: $e');
+        }
+      }
+
+      if (newToken != null && newToken.isNotEmpty) {
+        // Save the new tokens
+        await saveToken(newToken);
+        if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+          await saveRefreshToken(newRefreshToken);
+        }
+        if (newExpiresAt != null && newExpiresAt.isNotEmpty) {
+          await saveTokenExpiry(newExpiresAt);
+        }
+        
+        print('✅ Token refreshed successfully');
+        return newToken;
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ Error parsing refresh response: $e');
+      return null;
+    }
+  }
+
+  /// Attempt to rotate the refresh token using a special endpoint
+  Future<String?> _attemptRefreshTokenRotation() async {
+    try {
+      // If your API supports refresh token rotation, call a specific endpoint
+      // This is optional - only use if your backend supports it
+      
+      // Option 1: Try to refresh using the old refresh token with rotation
+      final oldRefreshToken = await getRefreshToken();
+      if (oldRefreshToken == null) return null;
+      
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/rotate-refresh');
+      final response = await _client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': oldRefreshToken}),
+      );
+      
+      if (response.statusCode == 200) {
+        return await _handleRefreshResponse(response);
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ Refresh token rotation error: $e');
+      return null;
+    }
+  }
+
+  /// Handle refresh failure - only log out if absolutely necessary
+  Future<void> _handleRefreshFailure() async {
+    // Only clear session and logout if refresh token is permanently invalid
+    // This should only happen if the user manually logs out or the refresh token is revoked
+    
+    // Check if we have a valid refresh token before clearing
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      // No refresh token means we can't recover
+      await clearSession();
+      if (onSessionExpired != null) {
+        // Use Future.microtask instead of WidgetsBinding
+        Future.microtask(() {
+          onSessionExpired!();
+        });
+      }
+      return;
+    }
+    
+    // Try one more time with a different approach
+    try {
+      // Wait a bit and retry
+      await Future.delayed(const Duration(seconds: 2));
+      final result = await refreshAccessToken();
+      if (result != null) {
+        print('✅ Recovery successful after delay');
+        return;
+      }
+    } catch (e) {
+      print('❌ Recovery attempt failed: $e');
+    }
+    
+    // If all recovery attempts fail, clear session
+    await clearSession();
+    if (onSessionExpired != null) {
+      // Use Future.microtask instead of WidgetsBinding
+      Future.microtask(() {
+        onSessionExpired!();
+      });
     }
   }
 
@@ -266,8 +421,13 @@ class BaseApiService {
   }) async {
     final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
 
+    // Ensure valid token before making request
     if (requireAuth) {
-      await _ensureValidToken();
+      final isValid = await _ensureValidToken();
+      if (!isValid) {
+        // If we can't get a valid token, continue anyway - the server will handle it
+        print('⚠️ Could not ensure valid token, proceeding anyway');
+      }
     }
 
     final token = await getToken();
@@ -317,10 +477,14 @@ class BaseApiService {
       return ApiResponse.error(e.toString());
     }
 
+    // Handle 401 with retry
     if (response.statusCode == 401 && requireAuth) {
+      print('⚠️ Received 401, attempting token refresh...');
+      
       final newToken = await refreshAccessToken();
 
-      if (newToken != null) {
+      if (newToken != null && newToken.isNotEmpty) {
+        // Retry the original request with new token
         headers['Authorization'] = 'Bearer $newToken';
         try {
           switch (method) {
@@ -352,11 +516,15 @@ class BaseApiService {
               );
               break;
           }
+          print('✅ Retry successful with new token');
+          return _handleResponse(response);
         } catch (e) {
           return ApiResponse.error(e.toString());
         }
       } else {
-        return ApiResponse.error('Session expired. Please login again.');
+        // Only return session expired if refresh token is truly invalid
+        // Don't logout immediately - let the request fail gracefully
+        return ApiResponse.error('Unable to refresh token. Please try again.');
       }
     }
 
@@ -365,8 +533,6 @@ class BaseApiService {
 
   // ==================== LOW-LEVEL AUTHENTICATED HTTP ====================
 
-  /// Sends an authenticated HTTP request with automatic 401 token refresh.
-  /// Returns the raw [http.Response] so callers can handle parsing themselves.
   Future<http.Response> sendAuthenticatedRequest({
     required String method,
     required String endpoint,
@@ -375,7 +541,11 @@ class BaseApiService {
   }) async {
     final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
 
-    await _ensureValidToken();
+    // Ensure valid token before making request
+    final isValid = await _ensureValidToken();
+    if (!isValid) {
+      print('⚠️ Could not ensure valid token, continuing anyway');
+    }
 
     final token = await getToken();
     var currentHeaders = <String, String>{
@@ -389,11 +559,18 @@ class BaseApiService {
 
     var response = await _sendHttpRequest(method, url, currentHeaders, body);
 
+    // If 401, try to refresh and retry once
     if (response.statusCode == 401) {
+      print('⚠️ Received 401 in sendAuthenticatedRequest, refreshing...');
+      
       final newToken = await refreshAccessToken();
-      if (newToken != null) {
+      if (newToken != null && newToken.isNotEmpty) {
         currentHeaders['Authorization'] = 'Bearer $newToken';
         response = await _sendHttpRequest(method, url, currentHeaders, body);
+        print('✅ Retry successful in sendAuthenticatedRequest');
+      } else {
+        // Don't throw exception - let the caller handle the 401
+        print('⚠️ Unable to refresh token in sendAuthenticatedRequest');
       }
     }
 

@@ -248,36 +248,9 @@ class _ContinueLearningState extends State<ContinueLearning> {
     String instructorId = course['instructorId'] ?? '';
     String instructorAvatar = course['instructorAvatar'] ?? '';
 
-    if (course['course'] != null && course['course'] is Map<String, dynamic>) {
-      final courseData = course['course'] as Map<String, dynamic>;
-
-      if (courseData['instructor'] != null) {
-        if (courseData['instructor'] is Map<String, dynamic>) {
-          final inst = courseData['instructor'] as Map<String, dynamic>;
-          final firstName = inst['firstName'] ?? '';
-          final lastName = inst['lastName'] ?? '';
-          if (firstName.isNotEmpty || lastName.isNotEmpty) {
-            instructorName = '$firstName $lastName'.trim();
-          } else if (inst['name'] != null) {
-            instructorName = inst['name'] as String;
-          }
-          instructorId = inst['id'] ?? instructorId;
-          instructorAvatar =
-              inst['photo'] ?? inst['avatar'] ?? instructorAvatar;
-        } else if (courseData['instructor'] is String) {
-          instructorName = courseData['instructor'] as String;
-        }
-      }
-
-      if (courseData['title'] != null && processed['title'] == null) {
-        processed['title'] = courseData['title'];
-      }
-      if (courseData['thumbnail'] != null && processed['thumbnail'] == null) {
-        processed['thumbnail'] = courseData['thumbnail'];
-      }
-    }
-
-    if (course['instructor'] != null &&
+    if (course['instructor'] != null && course['instructor'] is String) {
+      instructorName = course['instructor'] as String;
+    } else if (course['instructor'] != null &&
         course['instructor'] is Map<String, dynamic>) {
       final inst = course['instructor'] as Map<String, dynamic>;
       final firstName = inst['firstName'] ?? '';
