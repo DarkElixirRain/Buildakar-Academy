@@ -9,6 +9,7 @@ import '../../models/course_model.dart';
 import '../../widgets/explore/course_card.dart';
 import '../../widgets/course/course_reviews.dart';
 import '../../widgets/common/error_state.dart';
+import '../../routes/app_routes.dart';
 
 class InstructorProfileScreen extends StatefulWidget {
   final String instructorId;
@@ -680,14 +681,11 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen>
                   backgroundColor: Colors.orange,
                 ),
               );
-              // Uncomment the line below when the course detail screen is implemented
-              /*
               Navigator.pushNamed(
                 context,
                 AppRoutes.course,
                 arguments: {AppRoutes.argCourseId: courseId},
               );
-              */
             }
           },
         );

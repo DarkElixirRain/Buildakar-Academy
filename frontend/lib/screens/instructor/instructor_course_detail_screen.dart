@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
+import '../../providers/instructor_course_provider.dart';
 import '../../services/api_service.dart';
 import 'course_edit_screen.dart';
 import '../../core/widgets/app_card.dart';
@@ -37,6 +39,7 @@ class _InstructorCourseDetailScreenState
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ApiService _apiService = ApiService();
+  late final InstructorCourseProvider _courseProvider;
   bool _isLoading = true;
   bool _isSubmitting = false;
   String? _error;
@@ -52,13 +55,13 @@ class _InstructorCourseDetailScreenState
   // Section/Lesson processing state
   bool _isProcessingSection = false;
   bool _isProcessingLesson = false;
-  bool _isUploadingVideo = false;
   String? _processingSectionId;
   String? _processingLessonId;
 
   @override
   void initState() {
     super.initState();
+    _courseProvider = Provider.of<InstructorCourseProvider>(context, listen: false);
     _tabController = TabController(
       length: 5,
       vsync: this,
@@ -1062,28 +1065,11 @@ class _InstructorCourseDetailScreenState
       final video = await picker.pickVideo(source: ImageSource.gallery);
       if (video == null) return;
 
-      setState(() => _isUploadingVideo = true);
-      try {
-        final response = await _apiService.uploadLessonVideo(lesson['id'], File(video.path));
-        if (response.success) {
-          await _loadCourseData();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Video uploaded successfully'), backgroundColor: Colors.green),
-            );
-          }
-        } else {
-          throw Exception(response.error ?? 'Failed to upload video');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isUploadingVideo = false);
-      }
+      final file = File(video.path);
+      final fileSizeMb = file.lengthSync() / (1024 * 1024);
+
+      if (!mounted) return;
+      _showUploadProgressDialog(lesson, file);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1091,6 +1077,93 @@ class _InstructorCourseDetailScreenState
         );
       }
     }
+  }
+
+  void _showUploadProgressDialog(Map<String, dynamic> lesson, File videoFile) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final progress = _courseProvider.uploadProgress;
+            final phase = _courseProvider.uploadPhase;
+            final isUploading = _courseProvider.isUploading;
+
+            return AlertDialog(
+              title: const Text('Upload Video'),
+              content: SizedBox(
+                width: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      phase,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: phase == 'Complete!'
+                            ? Colors.green
+                            : phase == 'Failed'
+                                ? Colors.red
+                                : null,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: phase == 'Complete!'
+                            ? 1.0
+                            : phase == 'Failed'
+                                ? 0.0
+                                : progress,
+                        minHeight: 8,
+                        backgroundColor: Colors.grey[300],
+                        valueColor: AlwaysStoppedAnimation(
+                          phase == 'Complete!'
+                              ? Colors.green
+                              : phase == 'Failed'
+                                  ? Colors.red
+                                  : Colors.blue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      phase == 'Complete!'
+                          ? 'Video uploaded successfully'
+                          : phase == 'Failed'
+                              ? 'Upload failed. Please try again.'
+                              : '${(progress * 100).toStringAsFixed(0)}% — ${fileSizeMb.toStringAsFixed(1)} MB',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                if (!isUploading)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      if (phase == 'Complete!') {
+                        _loadCourseData();
+                      }
+                    },
+                    child: Text(phase == 'Failed' ? 'Dismiss' : 'Done'),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    _courseProvider.uploadLessonVideo(lesson['id'], videoFile).then((success) {
+      if (success && mounted) {
+        _loadCourseData();
+      }
+    });
   }
 
   Future<void> _deleteVideoConfirm(Map<String, dynamic> lesson) async {

@@ -7,6 +7,7 @@ import { prisma } from '../lib/prisma';
 import { hashPassword } from '../utils/password.utils';
 import { hashCode } from '../utils/hash';
 import { generateVerificationCode } from '../utils/generateVerificationCode';
+import { AppError } from '../utils/AppError';
 
 export class AuthController {
   async register(req: Request, res: Response, next: NextFunction) {
@@ -47,7 +48,7 @@ export class AuthController {
 
       const result = await authService.login(validatedData);
       if (!result.user.isVerified) {
-  throw new Error('Please verify your email before logging in.');
+  throw new AppError('Please verify your email before logging in.', 403);
 }
 
       const isProduction = process.env.NODE_ENV === 'production';
