@@ -160,7 +160,6 @@ export class EnrollmentService {
             price: true,
             originalPrice: true,
             rating: true,
-            // Assuming relation to Category and Instructor exist
             category: { select: { name: true } },
             instructor: { select: { id: true, firstName: true, lastName: true, photo: true } },
           },
@@ -201,15 +200,13 @@ export class EnrollmentService {
         ? lastWatched.lesson
         : (firstLessonByCourse.get(enrollment.courseId) ?? null);
 
-      // Flatten course data for frontend compatibility
       const course = enrollment.course;
-      const instructor = course.instructor;
+      const instructor = course?.instructor;
       const instructorName = instructor
         ? `${instructor.firstName ?? ''} ${instructor.lastName ?? ''}`.trim() ||
           'Unknown Instructor'
         : 'Unknown Instructor';
 
-      // Compute remainingTime string for frontend
       const progressNum = enrollment.progress ?? 0;
       const isCompletedBool = enrollment.isCompleted ?? false;
       let remainingTime = '';
@@ -222,32 +219,31 @@ export class EnrollmentService {
       }
 
       return {
-        id: enrollment.id, // enrollment ID
-        courseId: course.id,
-        title: course.title,
-        description: course.description ?? '',
-        thumbnail: course.thumbnail ?? '',
-        instructor: instructorName, // string for frontend's instructor field
+        id: enrollment.id,
+        courseId: course?.id ?? '',
+        title: course?.title ?? 'Untitled Course',
+        description: course?.description ?? '',
+        thumbnail: course?.thumbnail ?? '',
+        instructor: instructorName,
         instructorId: instructor?.id ?? '',
         instructorAvatar: instructor?.photo ?? '',
         progress: progressNum,
         isCompleted: isCompletedBool,
-        level: course.level ?? 'Beginner',
-        category: course.category?.name ?? 'General',
-        price: course.price ?? 0,
-        originalPrice: course.originalPrice ?? 0,
-        rating: course.rating ?? 0,
-        reviewsCount: 0, // placeholder; could fetch from review aggregate if needed
-        studentsCount: 0, // placeholder; could fetch from course.stats if needed
-        language: 'English', // default; adjust if you have language field
+        level: course?.level ?? 'BEGINNER',
+        category: course?.category?.name ?? 'General',
+        price: course?.price ?? 0,
+        originalPrice: course?.originalPrice ?? 0,
+        rating: course?.rating ?? 0,
+        reviewsCount: 0,
+        studentsCount: 0,
+        language: 'English',
         lastAccessedAt: enrollment.updatedAt,
         remainingTime,
-        sections: [], // placeholder; not needed for continue learning widget
-        learningObjectives: [], // placeholder
-        requirements: [], // placeholder
-        studyMaterials: [], // placeholder
-        whatYouWillLearn: [], // placeholder
-        // resumeLesson can be kept for internal use if needed
+        sections: [],
+        learningObjectives: [],
+        requirements: [],
+        studyMaterials: [],
+        whatYouWillLearn: [],
         resumeLesson,
       };
     });
