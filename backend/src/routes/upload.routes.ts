@@ -32,6 +32,9 @@ router.post('/thumbnail', upload.single('image'), async (req, res, next) => {
           resource_type: 'image',
           overwrite: true,
           timeout: 120000,
+          transformation: [
+            { width: 800, height: 450, crop: 'fill', quality: 'auto', fetch_format: 'auto' },
+          ],
         },
         (error, result) => {
           if (error) return reject(error);
@@ -41,14 +44,24 @@ router.post('/thumbnail', upload.single('image'), async (req, res, next) => {
       streamifier.createReadStream(req.file!.buffer).pipe(uploadStream);
     });
 
+    // Also generate responsive URLs
+    const baseUrl = result.secure_url.replace(/\/v\d+\//, '/v$&');
+
+    const publicId = result.public_id;
+
     res.status(200).json({
       success: true,
       message: 'Thumbnail uploaded successfully',
       data: {
-        url: result.secure_url,
-        publicId: result.public_id,
+        url: cloudinary.url(publicId, { width: 400, height: 225, crop: 'fill', quality: 'auto', fetch_format: 'auto', secure: true }),
+        publicId,
         width: result.width,
         height: result.height,
+        responsive: {
+          small: cloudinary.url(publicId, { width: 400, height: 225, crop: 'fill', quality: 'auto', fetch_format: 'auto', secure: true }),
+          medium: cloudinary.url(publicId, { width: 800, height: 450, crop: 'fill', quality: 'auto', fetch_format: 'auto', secure: true }),
+          large: cloudinary.url(publicId, { width: 1200, height: 675, crop: 'fill', quality: 'auto', fetch_format: 'auto', secure: true }),
+        },
       },
     });
   } catch (error) {

@@ -79,16 +79,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting — global (lenient)
+app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: 'Too many requests, please try again later.' },
-});
-
-app.use(limiter);
+  message: { success: false, message: 'Too many requests, please try again later.' },
+}));
 
 // CORS configuration - ACCEPT ANY ORIGIN (development)
 app.use(cors({
@@ -258,6 +256,8 @@ app.use((req: Request, res: Response) => {
     message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
 });
+
+
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
