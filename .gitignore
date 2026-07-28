@@ -1,3 +1,5 @@
 keys/
 .opencode/
 stitch_elite_ux_design_suite/
+frontend/lib/theme/stitch_colors.dart
+frontend/lib/theme/stitch_theme.dart
