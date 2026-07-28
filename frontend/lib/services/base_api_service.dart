@@ -130,8 +130,8 @@ class BaseApiService {
   }
 
   // ----- token refresh (internal, no 401 loop) -----
-  bool _refreshInProgress = false;
-  Completer<String?>? _refreshCompleter;
+  static bool _refreshInProgress = false;
+  static Completer<String?>? _refreshCompleter;
 
   /// Attempt to refresh the access token by calling POST /auth/refresh
   /// with the stored refresh token.  Uses a lock so only one refresh
