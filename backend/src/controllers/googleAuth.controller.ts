@@ -24,10 +24,12 @@ export class GoogleAuthController {
       }
 
       // Store refresh token in HttpOnly cookie
+      const isProduction = process.env.NODE_ENV === 'production';
+
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         expires: result.refreshTokenExpiresAt,
       });
 

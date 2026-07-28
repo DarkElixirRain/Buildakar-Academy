@@ -50,10 +50,12 @@ export class AuthController {
   throw new Error('Please verify your email before logging in.');
 }
 
+      const isProduction = process.env.NODE_ENV === 'production';
+
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         expires: result.refreshTokenExpiresAt,
       });
 
@@ -86,10 +88,12 @@ export class AuthController {
 
       const result = await authService.refresh(refreshToken);
 
+      const isProduction = process.env.NODE_ENV === 'production';
+
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         expires: result.refreshTokenExpiresAt,
       });
 
@@ -116,10 +120,12 @@ export class AuthController {
         await authService.logout(refreshToken);
       }
 
+      const isProduction = process.env.NODE_ENV === 'production';
+
       res.clearCookie('refreshToken', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
       });
 
       res.status(200).json({

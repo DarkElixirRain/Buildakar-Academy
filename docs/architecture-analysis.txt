@@ -1,0 +1,666 @@
+================================================================================
+  BUILDACAD BACKEND — ARCHITECTURE ANALYSIS
+  Generated: 2026-07-27
+================================================================================
+
+TABLE OF CONTENTS
+───────────────────────────────────────────────────────────────────────────────
+  1. SYSTEM DIAGRAM
+  2. HIGH-LEVEL ARCHITECTURE
+  3. CORE COMPONENTS & RESPONSIBILITIES
+  4. DATA LAYER
+  5. EXTERNAL DEPENDENCIES & INTEGRATIONS
+  6. COMMUNICATION PATTERNS
+  7. CROSS-CUTTING CONCERNS
+  8. SCALABILITY & RELIABILITY
+  9. DESIGN TRADE-OFFS
+  10. SUMMARY
+
+
+================================================================================
+1. SYSTEM DIAGRAM
+================================================================================
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                          CLIENT LAYER                                  │
+  │                      Frontend SPA (separate)                           │
+  └──────────────────────────┬──────────────────────────────────────────────┘
+                             │  HTTPS / REST
+                             ▼
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                   API LAYER — Express.js (single process)              │
+  │                                                                         │
+  │  ┌─────────────────┐   ┌──────────────────┐   ┌────────────────────┐   │
+  │  │ Global Middleware│──▶│   Route Matching │──▶│  Middleware Chain   │   │
+  │  │ nonce→compression│   │ /api/auth        │   │                    │   │
+  │  │ →helmet→rate-    │   │ /api/courses     │   │  Validation (Zod)  │   │
+  │  │ limit→CORS→cookie│   │ /api/admin       │   │  Auth (JWT)        │   │
+  │  │ →json→logging    │   │ /api/payments    │   │  Role (RBAC)       │   │
+  │  └─────────────────┘   │ ...               │   │  Ownership         │   │
+  │                         └──────────────────┘   └────────┬───────────┘   │
+  │                                                          │              │
+  │                                                          ▼              │
+  │                                                 ┌──────────────────┐   │
+  │                                                 │   Controllers    │   │
+  │                                                 │  (parse + format)│   │
+  │                                                 └────────┬─────────┘   │
+  │                                                          │              │
+  │                                                          ▼              │
+  │                                                 ┌──────────────────┐   │
+  │                                                 │    Services      │   │
+  │                                                 │(business logic)  │   │
+  │                                                 └───┬────┬────┬────┘   │
+  └─────────────────────────────────────────────────────┼────┼────┼────────┘
+                                                        │    │    │
+             ┌──────────────────────────────┐            │    │    │
+             │         DATA LAYER           │            │    │    │
+             │                              │◀───────────┘    │    │
+             │   ┌────────────────────┐     │                │    │
+             │   │   Prisma ORM       │     │◀───────────────┘    │
+             │   └────────┬───────────┘     │                     │
+             │            │                 │                     │
+             │            ▼                 │                     │
+             │   ┌────────────────────┐     │                     │
+             │   │ PostgreSQL (Neon)  │     │                     │
+             │   └────────────────────┘     │                     │
+             │                              │                     │
+             │   ┌────────────────────┐     │                     │
+             │   │ Cloudinary         │◀──────────────────────────┘
+             │   │ (video/images)     │     │
+             │   └────────────────────┘     │
+             └──────────────────────────────┘
+                                                       
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │                    EXTERNAL INTEGRATIONS                                │
+  │                                                                         │
+  │   Resend (Email) ─── Email Service                                      │
+  │   Firebase Cloud Messaging ─── Notification Service                     │
+  │   Google OAuth ─── Google Auth Service                                  │
+  │   eSewa ─── Payment Service                                             │
+  │   Jitsi / 8x8 ─── Live Class Service                                   │
+  └─────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+2. HIGH-LEVEL ARCHITECTURE
+================================================================================
+
+  Pattern: Layered Monolith with Singleton Services
+
+  This is a classic 3-layer architecture (Routes → Controllers → Services) built
+  as a single Express.js process. There is no NestJS dependency injection, no
+  microservices, no message queues, and no event bus. Everything runs in one
+  Node.js process.
+
+  Framework: Express.js (plain, NOT NestJS or Fastify)
+  Language: TypeScript (compiled via tsc to dist/)
+  ORM: Prisma 5.x
+  Database: PostgreSQL (hosted on Neon.tech — serverless)
+
+  Request flow:
+    HTTP Request
+      → Global middleware (security, rate limiting, CORS, body parsing)
+      → Route matching
+        → Validation middleware (Zod schema parse — body/params/query)
+        → Auth middleware (JWT Bearer token verify + req.user)
+        → Role middleware (RBAC — STUDENT/INSTRUCTOR/ADMIN)
+        → Ownership middleware (course/section/lesson-level)
+      → Controller (extract data, call service, format response)
+      → Service (all business logic, Prisma queries, external API calls)
+        → Prisma ORM → PostgreSQL
+        → Cloudinary (video upload)
+        → Firebase (push notifications, fire-and-forget)
+        → Resend (email, fire-and-forget)
+        → eSewa (payment callback)
+      → Controller formats JSON response
+      → Global error handler (on failure)
+        404 handler (on unmatched route)
+
+  Singleton pattern:
+    - Controllers: export default new XController()
+    - Services: export default new XService() or exported functions
+    - No DI container, no IoC — hard-coded import dependencies
+
+  No repository/DAO layer — services call prisma.<model>.findMany/create/update
+  directly.
+
+
+================================================================================
+3. CORE COMPONENTS & RESPONSIBILITIES
+================================================================================
+
+  3.1 LAYER MAP
+
+  ┌──────────────┬────────────────────┬──────────────────────────────────────────┐
+  │ Layer        │ Directory          │ Responsibility                           │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Routes       │ src/routes/        │ Endpoint definitions; compose middleware │
+  │              │                    │ pipeline; delegate to controllers        │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Controllers  │ src/controllers/   │ Extract request data; call services;     │
+  │              │                    │ shape HTTP responses (status + JSON)     │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Services     │ src/services/      │ ALL business logic, Prisma queries,      │
+  │              │                    │ external API orchestration               │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Middleware   │ src/middleware/     │ JWT auth, RBAC, ownership, Zod          │
+  │              │                    │ validation, error handling, 404          │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Utils        │ src/utils/         │ Zod schemas, JWT helpers, bcrypt,        │
+  │              │                    │ AppError class, eSewa HMAC               │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Lib          │ src/lib/           │ Singleton clients: Prisma, Firebase,     │
+  │              │                    │ Resend                                   │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Config       │ src/config/        │ Zod-validated env config, typed export   │
+  ├──────────────┼────────────────────┼──────────────────────────────────────────┤
+  │ Types        │ src/types/         │ Shared TS types (ApiResponse,            │
+  │              │                    │ PaginationQuery, Express augmentation)   │
+  └──────────────┴────────────────────┴──────────────────────────────────────────┘
+
+  3.2 WHAT EACH MODULE HANDLES
+
+  Module              Key Responsibilities
+  ─────────────────── ─────────────────────────────────────────────────────
+  Auth                Register (2-step email verification), login (email/
+                      password + Google OAuth), JWT pair issuance, refresh
+                      token rotation, logout, getMe, role update
+
+  Categories          CRUD for categories, stats per category, slug-based
+                      lookups, soft delete
+
+  Courses              Full lifecycle: create, read, update, delete,
+                      duplicate (with sections/lessons), status workflow
+                      (DRAFT→PENDING_APPROVAL→UNDER_REVIEW→PUBLISHED),
+                      instructor stats
+
+  Sections            CRUD, reorder, move (position changes) within a
+                      course; cascading delete with lessons
+
+  Lessons             CRUD, reorder, video upload (→Cloudinary), video
+                      deletion, stream URL generation; scoped to
+                      section/course with ownership checks
+
+  Enrollment          Enroll, unenroll, check status, list my enrollments,
+                      continue-learning (in-progress), lesson progress
+                      tracking, course progress calculation
+
+  Payments            Initiate payment (eSewa form), verify callback,
+                      handle failure, student payment history, single
+                      payment detail
+
+  Reviews             Create (enrolled users only), update own, delete,
+                      get course reviews, get my review for course
+
+  Instructors         Public listing, search, top instructors, profile
+                      management, follows, analytics (earnings, students,
+                      course stats)
+
+  Notifications       In-app notification CRUD, push via FCM (fire-and-
+                      forget), push token management, bulk/broadcast
+                      (admin), unread count
+
+  Live Classes        CRUD, lifecycle (schedule→start→end→cancel),
+                      Jitsi room creation + JWT, participant tracking,
+                      student views (upcoming/current/past)
+
+  Admin               Dashboard stats, chart data (7d/30d/90d), user
+                      management, course status moderation, instructor
+                      verification, payout management, broadcast
+                      notifications, activity log, notification cleanup
+
+  Search              Unified search (courses + instructors + categories),
+                      trending, autocomplete suggestions, recent searches
+                      per user
+
+  Upload              Course thumbnail upload (multer → Cloudinary)
+
+  Storage             Video storage abstraction — upload, delete, signed
+                      URLs; supports Cloudinary + Google Drive backends
+
+  3.3 BUSINESS LOGIC vs INFRASTRUCTURE
+
+  Separation is INCOMPLETE:
+    - Services contain BOTH business logic AND direct Prisma query calls
+    - No repository/DAO layer — violates SRP
+    - Only external integration with an interface: StorageService
+      (CloudinaryStorageService and GoogleDriveStorage both implement it)
+    - Every other external service (Resend, Firebase, eSewa) is called
+      directly from services with no abstraction
+
+  3.4 VALIDATION, AUTHENTICATION, AUTHORIZATION
+
+  Validation:
+    - Zod schemas in src/utils/validation.ts (~20 schemas)
+    - Applied via validate() middleware in routes (body/params/query)
+    - Also used for env config validation at startup (fail-fast)
+    - Password policy: ≥8 chars, uppercase + lowercase + digit + special
+
+  Authentication:
+    - JWT Bearer token (Authorization header)
+    - verifyAccessToken() in utils/jwt.utils.ts — 15-min expiry
+    - authenticate middleware — sets req.user { id, email, role, ... }
+    - optionalAuthenticate middleware — same but silent on missing token
+    - Refresh tokens: 64-byte random, SHA-256 hashed in DB, rotated,
+      HttpOnly cookie
+
+  Authorization:
+    - roleMiddleware(allowedRoles) — role-based access
+    - Pre-built: isAdmin, isInstructor, isInstructorOrAdmin, isStudent,
+      isAuthenticatedUser
+    - Ownership middleware: checkCourseOwnership, checkSectionOwnership,
+      checkLessonOwnership (all with admin bypass)
+    - isOwnerOrAdmin() factory for generic ownership checks
+
+
+================================================================================
+4. DATA LAYER
+================================================================================
+
+  4.1 DATABASE
+
+  PostgreSQL via Neon (serverless). Chosen for:
+    - Relational data model (courses → sections → lessons)
+    - ACID transactions (enrollment + payments)
+    - Rich querying for search and analytics
+    - Two connection URLs: DATABASE_URL (pooled via PgBouncer) and
+      DIRECT_URL (for migrations and interactive transactions)
+
+  4.2 SCHEMA OVERVIEW (18 models)
+
+  User (1) ────< Enrollment >──── Course (1)
+    │               │                  │
+    │               └─< LessonProgress  ├──< Section (1)──< Lesson
+    │                                  │
+    ├──< Review                         ├──< LiveClass
+    ├──< InstructorFollow               │
+    ├──< RefreshToken                   └──< Category
+    ├──< EmailVerification
+    ├──< PendingRegistration
+    ├──< Notification
+    └──< RecentSearch
+
+  Payment ────> Enrollment
+  PayoutAccount ────> User (Instructor)
+  Payout ────> PayoutAccount
+  InstructorAnalytics ────> User (Instructor)
+  LiveClassParticipant ────> LiveClass
+
+  Key enums: Role (STUDENT/INSTRUCTOR/ADMIN), AuthProvider (EMAIL/GOOGLE),
+  Level (BEGINNER/INTERMEDIATE/ADVANCED), CourseStatus (DRAFT/PENDING_
+  APPROVAL/UNDER_REVIEW/PUBLISHED), PaymentProvider (RAZORPAY/PAYPAL/ESEWA),
+  LiveClassStatus (SCHEDULED/LIVE/ENDED/CANCELLED),
+  NotificationType (ENROLLMENT/PAYMENT_SUCCESS/PAYMENT_FAILED/NEW_REVIEW/
+  COURSE_PUBLISHED/COURSE_APPROVED/SYSTEM)
+
+  4.3 NOTABLE SCHEMA CHOICES
+
+  - Composite unique constraints: Enrollment(userId, courseId),
+    Review(userId, courseId), LessonProgress(enrollmentId, lessonId),
+    InstructorFollow(followerId, instructorId), RecentSearch(userId, query)
+  - JSON fields for flexibility: Payment.metadata, PayoutAccount.details,
+    Notification.data
+  - InstructorAnalytics uses pre-aggregated period-based rows (DAY/WEEK/
+    MONTH/YEAR) rather than raw queries
+  - PendingRegistration holds pre-verification data with hashed code
+  - Cascade delete on Section (deletes lessons when section is deleted)
+  - PaymentProvider enum lists 3 providers but only ESEWA is implemented
+    in code
+
+  4.4 MIGRATIONS
+
+  21 sequential Prisma migrations (prisma/migrations/):
+    - Well-named by date and purpose (e.g., 20260624154151_init,
+      20260709090503_add_refresh_tokens)
+    - Uses both DATABASE_URL (pooled) and DIRECT_URL (migrations)
+    - Commands: prisma migrate dev (dev), prisma migrate deploy (prod)
+
+  4.5 CACHING
+
+  NONE. No Redis, no in-memory cache, no query result caching.
+  Every request hits the database directly.
+
+  4.6 DATA CONSISTENCY
+
+  Prisma $transaction used for:
+    - Enrollment + student count increment + instructor totalStudents
+    - Payment verification + enrollment upsert + revenue update
+    - Course duplication (course + sections + lessons)
+    - Section reordering
+    - Email verification + user creation
+
+  No distributed transactions needed (single monolith, single DB).
+
+
+================================================================================
+5. EXTERNAL DEPENDENCIES & INTEGRATIONS
+================================================================================
+
+  5.1 SERVICE MAP
+
+  Service           Library              Purpose              Abstraction?
+  ───────────────── ──────────────────── ──────────────────── ────────────
+  Cloudinary        cloudinary npm pkg    Video/image hosting  YES (interface)
+  Resend            resend npm pkg        Transactional email  NO
+  Firebase Admin    firebase-admin        Push notifications   NO
+  Google OAuth      google-auth-library   Social login         NO
+  eSewa             Manual HMAC + fetch   Payment processing   NO
+  Jitsi / 8x8       jsonwebtoken          Live video classes   NO
+  PostgreSQL        @prisma/client        Primary database     N/A (ORM)
+  bcryptjs          bcryptjs              Password hashing     N/A
+
+  5.2 ABSTRACTION QUALITY
+
+  Only StorageService has a proper interface:
+    storageService.ts defines StorageService interface with uploadVideo,
+    deleteFile, getSignedUrl methods. Two implementations exist:
+    CloudinaryStorageService (active) and GoogleDriveStorage (unused).
+
+  Every other integration is tightly coupled — swapping providers requires
+  editing service code directly. The PaymentProvider enum in the schema
+  hints at multi-provider support but the code only implements eSewa.
+
+  5.3 INTEGRATION DETAILS
+
+  eSewa (Nepal payment gateway):
+    - HMAC-SHA256 signature generation for transaction verification
+    - Routes: GET /api/payments/success and /api/payments/failure
+      (callback redirects)
+    - Merchant code + secret key from env
+
+  Google OAuth:
+    - Two flows: Authorization Code + PKCE, and ID Token verification
+    - Verifies tokens via REST calls to Google APIs (self-verified,
+      not using google-auth-library despite it being in package.json)
+    - Creates or links user accounts
+
+  Jitsi / 8x8 JAAS:
+    - Room name generation + JWT token for authenticated joining
+    - Config: JAAS_APP_ID, JAAS_KID, JAAS_PRIVATE_KEY_PATH or
+      JITSI_JWT_SECRET, JITSI_APP_ID, JITSI_DOMAIN (two modes in env)
+
+  Firebase Cloud Messaging:
+    - Single-topic push and multicast (bulk)
+    - Automatic cleanup of expired/invalid tokens on error
+
+
+================================================================================
+6. COMMUNICATION PATTERNS
+================================================================================
+
+  6.1 INTERNAL: SYNCHRONOUS ONLY
+
+  All internal communication is direct function calls:
+    Routes → Controllers → Services → Prisma ORM
+
+  There are zero:
+    - Message queues (RabbitMQ, SQS, BullMQ)
+    - Event emitters (Node EventEmitter, NestJS events)
+    - Pub/sub systems
+    - gRPC calls
+    - Inter-service HTTP calls
+
+  6.2 SIDE EFFECTS: FIRE-AND-FORGET
+
+  Notifications and emails are called WITHOUT await:
+
+    notifyEnrollment(userId, course.title, courseId)
+      .catch(err => console.error('Enrollment notify error:', err));
+
+  Used for:
+    - Payment success/failure notifications
+    - Enrollment confirmations
+    - Course published notifications
+    - Live class lifecycle notifications (scheduled/started/cancelled)
+    - New review notifications
+    - Follow notifications
+
+  This means side effects can silently fail — only logged, no retry.
+
+  6.3 EXTERNAL: REST + HTTP
+
+  - REST calls to Google APIs (OAuth verification, userinfo)
+  - REST calls to eSewa (payment initiation, status)
+  - Resend HTTP API (email sending)
+  - Firebase HTTP API (push notifications)
+  - Cloudinary HTTP upload (video streaming)
+  - Jitsi JWT token generation (no server-side signaling)
+
+
+================================================================================
+7. CROSS-CUTTING CONCERNS
+================================================================================
+
+  7.1 LOGGING
+
+  Custom logger in src/utils/logger.ts:
+    - Levels: debug, info, warn, error
+    - Level filtering (production: info+, development: all)
+    - Sensitive data redaction (password, token, secret, authorization,
+      creditcard, ssn)
+    - Output: console.log/console.warn/console.error
+
+  However, this logger is ONLY used in validation.middleware.ts.
+  Everywhere else uses raw console.log/console.error.
+
+  7.2 ERROR HANDLING
+
+  Centralized global error handler (middleware/error.middleware.ts):
+    - ZodError → 400 with field-level errors
+    - AppError (custom) → status code from error
+    - Prisma.PrismaClientKnownRequestError:
+      - P2002 (unique) → 409
+      - P2003 (foreign key) → 400
+      - P2025 (not found) → 404
+    - Prisma.PrismaClientValidationError → 400
+    - Keyword-based fallback (fragile): err.message.toLowerCase() checked
+      against keywords like "not found", "already exists", "unauthorized"
+    - Default → 500
+
+  Also has a separate errorHandler export in utils/AppError.ts that is NOT
+  used (the middleware version is what app.ts imports).
+
+  7.3 CONFIGURATION
+
+  src/config/index.ts:
+    - Loads .env via dotenv
+    - Validates with Zod schema at startup
+    - Fail-fast: missing critical vars → print errors → process.exit(1)
+    - Validated vars: PORT, NODE_ENV, DATABASE_URL, JWT_SECRET,
+      JWT_EXPIRES_IN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, FRONTEND_URL
+
+  GAP: JWT_ACCESS_SECRET (used by newer JWT system) is NOT in the config
+  schema. It's accessed directly via process.env and could silently be
+  undefined.
+
+  Other unvalidated env vars: RESEND_API_KEY, FIREBASE_PROJECT_ID,
+  FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, CLOUDINARY_*,
+  ESEWA_*, JAAS_* / JITSI_*, PRISMA_LOG_QUERIES
+
+  7.4 SECURITY
+
+  Middleware stack (applied in order):
+    1. Nonce generator (CSP nonce per request)
+    2. compression() (gzip)
+    3. helmet() — CSP, HSTS (1 year), referrer policy, etc.
+    4. Permissions-Policy header (manual)
+    5. express-rate-limit — 100 req/15 min (global)
+    6. cors() — origin: true (wide open, dev mode acknowledged)
+    7. cookie-parser
+    8. express.json (10mb limit)
+    9. express.urlencoded (10mb limit)
+   10. Request logging
+
+  CSP allows: cloudinary.com (images), accounts.google.com,
+  www.googleapis.com, fonts.gstatic.com, meet.jit.si, unsafe-inline styles
+
+  CORS: origin: true, credentials: true — accepts any origin
+
+  Rate limiting: 100 requests per 15 minutes per IP, global
+
+  Cookie security: httpOnly, secure (production only), sameSite: strict
+
+  Password policy: bcryptjs, salt rounds 10, Zod regex enforcement
+
+  Refresh token rotation: old token deleted on each refresh, new one issued
+
+  Potential issues:
+    - JWT_ACCESS_SECRET unvalidated
+    - CORS wide open (no production override mechanism)
+    - Refresh token in response body (partially defeats HttpOnly)
+    - No CSRF tokens (mitigated by SameSite=Strict)
+    - console.time around password comparison (timing info leak)
+
+
+================================================================================
+8. SCALABILITY & RELIABILITY
+================================================================================
+
+  8.1 SCALABILITY MECHANISMS
+
+  - Stateless application (JWT tokens, no server-side sessions)
+  - Can horizontally scale with multiple processes behind load balancer
+  - Prisma connection pooling via Neon/PgBouncer (connection_limit=2/instance)
+  - Cloudinary handles video CDN/storage independently
+  - Pagination on all list endpoints
+
+  8.2 SINGLE POINTS OF FAILURE
+
+  - PostgreSQL: single database, no read replicas
+  - Express: single process (no clustering, no PM2 defined)
+  - No caching: every request hits the DB → first bottleneck under load
+  - No background job queue: side effects are fire-and-forget with no retry
+
+  8.3 RELIABILITY PATTERNS
+
+  Present:
+    - Cloudinary upload retry: 3 attempts, 2s/4s backoff for HTTP 408/429/
+      499/500/502/503/504
+    - Prisma keep-alive: SELECT 1 every 30s (both pooled + direct)
+    - Transaction atomicity: $transaction for multi-table writes
+
+  Missing:
+    - No circuit breakers
+    - No bulkheads
+    - No timeout policies (except Cloudinary 600s upload)
+    - No retry for side effects (notifications, emails)
+    - No dead-letter queue for failed operations
+
+
+================================================================================
+9. DESIGN TRADE-OFFS
+================================================================================
+
+  9.1 STRONG POINTS
+
+  Decision                                Rationale
+  ─────────────────────────────────────── ───────────────────────────────────
+  Prisma ORM                              Type-safe, auto-generated
+                                          migrations, excellent DX
+  Zod for config + request validation     Runtime type safety at boundaries,
+                                          shared schemas
+  Zod-validated config with fail-fast     Prevents silent misconfiguration
+                                          in production
+  Refresh token rotation                  Limits breach window by revoking
+                                          old tokens
+  StorageService interface                Proper DI — the one clean
+                                          abstraction over external provider
+  Composite unique constraints            DB-level business rule enforcement
+  Two-step registration                   Pre-verification prevents phantom
+                                          accounts
+  Pre-aggregated analytics                InstructorAnalytics period rows
+                                          avoid expensive COUNT queries
+
+  9.2 WEAKNESSES & TECHNICAL DEBT
+
+  Issue                                   Impact
+  ─────────────────────────────────────── ───────────────────────────────────
+  No DI container                         Hard-coded imports in singletons;
+                                          unit testing requires monkey-
+                                          patching
+  No repository layer                     Services mix business logic with
+                                          query construction — violates SRP
+  Dual JWT systems                        JWT_SECRET (7d, old) + JWT_ACCESS_
+                                          SECRET (15m, new) both live;
+                                          confusing + potential misconfig
+  Fire-and-forget side effects            Notification/email failures
+                                          silently swallowed — no retry,
+                                          no guarantee
+  No caching layer                        Every request hits DB — categories,
+                                          courses, instructor profiles
+                                          all uncached
+  Incomplete payment abstraction          Enum has RAZORPAY/PAYPAL/ESEWA but
+                                          only eSewa is implemented
+  Refresh token in response body          Sent as both HttpOnly cookie AND
+                                          JSON body — defeats HttpOnly goal
+  CORS wide open in production path       origin: true with no env toggle;
+                                          dev-mode acknowledgment but no
+                                          fix mechanism
+  Inconsistent service patterns           Some are classes, some object
+                                          literals, some exported functions
+  JWT_ACCESS_SECRET unvalidated           Not in Zod config schema —
+                                          missing value = undefined secret
+  Keyword-based error fallback            err.message.includes("not found")
+                                          — fragile, English-dependent
+  No /ready or /live probes               Only basic /health and /db-test;
+                                          not K8s-ready
+  logger.ts barely used                   Built a custom logger but every-
+                                          thing uses console directly
+
+  9.3 MISSING ABSTRACTIONS
+
+  - Email sender interface (hard-coded to Resend)
+  - Push notification interface (hard-coded to Firebase)
+  - Payment gateway interface (hard-coded to eSewa despite schema hints)
+  - Logger abstraction (exists in utils/ but unused)
+
+
+================================================================================
+10. SUMMARY
+================================================================================
+
+  STRENGTHS
+  ───────────────────────────────────────────────────────────────────────────
+  - Clean layered architecture: routes → controllers → services
+  - Excellent validation posture: Zod at config boundary + every API endpoint
+  - Solid authentication: JWT + refresh token rotation + 2-step email
+    verification + Google OAuth
+  - Strong security middleware: Helmet (CSP/HSTS), rate limiting, RBAC,
+    ownership checks
+  - Well-designed relational schema with proper normalization, unique
+    constraints, and enums
+  - Good migration hygiene: 21 chronological, well-named SQL migrations
+
+  WEAKNESSES
+  ───────────────────────────────────────────────────────────────────────────
+  - No DI container → hard to test in isolation
+  - No repository layer → services do everything
+  - No caching → DB is the bottleneck
+  - No background job queue → side effects are unreliable fire-and-forget
+  - Dual JWT systems with one secret unvalidated
+  - Inconsistent patterns across the codebase (classes vs. functions vs.
+    object literals)
+  - Incomplete abstractions despite schema hints (multi-provider payments)
+  - CORS wide open with no production-toggle mechanism
+
+  QUESTIONS FOR A SENIOR ENGINEER
+  ───────────────────────────────────────────────────────────────────────────
+  1. What is the intent with JWT_SECRET vs. JWT_ACCESS_SECRET? Can we
+     consolidate to one system and validate both in config?
+
+  2. Is there a plan to add caching (Redis) for course listings, categories,
+     and instructor profiles? This is the most obvious scaling bottleneck.
+
+  3. For fire-and-forget notifications — have you considered a background
+     job queue (BullMQ/Bull) to guarantee delivery with retries?
+
+  4. What is the production deployment target? No Dockerfiles or Kubernetes
+     manifests exist — is manual deployment intended?
+
+  5. Are there plans to implement the other payment providers (Razorpay,
+     PayPal) hinted at in the Prisma schema, or should the enum be trimmed
+     to match reality?
+
+  6. How are integration tests structured? The current singleton pattern
+     makes mocking Prisma or external services difficult without a DI
+     framework or proxy.
