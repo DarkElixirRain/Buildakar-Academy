@@ -165,7 +165,9 @@ class BaseApiService {
   Future<String?> refreshAccessToken() async {
     // If a refresh is already in progress, wait for it
     if (_refreshInProgress) {
-      return _refreshCompleter?.future;
+      final result = await _refreshCompleter?.future;
+      // Re-read tokens from storage - they may have been updated
+      return result;
     }
 
     _refreshInProgress = true;
@@ -173,18 +175,19 @@ class BaseApiService {
     _refreshAttempts = 0;
 
     try {
-      String? refreshToken = await getRefreshToken();
-      
-      if (refreshToken == null || refreshToken.isEmpty) {
-        print('❌ No refresh token available');
-        _refreshCompleter!.complete(null);
-        return null;
-      }
-
       while (_refreshAttempts < _maxRefreshAttempts) {
         _refreshAttempts++;
         print('🔄 Refresh attempt $_refreshAttempts/$_maxRefreshAttempts');
-        
+
+        // Read the refresh token fresh each attempt (may have been rotated)
+        String? refreshToken = await getRefreshToken();
+
+        if (refreshToken == null || refreshToken.isEmpty) {
+          print('❌ No refresh token available');
+          _refreshCompleter!.complete(null);
+          return null;
+        }
+
         try {
           final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh');
           final response = await _client.post(
@@ -203,30 +206,25 @@ class BaseApiService {
             }
           } 
           else if (response.statusCode == 401) {
-            // Refresh token itself is expired or invalid
             print('⚠️ Refresh token is invalid/expired, attempting rotation...');
-            
-            // Try to get a new refresh token using rotation
+
             final refreshResult = await _attemptRefreshTokenRotation();
             if (refreshResult != null) {
               _refreshCompleter!.complete(refreshResult);
               return refreshResult;
             }
-            
-            // If rotation fails, we need to log out
+
             print('❌ Refresh token rotation failed');
             await _handleRefreshFailure();
             _refreshCompleter!.complete(null);
             return null;
           }
           else if (response.statusCode >= 500) {
-            // Server error, wait and retry
             print('⚠️ Server error, waiting before retry...');
             await Future.delayed(Duration(seconds: _refreshAttempts * 2));
             continue;
           }
           else {
-            // Other errors
             print('❌ Refresh failed with status: ${response.statusCode}');
             await _handleRefreshFailure();
             _refreshCompleter!.complete(null);
@@ -248,7 +246,7 @@ class BaseApiService {
       await _handleRefreshFailure();
       _refreshCompleter!.complete(null);
       return null;
-      
+
     } catch (e) {
       print('❌ Refresh token error: $e');
       await _handleRefreshFailure();
@@ -384,6 +382,41 @@ class BaseApiService {
     };
   }
 
+  /// Execute an HTTP request without any 401 handling
+  Future<http.Response> _executeRequest(
+    String method,
+    Uri url,
+    Map<String, String> headers,
+    dynamic data,
+  ) async {
+    switch (method) {
+      case 'GET':
+        return await _client.get(url, headers: headers);
+      case 'POST':
+        return await _client.post(
+          url,
+          headers: headers,
+          body: data != null ? jsonEncode(data) : null,
+        );
+      case 'PUT':
+        return await _client.put(
+          url,
+          headers: headers,
+          body: data != null ? jsonEncode(data) : null,
+        );
+      case 'DELETE':
+        return await _client.delete(url, headers: headers);
+      case 'PATCH':
+        return await _client.patch(
+          url,
+          headers: headers,
+          body: data != null ? jsonEncode(data) : null,
+        );
+      default:
+        throw Exception('Unsupported HTTP method: $method');
+    }
+  }
+
   // ----- low-level request with 401 retry -----
   Future<ApiResponse> _request(
     String method,
@@ -451,12 +484,26 @@ class BaseApiService {
 
     // Handle 401 with retry
     if (response.statusCode == 401 && requireAuth) {
+      // Re-read the current token — another request may have already refreshed it
+      final currentToken = await getToken();
+      if (currentToken != null && currentToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $currentToken';
+        http.Response retryResponse;
+        try {
+          retryResponse = await _executeRequest(method, url, headers, data);
+        } catch (e) {
+          retryResponse = response;
+        }
+        if (retryResponse.statusCode != 401) {
+          return _handleResponse(retryResponse);
+        }
+      }
+
       print('⚠️ Received 401, attempting token refresh...');
       
       final newToken = await refreshAccessToken();
 
       if (newToken != null && newToken.isNotEmpty) {
-        // Retry the original request with new token
         headers['Authorization'] = 'Bearer $newToken';
         try {
           switch (method) {
