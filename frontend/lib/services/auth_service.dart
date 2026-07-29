@@ -11,6 +11,16 @@ import '../config/app_config.dart';
 
 // AuthApiService - Handles API calls for authentication
 class AuthApiService extends BaseApiService {
+  
+  // ==================== TOKEN REFRESH ====================
+  
+  /// Refresh the access token - exposed from BaseApiService
+  Future<String?> refreshAccessToken() async {
+    return await super.refreshAccessToken();
+  }
+
+  // ==================== AUTH METHODS ====================
+
   // Login
   Future<AuthResponse> login(LoginRequest request) async {
     try {
@@ -357,6 +367,27 @@ class AuthService {
     }
   }
   
+  /// Refresh token using the refresh token
+  Future<bool> refreshToken(String refreshToken) async {
+    try {
+      print('🔄 AuthService: Refreshing token...');
+      
+      // Use the AuthApiService which extends BaseApiService
+      final newToken = await _authApiService.refreshAccessToken();
+      
+      if (newToken != null && newToken.isNotEmpty) {
+        print('✅ AuthService: Token refreshed successfully');
+        return true;
+      }
+      
+      print('❌ AuthService: Token refresh failed');
+      return false;
+    } catch (e) {
+      print('❌ AuthService: Token refresh error: $e');
+      return false;
+    }
+  }
+  
   /// Login user
   Future<bool> login(String email, String password) async {
     try {
@@ -481,7 +512,7 @@ class AuthService {
     }
   }
   
-  /// Refresh user data - FIXED to not clear session on failure
+  /// Refresh user data
   Future<bool> refreshUser() async {
     try {
       print('🔄 AuthService: Refresh user attempt');

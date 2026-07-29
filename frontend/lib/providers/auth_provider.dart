@@ -9,10 +9,12 @@ class AuthProvider extends ChangeNotifier {
   
   User? _currentUser;
   bool _isLoading = false;
+  bool _isRefreshing = false;
   String? _error;
 
   User? get user => _currentUser;
   bool get isLoading => _isLoading;
+  bool get isRefreshing => _isRefreshing;
   String? get error => _error;
   bool get isAuthenticated => _currentUser != null;
 
@@ -53,6 +55,94 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Check if the current token is valid
+  Future<bool> hasValidToken() async {
+    try {
+      final token = await _authService.getToken();
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+      
+      // Check if token is expired
+      final expiryStr = await _authService.getTokenExpiry();
+      if (expiryStr != null) {
+        try {
+          final expiry = DateTime.parse(expiryStr);
+          final now = DateTime.now();
+          // Add 5 minute buffer
+          if (expiry.isBefore(now.add(const Duration(minutes: 5)))) {
+            print('⚠️ Token expires soon or already expired');
+            return false;
+          }
+        } catch (e) {
+          // If we can't parse expiry, assume token is valid
+          print('⚠️ Could not parse token expiry: $e');
+        }
+      }
+      
+      return true;
+    } catch (e) {
+      print('❌ AuthProvider: Error checking token validity: $e');
+      return false;
+    }
+  }
+
+  /// Refresh the access token using refresh token
+  Future<bool> refreshToken() async {
+    if (_isRefreshing) {
+      print('ℹ️ AuthProvider: Refresh already in progress');
+      return false;
+    }
+
+    _isRefreshing = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      print('🔄 AuthProvider: Refreshing token...');
+      
+      // Check if we have a refresh token
+      final refreshToken = await _authService.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('❌ AuthProvider: No refresh token available');
+        _isRefreshing = false;
+        _error = 'No refresh token available. Please login again.';
+        notifyListeners();
+        return false;
+      }
+
+      // Use the auth service's refresh method
+      final success = await _authService.refreshToken(refreshToken);
+      
+      if (success) {
+        // Reload user data after successful refresh
+        _currentUser = await _authService.getUser();
+        _error = null;
+        print('✅ AuthProvider: Token refreshed successfully');
+        notifyListeners();
+        _isRefreshing = false;
+        return true;
+      } else {
+        // If refresh failed, clear everything
+        await _authService.clearSession();
+        _currentUser = null;
+        _error = 'Session expired. Please login again.';
+        print('❌ AuthProvider: Token refresh failed - session cleared');
+        notifyListeners();
+        _isRefreshing = false;
+        return false;
+      }
+    } catch (e) {
+      _error = _getErrorMessage(e);
+      _currentUser = null;
+      print('❌ AuthProvider: Token refresh error: $e');
+      await _authService.clearSession();
+      notifyListeners();
+      _isRefreshing = false;
+      return false;
     }
   }
 
@@ -262,7 +352,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Force logout (called when session expires from BaseApiService)
-  /// This is called from BaseApiService.onSessionExpired callback
   void forceLogout() {
     print('🚨 AuthProvider: Force logout called - session expired');
     // Clear current user
@@ -378,7 +467,6 @@ class AuthProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    // Clean up any resources if needed
     super.dispose();
   }
 }

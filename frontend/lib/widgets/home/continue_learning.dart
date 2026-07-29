@@ -22,7 +22,7 @@ class ContinueLearning extends StatefulWidget {
   final int limit;
 
   const ContinueLearning({Key? key, this.onCoursePress, this.limit = 10})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<ContinueLearning> createState() => _ContinueLearningState();
@@ -88,6 +88,48 @@ class _ContinueLearningState extends State<ContinueLearning> {
     return 0;
   }
 
+  /// Check if error is authentication related
+  bool _isAuthError(String errorMessage) {
+    final lowerMsg = errorMessage.toLowerCase();
+    return lowerMsg.contains('invalid token') ||
+        lowerMsg.contains('expired token') ||
+        lowerMsg.contains('unauthorized') ||
+        lowerMsg.contains('authentication') ||
+        lowerMsg.contains('access token') ||
+        lowerMsg.contains('token expired') ||
+        lowerMsg.contains('session expired') ||
+        lowerMsg.contains('please login') ||
+        lowerMsg.contains('not authenticated') ||
+        lowerMsg.contains('401') ||
+        lowerMsg.contains('403') ||
+        lowerMsg.contains('refresh token');
+  }
+
+  /// Show login required dialog
+  void _showLoginRequiredDialog() {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Session Expired'),
+        content: const Text(
+          'Your session has expired. Please login again to continue learning.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+            child: const Text('Login'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _fetchContinueLearning() async {
     if (!mounted) return;
 
@@ -102,6 +144,26 @@ class _ContinueLearningState extends State<ContinueLearning> {
       return;
     }
 
+    // Check if token is valid before making request
+    final hasValidToken = await authProvider.hasValidToken();
+    if (!hasValidToken) {
+      print('🔄 Token invalid, attempting refresh...');
+      final refreshed = await authProvider.refreshToken();
+      if (refreshed && mounted) {
+        print('✅ Token refreshed, fetching courses...');
+      } else {
+        if (mounted) {
+          setState(() {
+            _error = 'Session expired. Please login again.';
+            _isLoading = false;
+            _courses = [];
+          });
+          _showLoginRequiredDialog();
+        }
+        return;
+      }
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -114,131 +176,220 @@ class _ContinueLearningState extends State<ContinueLearning> {
 
       if (!mounted) return;
 
+      print('📱 Response success: ${response.success}');
+      print('📱 Response data: ${response.data}');
+      print('📱 Response error: ${response.error}');
+
       if (response.success && response.data != null) {
         final courses = response.data!;
-
-        // First pass: process with existing heuristics
-        final processedCourses = courses.map((course) {
-          return _processCourseData(course);
-        }).toList();
-
-        // Second pass: for any course still missing a real instructor,
-        // fetch the full course record
-        final enrichedCourses = await Future.wait(
-          processedCourses.map((course) async {
-            final needsEnrichment =
-                course['instructor'] == null ||
-                course['instructor'] == 'Unknown Instructor' ||
-                (course['instructor'] as String).trim().isEmpty;
-
-            if (!needsEnrichment) return course;
-
-            final courseId = course['courseId'] ?? course['id'];
-            if (courseId == null) return course;
-
-            try {
-              final detailResponse = await _apiService.getCourseById(courseId);
-              if (detailResponse.success && detailResponse.data != null) {
-                final courseData = detailResponse.data!;
-
-                // Try to extract instructor from course data
-                String instructorName = 'Unknown Instructor';
-                String instructorId = '';
-                String instructorAvatar = '';
-
-                // Check if instructor is in the data
-                if (courseData['instructor'] != null) {
-                  if (courseData['instructor'] is Map<String, dynamic>) {
-                    final inst =
-                        courseData['instructor'] as Map<String, dynamic>;
-                    final firstName = inst['firstName']?.toString() ?? '';
-                    final lastName = inst['lastName']?.toString() ?? '';
-                    if (firstName.isNotEmpty || lastName.isNotEmpty) {
-                      instructorName = '$firstName $lastName'.trim();
-                    } else if (inst['name'] != null) {
-                      instructorName = inst['name'].toString();
-                    }
-                    instructorId = inst['id']?.toString() ?? '';
-                    instructorAvatar =
-                        inst['photo']?.toString() ??
-                        inst['avatar']?.toString() ??
-                        '';
-                  } else if (courseData['instructor'] is String) {
-                    instructorName = courseData['instructor'].toString();
-                  }
-                }
-
-                // Also check for instructorId directly
-                if (instructorId.isEmpty) {
-                  instructorId = courseData['instructorId']?.toString() ?? '';
-                }
-
-                // Check for instructorName directly
-                if (instructorName == 'Unknown Instructor' &&
-                    courseData['instructorName'] != null) {
-                  instructorName = courseData['instructorName'].toString();
-                }
-
-                // Check for firstName and lastName directly
-                if (instructorName == 'Unknown Instructor') {
-                  final firstName = courseData['firstName']?.toString() ?? '';
-                  final lastName = courseData['lastName']?.toString() ?? '';
-                  if (firstName.isNotEmpty || lastName.isNotEmpty) {
-                    instructorName = '$firstName $lastName'.trim();
-                  }
-                }
-
-                // If we still don't have an instructor name, try to get it from the course's instructor relation
-                if (instructorName == 'Unknown Instructor' &&
-                    courseData['instructor'] != null) {
-                  // Try parsing as Course model
-                  try {
-                    final fullCourse = Course.fromJson(courseData);
-                    instructorName = fullCourse.instructor.fullName;
-                    instructorId = fullCourse.instructor.id;
-                    instructorAvatar = fullCourse.instructor.avatarUrl;
-                  } catch (_) {
-                    // Fallback to what we already have
-                  }
-                }
-
-                final merged = Map<String, dynamic>.from(course);
-                merged['instructor'] = instructorName;
-                merged['instructorId'] = instructorId;
-                merged['instructorAvatar'] = instructorAvatar;
-
-                print(
-                  '✅ Enriched course: ${course['title']} - Instructor: $instructorName',
-                );
-                return merged;
-              }
-            } catch (e) {
-              print('❌ Failed to enrich course: $e');
-            }
-            return course;
-          }),
-        );
-
-        setState(() {
-          _courses = enrichedCourses;
-          _isLoading = false;
-          _error = null;
-        });
+        print('📱 Found ${courses.length} courses');
+        
+        if (courses.isNotEmpty) {
+          // Log first course to see structure
+          print('📱 First course: ${courses.first}');
+          await _processCourses(courses);
+        } else {
+          // Empty list - show no courses
+          print('📱 No courses found');
+          setState(() {
+            _courses = [];
+            _isLoading = false;
+            _error = null;
+          });
+        }
       } else {
+        final errorMsg = response.error ?? 'Failed to load continue learning courses';
+        print('❌ API Error: $errorMsg');
+        
+        // Check if error is auth-related
+        if (_isAuthError(errorMsg)) {
+          final refreshed = await authProvider.refreshToken();
+          if (refreshed && mounted) {
+            await _fetchContinueLearning();
+            return;
+          } else {
+            setState(() {
+              _error = 'Session expired. Please login again.';
+              _isLoading = false;
+              _courses = [];
+            });
+            _showLoginRequiredDialog();
+            return;
+          }
+        }
+        
+        // For any other error, just show empty state (no courses)
         setState(() {
-          _error = response.error ?? 'Failed to load continue learning courses';
+          _error = null;
           _isLoading = false;
           _courses = [];
         });
       }
     } catch (e) {
       if (!mounted) return;
+      
+      final errorStr = e.toString();
+      print('❌ Exception: $errorStr');
+      
+      if (_isAuthError(errorStr)) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final refreshed = await authProvider.refreshToken();
+        if (refreshed && mounted) {
+          await _fetchContinueLearning();
+          return;
+        } else {
+          setState(() {
+            _error = 'Session expired. Please login again.';
+            _isLoading = false;
+            _courses = [];
+          });
+          _showLoginRequiredDialog();
+          return;
+        }
+      }
+      
+      // For any other error, just show empty state (no courses)
       setState(() {
-        _error = e.toString();
+        _error = null;
         _isLoading = false;
         _courses = [];
       });
     }
+  }
+
+  Future<void> _processCourses(List<Map<String, dynamic>> courses) async {
+    // If no courses, set empty and return
+    if (courses.isEmpty) {
+      print('📱 No courses to process');
+      setState(() {
+        _courses = [];
+        _isLoading = false;
+        _error = null;
+      });
+      return;
+    }
+
+    print('📱 Processing ${courses.length} courses');
+
+    // First pass: process with existing heuristics
+    final processedCourses = courses.map((course) {
+      print('📱 Processing course: ${course['title']}');
+      return _processCourseData(course);
+    }).toList();
+
+    // Second pass: for any course still missing a real instructor,
+    // fetch the full course record
+    final enrichedCourses = await Future.wait(
+      processedCourses.map((course) async {
+        final needsEnrichment =
+            course['instructor'] == null ||
+            course['instructor'] == 'Unknown Instructor' ||
+            (course['instructor'] as String).trim().isEmpty;
+
+        if (!needsEnrichment) return course;
+
+        final courseId = course['courseId'] ?? course['id'];
+        if (courseId == null) return course;
+
+        try {
+          print('📱 Enriching course: ${course['title']} with ID: $courseId');
+          final detailResponse = await _apiService.getCourseById(courseId);
+          if (detailResponse.success && detailResponse.data != null) {
+            final courseData = detailResponse.data!;
+            return _enrichCourseWithInstructor(course, courseData);
+          }
+        } catch (e) {
+          print('❌ Failed to enrich course: $e');
+        }
+        return course;
+      }),
+    );
+
+    // Filter out any null or invalid courses
+    final validCourses = enrichedCourses.where((course) => 
+      course['title'] != null && course['title'].toString().isNotEmpty
+    ).toList();
+
+    print('📱 Valid courses after processing: ${validCourses.length}');
+
+    setState(() {
+      _courses = validCourses;
+      _isLoading = false;
+      _error = null;
+    });
+  }
+
+  Map<String, dynamic> _enrichCourseWithInstructor(
+    Map<String, dynamic> course,
+    Map<String, dynamic> courseData,
+  ) {
+    // Try to extract instructor from course data
+    String instructorName = 'Unknown Instructor';
+    String instructorId = '';
+    String instructorAvatar = '';
+
+    // Check if instructor is in the data
+    if (courseData['instructor'] != null) {
+      if (courseData['instructor'] is Map<String, dynamic>) {
+        final inst = courseData['instructor'] as Map<String, dynamic>;
+        final firstName = inst['firstName']?.toString() ?? '';
+        final lastName = inst['lastName']?.toString() ?? '';
+        if (firstName.isNotEmpty || lastName.isNotEmpty) {
+          instructorName = '$firstName $lastName'.trim();
+        } else if (inst['name'] != null) {
+          instructorName = inst['name'].toString();
+        }
+        instructorId = inst['id']?.toString() ?? '';
+        instructorAvatar = inst['photo']?.toString() ??
+            inst['avatar']?.toString() ??
+            '';
+      } else if (courseData['instructor'] is String) {
+        instructorName = courseData['instructor'].toString();
+      }
+    }
+
+    // Also check for instructorId directly
+    if (instructorId.isEmpty) {
+      instructorId = courseData['instructorId']?.toString() ?? '';
+    }
+
+    // Check for instructorName directly
+    if (instructorName == 'Unknown Instructor' &&
+        courseData['instructorName'] != null) {
+      instructorName = courseData['instructorName'].toString();
+    }
+
+    // Check for firstName and lastName directly
+    if (instructorName == 'Unknown Instructor') {
+      final firstName = courseData['firstName']?.toString() ?? '';
+      final lastName = courseData['lastName']?.toString() ?? '';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        instructorName = '$firstName $lastName'.trim();
+      }
+    }
+
+    // If we still don't have an instructor name, try to get it from the course's instructor relation
+    if (instructorName == 'Unknown Instructor' &&
+        courseData['instructor'] != null) {
+      try {
+        final fullCourse = Course.fromJson(courseData);
+        instructorName = fullCourse.instructor.fullName;
+        instructorId = fullCourse.instructor.id;
+        instructorAvatar = fullCourse.instructor.avatarUrl;
+      } catch (_) {
+        // Fallback to what we already have
+      }
+    }
+
+    final merged = Map<String, dynamic>.from(course);
+    merged['instructor'] = instructorName;
+    merged['instructorId'] = instructorId;
+    merged['instructorAvatar'] = instructorAvatar;
+
+    print(
+      '✅ Enriched course: ${course['title']} - Instructor: $instructorName',
+    );
+    return merged;
   }
 
   Map<String, dynamic> _processCourseData(Map<String, dynamic> course) {
@@ -262,8 +413,6 @@ class _ContinueLearningState extends State<ContinueLearning> {
       }
       instructorId = inst['id'] ?? instructorId;
       instructorAvatar = inst['photo'] ?? inst['avatar'] ?? instructorAvatar;
-    } else if (course['instructor'] != null && course['instructor'] is String) {
-      instructorName = course['instructor'] as String;
     } else if (course['instructorName'] != null) {
       instructorName = course['instructorName'] as String;
     } else if (course['name'] != null) {
@@ -287,7 +436,7 @@ class _ContinueLearningState extends State<ContinueLearning> {
     processed['instructorId'] = instructorId;
     processed['instructorAvatar'] = instructorAvatar;
 
-    // Convert numeric values safely using _safeToDouble and _safeToInt
+    // Convert numeric values safely
     processed['price'] = _safeToDouble(course['price']);
     processed['originalPrice'] = _safeToDouble(course['originalPrice']);
     processed['rating'] = _safeToDouble(course['rating']);
@@ -585,6 +734,43 @@ class _ContinueLearningState extends State<ContinueLearning> {
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
+    // If not authenticated, show login prompt
+    if (!authProvider.isAuthenticated) {
+      return _buildNotAuthenticated(isDark, brightness);
+    }
+
+    // If loading, show skeleton
+    if (_isLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Continue Learning',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
+          ),
+          _buildSkeletonLoading(isDark, brightness),
+        ],
+      );
+    }
+
+    // If error, show error state
+    if (_error != null) {
+      return _buildErrorState(isDark, brightness);
+    }
+
+    // If no courses, return empty SizedBox (don't show anything)
+    if (_courses.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Calculate responsive sizes
     double cardWidth;
     double cardHeight;
     double imageHeight;
@@ -641,38 +827,6 @@ class _ContinueLearningState extends State<ContinueLearning> {
     cardHeight = cardHeight.clamp(200.0, 360.0);
     imageHeight = imageHeight.clamp(80.0, 160.0);
 
-    if (_isLoading) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              'Continue Learning',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-          ),
-          _buildSkeletonLoading(isDark, cardWidth, cardHeight, brightness),
-        ],
-      );
-    }
-
-    if (!authProvider.isAuthenticated) {
-      return _buildNotAuthenticated(isDark, brightness);
-    }
-
-    if (_error != null) {
-      return _buildErrorState(isDark, brightness);
-    }
-
-    if (_courses.isEmpty) {
-      return _buildEmptyState(isDark, brightness);
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -720,7 +874,6 @@ class _ContinueLearningState extends State<ContinueLearning> {
               itemBuilder: (context, index) {
                 final course = _courses[index];
                 final isCompleted = course['isCompleted'] ?? false;
-                // Ensure progress is a double using _safeToDouble
                 final progress = _safeToDouble(
                   course['progress'],
                 ).clamp(0.0, 100.0);
@@ -785,7 +938,6 @@ class _ContinueLearningState extends State<ContinueLearning> {
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
     final isLast = index == _courses.length - 1;
-    // Ensure progress is a double between 0 and 1 for the indicator
     final progressValue = (progress / 100.0).clamp(0.0, 1.0);
 
     return GestureDetector(
@@ -1084,24 +1236,21 @@ class _ContinueLearningState extends State<ContinueLearning> {
 
   Widget _buildSkeletonLoading(
     bool isDark,
-    double cardWidth,
-    double cardHeight,
     Brightness brightness,
   ) {
-    final textColor = AppColors.getTextColor(brightness);
     final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
     final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
 
     return SizedBox(
-      height: cardHeight + 10,
+      height: 200,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: 3,
         padding: const EdgeInsets.only(right: 16),
         itemBuilder: (context, index) {
           return Container(
-            width: cardWidth,
-            height: cardHeight,
+            width: 180,
+            height: 200,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               color: backgroundElementColor,
@@ -1116,9 +1265,9 @@ class _ContinueLearningState extends State<ContinueLearning> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  height: cardHeight * 0.40,
+                  height: 80,
                   decoration: BoxDecoration(
-                  color: backgroundSelectedColor.withValues(alpha: 0.5),
+                    color: backgroundSelectedColor.withValues(alpha: 0.5),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(14),
                       topRight: Radius.circular(14),
@@ -1342,95 +1491,6 @@ class _ContinueLearningState extends State<ContinueLearning> {
                 ),
                 child: const Text(
                   'Try Again',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState(bool isDark, Brightness brightness) {
-    final textColor = AppColors.getTextColor(brightness);
-    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
-    final primaryColor = AppColors.getPrimaryColor(brightness);
-    final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
-    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            'Continue Learning',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: backgroundElementColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: backgroundSelectedColor,
-              width: 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.school_outlined,
-                size: 40,
-                color: textSecondaryColor,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'No courses in progress',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Browse our catalog and start learning today!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: textSecondaryColor,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/browse');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text(
-                  'Browse Courses',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,

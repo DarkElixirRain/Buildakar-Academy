@@ -891,7 +891,7 @@ export async function joinLiveClass(
 
       const payload = {
         aud: 'jitsi',
-        iss: 'chat',
+        iss: jaasAppId,
         sub: jaasAppId,
         room: liveClass.roomName,
         exp: now + 3600,

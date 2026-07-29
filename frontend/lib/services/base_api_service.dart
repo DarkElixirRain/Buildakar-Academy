@@ -1,3 +1,5 @@
+// lib/services/base_api_service.dart
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -11,7 +13,6 @@ class BaseApiService {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   /// Called when the refresh token is permanently invalid/expired
-  /// so the app can perform a centralized logout.
   static void Function()? onSessionExpired;
 
   // ----- token management -----
@@ -203,9 +204,9 @@ class BaseApiService {
           } 
           else if (response.statusCode == 401) {
             // Refresh token itself is expired or invalid
-            print('⚠️ Refresh token is invalid/expired, attempting to get new one...');
+            print('⚠️ Refresh token is invalid/expired, attempting rotation...');
             
-            // Try to get a new refresh token using the old one if server supports rotation
+            // Try to get a new refresh token using rotation
             final refreshResult = await _attemptRefreshTokenRotation();
             if (refreshResult != null) {
               _refreshCompleter!.complete(refreshResult);
@@ -215,6 +216,7 @@ class BaseApiService {
             // If rotation fails, we need to log out
             print('❌ Refresh token rotation failed');
             await _handleRefreshFailure();
+            _refreshCompleter!.complete(null);
             return null;
           }
           else if (response.statusCode >= 500) {
@@ -227,6 +229,7 @@ class BaseApiService {
             // Other errors
             print('❌ Refresh failed with status: ${response.statusCode}');
             await _handleRefreshFailure();
+            _refreshCompleter!.complete(null);
             return null;
           }
         } catch (e) {
@@ -236,17 +239,20 @@ class BaseApiService {
             continue;
           }
           await _handleRefreshFailure();
+          _refreshCompleter!.complete(null);
           return null;
         }
       }
 
       // All attempts exhausted
       await _handleRefreshFailure();
+      _refreshCompleter!.complete(null);
       return null;
       
     } catch (e) {
       print('❌ Refresh token error: $e');
       await _handleRefreshFailure();
+      _refreshCompleter!.complete(null);
       return null;
     } finally {
       _refreshInProgress = false;
@@ -316,10 +322,6 @@ class BaseApiService {
   /// Attempt to rotate the refresh token using a special endpoint
   Future<String?> _attemptRefreshTokenRotation() async {
     try {
-      // If your API supports refresh token rotation, call a specific endpoint
-      // This is optional - only use if your backend supports it
-      
-      // Option 1: Try to refresh using the old refresh token with rotation
       final oldRefreshToken = await getRefreshToken();
       if (oldRefreshToken == null) return null;
       
@@ -343,40 +345,11 @@ class BaseApiService {
 
   /// Handle refresh failure - only log out if absolutely necessary
   Future<void> _handleRefreshFailure() async {
-    // Only clear session and logout if refresh token is permanently invalid
-    // This should only happen if the user manually logs out or the refresh token is revoked
-    
-    // Check if we have a valid refresh token before clearing
-    final refreshToken = await getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) {
-      // No refresh token means we can't recover
-      await clearSession();
-      if (onSessionExpired != null) {
-        // Use Future.microtask instead of WidgetsBinding
-        Future.microtask(() {
-          onSessionExpired!();
-        });
-      }
-      return;
-    }
-    
-    // Try one more time with a different approach
-    try {
-      // Wait a bit and retry
-      await Future.delayed(const Duration(seconds: 2));
-      final result = await refreshAccessToken();
-      if (result != null) {
-        print('✅ Recovery successful after delay');
-        return;
-      }
-    } catch (e) {
-      print('❌ Recovery attempt failed: $e');
-    }
-    
-    // If all recovery attempts fail, clear session
+    // Clear session since refresh failed
     await clearSession();
+    
+    // Trigger session expiry callback
     if (onSessionExpired != null) {
-      // Use Future.microtask instead of WidgetsBinding
       Future.microtask(() {
         onSessionExpired!();
       });
@@ -425,7 +398,6 @@ class BaseApiService {
     if (requireAuth) {
       final isValid = await _ensureValidToken();
       if (!isValid) {
-        // If we can't get a valid token, continue anyway - the server will handle it
         print('⚠️ Could not ensure valid token, proceeding anyway');
       }
     }
@@ -522,9 +494,20 @@ class BaseApiService {
           return ApiResponse.error(e.toString());
         }
       } else {
-        // Only return session expired if refresh token is truly invalid
-        // Don't logout immediately - let the request fail gracefully
-        return ApiResponse.error('Unable to refresh token. Please try again.');
+        // Properly handle refresh failure
+        print('❌ Unable to refresh token');
+        
+        // Clear session
+        await clearSession();
+        
+        // Trigger session expiry callback
+        if (onSessionExpired != null) {
+          Future.microtask(() {
+            onSessionExpired!();
+          });
+        }
+        
+        return ApiResponse.error('Session expired. Please login again.');
       }
     }
 
@@ -569,8 +552,33 @@ class BaseApiService {
         response = await _sendHttpRequest(method, url, currentHeaders, body);
         print('✅ Retry successful in sendAuthenticatedRequest');
       } else {
-        // Don't throw exception - let the caller handle the 401
-        print('⚠️ Unable to refresh token in sendAuthenticatedRequest');
+        // Properly handle refresh failure
+        print('❌ Unable to refresh token in sendAuthenticatedRequest');
+        
+        // Clear session since refresh failed
+        await clearSession();
+        
+        // Create a proper error response
+        final errorResponse = http.Response(
+          jsonEncode({
+            'success': false,
+            'message': 'Session expired. Please login again.',
+            'error': 'refresh_token_failed',
+          }),
+          401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        );
+        
+        // Trigger session expiry callback
+        if (onSessionExpired != null) {
+          Future.microtask(() {
+            onSessionExpired!();
+          });
+        }
+        
+        return errorResponse;
       }
     }
 
