@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart'
     show JitsiMeet, JitsiMeetConferenceOptions, JitsiMeetUserInfo, JitsiMeetEventListener;
 import 'package:jitsi_meet_flutter_sdk/src/method_response.dart'
@@ -6,6 +7,7 @@ import 'package:jitsi_meet_flutter_sdk/src/method_response.dart'
 class JitsiService {
   static final JitsiMeet _jitsiMeet = JitsiMeet();
   static bool _isInMeeting = false;
+  static bool _isJoining = false;
 
   static bool get isInMeeting => _isInMeeting;
 
@@ -19,11 +21,17 @@ class JitsiService {
     String? token,
     JitsiMeetEventListener? listener,
   }) async {
+    if (_isJoining) {
+      debugPrint('[JitsiService] Already joining a meeting, skipping duplicate call');
+      return;
+    }
+
     try {
       if (_isInMeeting) {
         await hangUp();
       }
 
+      _isJoining = true;
       _isInMeeting = true;
 
       final userInfo = JitsiMeetUserInfo(
@@ -61,6 +69,8 @@ class JitsiService {
     } catch (error) {
       _isInMeeting = false;
       rethrow;
+    } finally {
+      _isJoining = false;
     }
   }
 

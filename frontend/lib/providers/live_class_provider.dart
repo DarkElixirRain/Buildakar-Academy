@@ -576,15 +576,10 @@ class LiveClassProvider extends ChangeNotifier {
   
   // Join a live class
   Future<Map<String, dynamic>?> joinLiveClass(String id) async {
-    _isLoading = true;
-    notifyListeners();
-    
     try {
       final result = await _apiService.joinLiveClass(id);
-      
+
       if (result.success && result.data != null) {
-        // Refresh the list to update counts after joining
-        await loadAllStudentClasses();
         return result.data;
       } else {
         _errorMessage = result.error ?? 'Failed to join live class';
@@ -597,9 +592,6 @@ class LiveClassProvider extends ChangeNotifier {
       _hasError = true;
       notifyListeners();
       return null;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
   

@@ -35,6 +35,7 @@ class _LiveClassRoomScreenState extends State<LiveClassRoomScreen> {
   String? _errorMessage;
   int _participantCount = 0;
   bool _isLeaving = false;
+  bool _conferenceEndedOrErrored = false;
 
   @override
   void initState() {
@@ -88,6 +89,7 @@ Future<void> _connect() async {
 
   if (room == null || room.isEmpty) {
     debugPrint('[LiveClassRoom] ERROR: room name is null or empty. roomData keys: ${widget.roomData.keys}');
+    if (!mounted) return;
     setState(() {
       _state = _RoomState.error;
       _errorMessage = 'This class does not have a meeting room configured.';
@@ -102,6 +104,7 @@ Future<void> _connect() async {
     },
     conferenceTerminated: (url, error) {
       debugPrint('[LiveClassRoom] 🔴 conferenceTerminated: url=$url error=$error');
+      _conferenceEndedOrErrored = true;
       _onConferenceTerminated(url, error);
     },
     readyToClose: () {
@@ -130,9 +133,12 @@ Future<void> _connect() async {
       listener: listener,
     ).timeout(const Duration(seconds: 20));
     debugPrint('[LiveClassRoom] ✅ JitsiService.joinMeeting completed');
-    if (mounted) {
-      setState(() => _state = _RoomState.inMeeting);
+    if (!mounted) return;
+    if (_conferenceEndedOrErrored) {
+      debugPrint('[LiveClassRoom] ⚠️ Conference already ended/errored during join, not overriding state');
+      return;
     }
+    setState(() => _state = _RoomState.inMeeting);
   } on TimeoutException {
     debugPrint('[LiveClassRoom] ⚠️ JitsiService.joinMeeting timed out after 20s');
     if (!mounted) return;
@@ -504,7 +510,7 @@ class _InMeetingBackdrop extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(height: 16),
           ],
           ElevatedButton.icon(
             onPressed: onLeave,

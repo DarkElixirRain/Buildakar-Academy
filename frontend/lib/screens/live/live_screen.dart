@@ -55,7 +55,7 @@ class _LiveScreenState extends State<LiveScreen>
     final provider = Provider.of<LiveClassProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    showDialog(
+    final dialogFuture = showDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withAlpha(140),
@@ -64,7 +64,9 @@ class _LiveScreenState extends State<LiveScreen>
 
     try {
       final roomData = await provider.joinLiveClass(liveClass.id);
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
       if (roomData != null && mounted) {
         final user = authProvider.user;
@@ -115,22 +117,28 @@ class _LiveScreenState extends State<LiveScreen>
           errorMessage = 'This class is no longer available.';
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: () => _joinClass(liveClass),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: () => _joinClass(liveClass),
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     } catch (e) {
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+      }
       if (mounted) {
         String errorMessage = 'Error: ${e.toString()}';
         if (errorMessage.contains('SocketException')) {
@@ -138,14 +146,16 @@ class _LiveScreenState extends State<LiveScreen>
         } else if (errorMessage.contains('Timeout')) {
           errorMessage = 'Connection timed out. Please try again.';
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
