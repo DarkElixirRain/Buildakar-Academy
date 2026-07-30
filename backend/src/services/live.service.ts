@@ -891,7 +891,7 @@ export async function joinLiveClass(
 
       const payload = {
         aud: 'jitsi',
-        iss: jaasAppId,
+        iss: 'chat',
         sub: jaasAppId,
         room: liveClass.roomName,
         exp: now + 3600,
@@ -904,13 +904,13 @@ export async function joinLiveClass(
             email: user.email || 'user@buildakar.com',
             moderator: isModerator,
           },
-        },
-        features: {
-          livestreaming: false,
-          recording: false,
-          'outbound-call': false,
-          transcription: false,
-          'sip-outbound-call': false,
+          features: {
+            livestreaming: false,
+            recording: false,
+            'outbound-call': false,
+            transcription: false,
+            'sip-outbound-call': false,
+          },
         },
       };
 
