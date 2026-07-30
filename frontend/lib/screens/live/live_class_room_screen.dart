@@ -5,6 +5,7 @@ import 'package:jitsi_meet_flutter_sdk/jitsi_meet_flutter_sdk.dart';
 import '../../constants/colors.dart';
 import '../../providers/live_class_provider.dart';
 import '../../services/jitsi_service.dart';
+import '../../services/live_class_service.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -36,19 +37,24 @@ class _LiveClassRoomScreenState extends State<LiveClassRoomScreen> {
   int _participantCount = 0;
   bool _isLeaving = false;
   bool _conferenceEndedOrErrored = false;
+  Timer? _pollTimer;
+  late LiveClassApiService _liveClassService;
 
   @override
   void initState() {
     super.initState();
+    _liveClassService = LiveClassApiService();
     WidgetsBinding.instance.addPostFrameCallback((_) => _connect());
   }
 
   void _onConferenceJoined(String url) {
     if (!mounted) return;
     setState(() => _state = _RoomState.inMeeting);
+    _startPolling();
   }
 
   void _onConferenceTerminated(String url, Object? error) {
+    _stopPolling();
     JitsiService.markLeft();
     if (!mounted) return;
     if (error != null) {
@@ -131,7 +137,7 @@ Future<void> _connect() async {
       serverUrl: serverUrl,
       token: token,
       listener: listener,
-    ).timeout(const Duration(seconds: 20));
+    );
     debugPrint('[LiveClassRoom] ✅ JitsiService.joinMeeting completed');
     if (!mounted) return;
     if (_conferenceEndedOrErrored) {
@@ -163,9 +169,37 @@ Future<void> _connect() async {
     await _connect();
   }
 
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _checkClassStatus());
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  Future<void> _checkClassStatus() async {
+    if (!mounted || _isLeaving) return;
+    final classId = widget.liveClass['id']?.toString();
+    if (classId == null || classId.isEmpty) return;
+
+    final result = await _liveClassService.getLiveClassById(classId);
+    if (result.success && result.data != null && !_isLeaving && mounted) {
+      final status = result.data!.status.toLowerCase();
+      if (status == 'ended' || status == 'cancelled') {
+        debugPrint('[LiveClassRoom] Class status changed to $status, leaving room');
+        _stopPolling();
+        await JitsiService.hangUp();
+        JitsiService.markLeft();
+      }
+    }
+  }
+
   Future<void> _leaveRoom() async {
     if (_isLeaving) return;
     _isLeaving = true;
+    _stopPolling();
 
     await JitsiService.hangUp();
     JitsiService.markLeft();
@@ -268,6 +302,7 @@ Future<void> _connect() async {
 
   @override
   void dispose() {
+    _stopPolling();
     JitsiService.markLeft();
     super.dispose();
   }

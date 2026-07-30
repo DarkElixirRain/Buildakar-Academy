@@ -32,7 +32,6 @@ class JitsiService {
       }
 
       _isJoining = true;
-      _isInMeeting = true;
 
       final userInfo = JitsiMeetUserInfo(
         displayName: displayName,
@@ -63,9 +62,9 @@ class JitsiService {
 
       final MethodResponse response = await _jitsiMeet.join(options, listener);
       if (!response.isSuccess) {
-        _isInMeeting = false;
         throw Exception('Failed to join meeting: ${response.error ?? response.message ?? 'Unknown error'}');
       }
+      _isInMeeting = true;
     } catch (error) {
       _isInMeeting = false;
       rethrow;

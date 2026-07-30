@@ -302,6 +302,13 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     }
   }
 
+  /// Tapping the card itself opens the course detail page — same as tapping
+  /// a card in the "Continue Learning" widget on the home screen.
+  void _handleCourseCardPress(Map<String, dynamic> course) {
+    final courseId = course['courseId'] ?? course['id'];
+    Navigator.pushNamed(context, '/course', arguments: {'courseId': courseId});
+  }
+
   Course _createMinimalCourse(Map<String, dynamic> data) {
     final instructor = Instructor(
       id: data['instructorId'] ?? '',
@@ -369,6 +376,33 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     });
   }
 
+  /// Card width/height using the exact same breakpoints, percentages, and
+  /// clamps as widgets/home/continue_learning.dart, so a course card looks
+  /// identical whether it's on the Home tab or here on My Learning.
+  ({double width, double height}) _computeCardSize(double screenWidth, double screenHeight) {
+    double cardWidth;
+    double cardHeight;
+
+    if (screenWidth < 380) {
+      cardWidth = screenWidth * 0.75;
+      cardHeight = screenHeight * 0.30;
+    } else if (screenWidth < 600) {
+      cardWidth = screenWidth * 0.65;
+      cardHeight = screenHeight * 0.32;
+    } else if (screenWidth < 900) {
+      cardWidth = screenWidth * 0.40;
+      cardHeight = screenHeight * 0.34;
+    } else {
+      cardWidth = screenWidth * 0.28;
+      cardHeight = screenHeight * 0.36;
+    }
+
+    cardWidth = cardWidth.clamp(180.0, 380.0);
+    cardHeight = cardHeight.clamp(200.0, 360.0);
+
+    return (width: cardWidth, height: cardHeight);
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -376,6 +410,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     final isDark = themeProvider.isDarkMode;
     final brightness = isDark ? Brightness.dark : Brightness.light;
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final isTablet = screenWidth >= 600 && screenWidth < 900;
     final isDesktop = screenWidth >= 900;
 
@@ -384,7 +419,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     }
 
     if (_isLoading) {
-      return _buildSkeletonLoading(isDark, screenWidth);
+      return _buildSkeletonLoading(isDark, screenWidth, screenHeight);
     }
 
     if (_error != null && _courses.isEmpty) {
@@ -403,7 +438,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
           Expanded(
             child: _courses.isEmpty
                 ? _buildEmptyState(isDark)
-                : _buildCourseGrid(isDark, isTablet, isDesktop, screenWidth),
+                : _buildCourseGrid(isDark, isTablet, isDesktop, screenWidth, screenHeight),
           ),
         ],
       ),
@@ -414,27 +449,9 @@ class _MyLearningScreenState extends State<MyLearningScreen>
   // SKELETON LOADING
   // ============================================
 
-  Widget _buildSkeletonLoading(bool isDark, double screenWidth) {
+  Widget _buildSkeletonLoading(bool isDark, double screenWidth, double screenHeight) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    int crossAxisCount;
-    double aspectRatio;
-
-    if (screenWidth < 400) {
-      crossAxisCount = 1;
-      aspectRatio = 0.78;
-    } else if (screenWidth < 600) {
-      crossAxisCount = 2;
-      aspectRatio = 0.72;
-    } else if (screenWidth < 900) {
-      crossAxisCount = 3;
-      aspectRatio = 0.68;
-    } else if (screenWidth < 1200) {
-      crossAxisCount = 4;
-      aspectRatio = 0.64;
-    } else {
-      crossAxisCount = 5;
-      aspectRatio = 0.6;
-    }
+    final cardSize = _computeCardSize(screenWidth, screenHeight);
 
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(isDark ? Brightness.dark : Brightness.light),
@@ -498,15 +515,15 @@ class _MyLearningScreenState extends State<MyLearningScreen>
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: aspectRatio,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: cardSize.width,
+                  mainAxisExtent: cardSize.height,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
                 itemCount: 6,
                 itemBuilder: (context, index) {
-                  return _buildSkeletonCard(isDark);
+                  return _buildSkeletonCard(isDark, cardSize.height);
                 },
               ),
             ),
@@ -516,8 +533,9 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     );
   }
 
-  Widget _buildSkeletonCard(bool isDark) {
+  Widget _buildSkeletonCard(bool isDark, double cardHeight) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
+    final imageHeight = (cardHeight * 0.40).clamp(80.0, 160.0);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
@@ -533,7 +551,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
         children: [
           // Thumbnail skeleton
           Container(
-            height: 110,
+            height: imageHeight,
             width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.getBackgroundSelectedColor(brightness),
@@ -738,26 +756,14 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     );
   }
 
-  Widget _buildCourseGrid(bool isDark, bool isTablet, bool isDesktop, double screenWidth) {
-    int crossAxisCount;
-    double aspectRatio;
-
-    if (screenWidth < 400) {
-      crossAxisCount = 1;
-      aspectRatio = 0.78;
-    } else if (screenWidth < 600) {
-      crossAxisCount = 2;
-      aspectRatio = 0.72;
-    } else if (screenWidth < 900) {
-      crossAxisCount = 3;
-      aspectRatio = 0.68;
-    } else if (screenWidth < 1200) {
-      crossAxisCount = 4;
-      aspectRatio = 0.64;
-    } else {
-      crossAxisCount = 5;
-      aspectRatio = 0.6;
-    }
+  Widget _buildCourseGrid(
+    bool isDark,
+    bool isTablet,
+    bool isDesktop,
+    double screenWidth,
+    double screenHeight,
+  ) {
+    final cardSize = _computeCardSize(screenWidth, screenHeight);
 
     return RefreshIndicator(
       onRefresh: _refreshData,
@@ -765,9 +771,11 @@ class _MyLearningScreenState extends State<MyLearningScreen>
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: aspectRatio,
+          // Fixed box size (not an aspect ratio) so every card is exactly
+          // the same width/height as the "Continue Learning" cards.
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: cardSize.width,
+            mainAxisExtent: cardSize.height,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
@@ -781,6 +789,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
               _filteredCourses[index],
               isDark,
               screenWidth,
+              cardSize.height,
             );
           },
         ),
@@ -793,6 +802,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     Map<String, dynamic> course,
     bool isDark,
     double screenWidth,
+    double cardHeight,
   ) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
 
@@ -810,60 +820,50 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     final progressColor = isCompleted ? successColor : primaryColor;
     final progressValue = (progress / 100).clamp(0.0, 1.0);
 
-    // Responsive sizing — mirrors the breakpoints/proportions used by the
-    // "Continue Learning" horizontal card so both surfaces feel consistent.
+    // Responsive sizing — exact same breakpoints, proportions, and clamps
+    // as widgets/home/continue_learning.dart's card, so both surfaces
+    // render identical-looking, identical-sized cards.
     double fontSizeTitle;
     double fontSizeSubtitle;
     double fontSizeBadge;
     double paddingSize;
     double buttonHeight;
     double progressBarHeight;
-    double imageHeight;
 
-    if (screenWidth < 400) {
+    if (screenWidth < 380) {
       fontSizeTitle = 12;
       fontSizeSubtitle = 10;
       fontSizeBadge = 8;
-      paddingSize = 8;
+      paddingSize = 6;
       buttonHeight = 28;
       progressBarHeight = 3;
-      imageHeight = 100;
     } else if (screenWidth < 600) {
       fontSizeTitle = 13;
       fontSizeSubtitle = 11;
       fontSizeBadge = 9;
-      paddingSize = 9;
+      paddingSize = 8;
       buttonHeight = 30;
-      progressBarHeight = 3;
-      imageHeight = 105;
-    } else if (screenWidth < 900) {
-      fontSizeTitle = 13;
-      fontSizeSubtitle = 11;
-      fontSizeBadge = 9;
-      paddingSize = 10;
-      buttonHeight = 32;
       progressBarHeight = 4;
-      imageHeight = 110;
-    } else if (screenWidth < 1200) {
+    } else if (screenWidth < 900) {
       fontSizeTitle = 14;
       fontSizeSubtitle = 12;
       fontSizeBadge = 10;
       paddingSize = 10;
       buttonHeight = 34;
       progressBarHeight = 4;
-      imageHeight = 115;
     } else {
       fontSizeTitle = 15;
       fontSizeSubtitle = 13;
-      fontSizeBadge = 10;
+      fontSizeBadge = 11;
       paddingSize = 12;
       buttonHeight = 36;
-      progressBarHeight = 4;
-      imageHeight = 120;
+      progressBarHeight = 5;
     }
 
+    final imageHeight = (cardHeight * 0.40).clamp(80.0, 160.0);
+
     return GestureDetector(
-      onTap: () => _handleCoursePress(course),
+      onTap: () => _handleCourseCardPress(course),
       child: Container(
         decoration: BoxDecoration(
           color: backgroundElementColor,
