@@ -206,7 +206,7 @@ class BaseApiService {
             }
           } 
           else if (response.statusCode == 401) {
-            print('⚠️ Refresh token is invalid/expired, attempting rotation...');
+            print('⚠️ Refresh token is invalid/expired, attempting retry...');
 
             final refreshResult = await _attemptRefreshTokenRotation();
             if (refreshResult != null) {
@@ -214,8 +214,7 @@ class BaseApiService {
               return refreshResult;
             }
 
-            print('❌ Refresh token rotation failed');
-            await _handleRefreshFailure();
+            print('❌ Refresh token retry failed after 401');
             _refreshCompleter!.complete(null);
             return null;
           }
@@ -226,7 +225,6 @@ class BaseApiService {
           }
           else {
             print('❌ Refresh failed with status: ${response.statusCode}');
-            await _handleRefreshFailure();
             _refreshCompleter!.complete(null);
             return null;
           }
@@ -236,20 +234,17 @@ class BaseApiService {
             await Future.delayed(Duration(seconds: _refreshAttempts));
             continue;
           }
-          await _handleRefreshFailure();
           _refreshCompleter!.complete(null);
           return null;
         }
       }
 
       // All attempts exhausted
-      await _handleRefreshFailure();
       _refreshCompleter!.complete(null);
       return null;
 
     } catch (e) {
       print('❌ Refresh token error: $e');
-      await _handleRefreshFailure();
       _refreshCompleter!.complete(null);
       return null;
     } finally {
@@ -317,17 +312,17 @@ class BaseApiService {
     }
   }
 
-  /// Attempt to rotate the refresh token using a special endpoint
+  /// Retry refresh with the latest stored token (may have been rotated by concurrent request)
   Future<String?> _attemptRefreshTokenRotation() async {
     try {
-      final oldRefreshToken = await getRefreshToken();
-      if (oldRefreshToken == null) return null;
+      final currentRefreshToken = await getRefreshToken();
+      if (currentRefreshToken == null) return null;
       
-      final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/rotate-refresh');
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/auth/refresh');
       final response = await _client.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': oldRefreshToken}),
+        body: jsonEncode({'refreshToken': currentRefreshToken}),
       );
       
       if (response.statusCode == 200) {
@@ -336,21 +331,8 @@ class BaseApiService {
       
       return null;
     } catch (e) {
-      print('❌ Refresh token rotation error: $e');
+      print('❌ Refresh token retry error: $e');
       return null;
-    }
-  }
-
-  /// Handle refresh failure - only log out if absolutely necessary
-  Future<void> _handleRefreshFailure() async {
-    // Clear session since refresh failed
-    await clearSession();
-    
-    // Trigger session expiry callback
-    if (onSessionExpired != null) {
-      Future.microtask(() {
-        onSessionExpired!();
-      });
     }
   }
 
@@ -541,20 +523,8 @@ class BaseApiService {
           return ApiResponse.error(e.toString());
         }
       } else {
-        // Properly handle refresh failure
         print('❌ Unable to refresh token');
-        
-        // Clear session
-        await clearSession();
-        
-        // Trigger session expiry callback
-        if (onSessionExpired != null) {
-          Future.microtask(() {
-            onSessionExpired!();
-          });
-        }
-        
-        return ApiResponse.error('Session expired. Please login again.');
+        return ApiResponse.error('Authentication failed. Please try again.');
       }
     }
 
@@ -599,17 +569,12 @@ class BaseApiService {
         response = await _sendHttpRequest(method, url, currentHeaders, body);
         print('✅ Retry successful in sendAuthenticatedRequest');
       } else {
-        // Properly handle refresh failure
         print('❌ Unable to refresh token in sendAuthenticatedRequest');
         
-        // Clear session since refresh failed
-        await clearSession();
-        
-        // Create a proper error response
-        final errorResponse = http.Response(
+        return http.Response(
           jsonEncode({
             'success': false,
-            'message': 'Session expired. Please login again.',
+            'message': 'Authentication failed. Please try again.',
             'error': 'refresh_token_failed',
           }),
           401,
@@ -617,15 +582,6 @@ class BaseApiService {
             'Content-Type': 'application/json',
           },
         );
-        
-        // Trigger session expiry callback
-        if (onSessionExpired != null) {
-          Future.microtask(() {
-            onSessionExpired!();
-          });
-        }
-        
-        return errorResponse;
       }
     }
 

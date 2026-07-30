@@ -26,7 +26,6 @@ router.post('/google', googleAuthController.googleAuth);
 
 // Refresh Access Token
 router.post('/refresh', authController.refresh);
-router.post('/rotate-refresh', authController.refresh);
 
 //    Protected Routes
 

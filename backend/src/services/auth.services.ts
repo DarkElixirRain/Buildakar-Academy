@@ -114,9 +114,13 @@ export class AuthService {
     const tokenHash = hashRefreshToken(tokens.refreshToken);
 
     console.time('[Auth] Refresh token DB ops');
+    // Clean up only expired refresh tokens, keep valid ones for multi-device support
     await prisma.$transaction([
       prisma.refreshToken.deleteMany({
-        where: { userId: user.id },
+        where: {
+          userId: user.id,
+          expiresAt: { lt: new Date() },
+        },
       }),
       prisma.refreshToken.create({
         data: {
