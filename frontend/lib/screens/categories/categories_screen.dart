@@ -633,17 +633,17 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
     if (isTablet) {
       crossAxisCount = 3;
-      childAspectRatio = 1.1;
+      childAspectRatio = 0.95;
       spacing = 20.0;
       itemCount = 6;
     } else if (isSmallScreen) {
       crossAxisCount = 2;
-      childAspectRatio = 0.9;
+      childAspectRatio = 0.72;
       spacing = 12.0;
       itemCount = 4;
     } else {
       crossAxisCount = 2;
-      childAspectRatio = 1.0;
+      childAspectRatio = 0.74;
       spacing = 16.0;
       itemCount = 6;
     }
@@ -677,11 +677,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image skeleton
-                Expanded(
-                  flex: 2,
+                // Image skeleton - fixed aspect ratio like real card
+                AspectRatio(
+                  aspectRatio: 16 / 10,
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.getBackgroundSelectedColor(brightness),
@@ -695,42 +694,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 // Content skeleton
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title skeleton
-                            Container(
-                              height: 14.0,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: AppColors.getBackgroundSelectedColor(brightness),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            // Description skeleton
-                            Container(
-                              height: 10.0,
-                              width: 60.0,
-                              decoration: BoxDecoration(
-                                color: AppColors.getBackgroundSelectedColor(brightness),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Badge skeleton
+                        // Title skeleton
                         Container(
-                          height: 20.0,
-                          width: 80.0,
+                          height: 11.0,
+                          width: double.infinity,
                           decoration: BoxDecoration(
                             color: AppColors.getBackgroundSelectedColor(brightness),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        // Description skeleton
+                        Container(
+                          height: 9.0,
+                          width: 60.0,
+                          decoration: BoxDecoration(
+                            color: AppColors.getBackgroundSelectedColor(brightness),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const Spacer(),
+                        // Badge skeleton
+                        Container(
+                          height: 16.0,
+                          width: 60.0,
+                          decoration: BoxDecoration(
+                            color: AppColors.getBackgroundSelectedColor(brightness),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ],

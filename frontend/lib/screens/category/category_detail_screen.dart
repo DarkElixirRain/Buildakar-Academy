@@ -563,7 +563,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         childAspectRatio = 2.6;
       } else {
         columns = 2;
-        childAspectRatio = isSmallPhone ? 0.85 : 0.78;
+        childAspectRatio = isSmallPhone ? 0.72 : 0.74;
       }
       spacing = 12.0;
       verticalSpacing = 16.0;
@@ -1412,94 +1412,90 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       padding: EdgeInsets.all(contentPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title, 
-                maxLines: 2, 
-                overflow: TextOverflow.ellipsis, 
-                style: TextStyle(
-                  fontSize: isSmallPhone ? 12 : 14, 
-                  fontWeight: FontWeight.w700, 
-                  color: textColor, 
-                  height: 1.2,
+          Text(
+            title, 
+            maxLines: 2, 
+            overflow: TextOverflow.ellipsis, 
+            style: TextStyle(
+              fontSize: isSmallPhone ? 12 : 14, 
+              fontWeight: FontWeight.w700, 
+              color: textColor, 
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            instructor, 
+            maxLines: 1, 
+            overflow: TextOverflow.ellipsis, 
+            style: TextStyle(
+              fontSize: isSmallPhone ? 10 : 11.5, 
+              color: textSecondary,
+            ),
+          ),
+          if (!isListStyle) const SizedBox(height: 2),
+          if (!isListStyle)
+            Row(
+              children: [
+                Icon(Icons.star_rounded, size: 13, color: AppColors.getWarningColor(b)),
+                const SizedBox(width: 2),
+                Text(
+                  rating.toStringAsFixed(1), 
+                  style: TextStyle(
+                    fontSize: isSmallPhone ? 10 : 11, 
+                    fontWeight: FontWeight.bold, 
+                    color: textColor,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                instructor, 
-                maxLines: 1, 
-                overflow: TextOverflow.ellipsis, 
-                style: TextStyle(
-                  fontSize: isSmallPhone ? 10 : 11.5, 
-                  color: textSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.star_rounded, size: 15, color: AppColors.getWarningColor(b)),
-                  const SizedBox(width: 2),
-                  Text(
-                    rating.toStringAsFixed(1), 
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    '($reviewCount)', 
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: isSmallPhone ? 11 : 12, 
-                      fontWeight: FontWeight.bold, 
-                      color: textColor,
+                      fontSize: isSmallPhone ? 9 : 10, 
+                      color: textSecondary,
                     ),
                   ),
+                ),
+                if (level.isNotEmpty) ...[
                   const SizedBox(width: 3),
                   Flexible(
-                    child: Text(
-                      '($reviewCount)', 
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: isSmallPhone ? 10 : 11, 
-                        color: textSecondary,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: _accentColor.withValues(alpha: 0.12), 
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        level, 
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isSmallPhone ? 7 : 8.5, 
+                          fontWeight: FontWeight.w600, 
+                          color: _accentColor,
+                        ),
                       ),
                     ),
                   ),
-                  if (level.isNotEmpty) ...[
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _accentColor.withValues(alpha: 0.12), 
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          level, 
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: isSmallPhone ? 8 : 9, 
-                            fontWeight: FontWeight.w600, 
-                            color: _accentColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          const Spacer(),
           Row(
             children: [
               Flexible(
                 child: Row(
                   children: [
-                    Icon(Icons.play_circle_outline_rounded, size: 13, color: textSecondary),
-                    const SizedBox(width: 3),
+                    Icon(Icons.play_circle_outline_rounded, size: 12, color: textSecondary),
+                    const SizedBox(width: 2),
                     Flexible(
                       child: Text(
                         '$lessonCount lessons', 
                         style: TextStyle(
-                          fontSize: isSmallPhone ? 10 : 11, 
+                          fontSize: isSmallPhone ? 9 : 10.5, 
                           color: textSecondary,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1508,12 +1504,12 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3),
               if (isFree)
                 Text(
                   'FREE', 
                   style: TextStyle(
-                    fontSize: 13, 
+                    fontSize: 12, 
                     fontWeight: FontWeight.bold, 
                     color: AppColors.getSuccessColor(b),
                   ),
@@ -1530,18 +1526,18 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: isSmallPhone ? 10 : 11, 
+                              fontSize: isSmallPhone ? 9 : 10, 
                               color: textSecondary, 
                               decoration: TextDecoration.lineThrough,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 3),
+                        const SizedBox(width: 2),
                       ],
                       Text(
                         'रु ${price.toStringAsFixed(0)}', 
                         style: TextStyle(
-                          fontSize: isSmallPhone ? 12.5 : 14, 
+                          fontSize: isSmallPhone ? 11.5 : 13, 
                           fontWeight: FontWeight.bold, 
                           color: textColor,
                         ),
