@@ -315,6 +315,20 @@ class _CourseLearningPageState extends State<CourseLearningPage>
     return list;
   }
 
+  bool get _hasPreviousLesson {
+    final flat = _flatLessons;
+    final pos = flat.indexWhere(
+        (e) => e.key.id == _currentSectionId && e.value.id == _currentLessonId);
+    return pos > 0;
+  }
+
+  bool get _hasNextLesson {
+    final flat = _flatLessons;
+    final pos = flat.indexWhere(
+        (e) => e.key.id == _currentSectionId && e.value.id == _currentLessonId);
+    return pos >= 0 && pos < flat.length - 1;
+  }
+
   void _selectLesson(CourseSection section, Lesson lesson, {bool autoPlay = true}) {
     setState(() {
       _currentSectionId = section.id;
@@ -502,6 +516,10 @@ class _CourseLearningPageState extends State<CourseLearningPage>
                   title: _currentLesson?.title ?? 'Lesson',
                   topInset: insetsTop,
                   onBack: _closeVideo,
+                  onNextLesson: _goToNextLesson,
+                  onPreviousLesson: _goToPreviousLesson,
+                  hasNextLesson: _hasNextLesson,
+                  hasPreviousLesson: _hasPreviousLesson,
                 ),
               ),
             ),
