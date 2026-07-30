@@ -563,7 +563,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         childAspectRatio = 2.6;
       } else {
         columns = 2;
-        childAspectRatio = 0.75;
+        childAspectRatio = isSmallPhone ? 0.85 : 0.78;
       }
       spacing = 12.0;
       verticalSpacing = 16.0;
@@ -1406,8 +1406,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       ),
     );
 
+    final contentPadding = isSmallPhone && !isListStyle ? 8.0 : (isListStyle ? 12.0 : 10.0);
+
     final content = Padding(
-      padding: EdgeInsets.all(isListStyle ? 12 : 10),
+      padding: EdgeInsets.all(contentPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1420,23 +1422,23 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 maxLines: 2, 
                 overflow: TextOverflow.ellipsis, 
                 style: TextStyle(
-                  fontSize: isSmallPhone ? 12.5 : 14, 
+                  fontSize: isSmallPhone ? 12 : 14, 
                   fontWeight: FontWeight.w700, 
                   color: textColor, 
-                  height: 1.25,
+                  height: 1.2,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 instructor, 
                 maxLines: 1, 
                 overflow: TextOverflow.ellipsis, 
                 style: TextStyle(
-                  fontSize: isSmallPhone ? 10.5 : 11.5, 
+                  fontSize: isSmallPhone ? 10 : 11.5, 
                   color: textSecondary,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(Icons.star_rounded, size: 15, color: AppColors.getWarningColor(b)),
@@ -1450,35 +1452,43 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     ),
                   ),
                   const SizedBox(width: 3),
-                  Text(
-                    '($reviewCount)', 
-                    style: TextStyle(
-                      fontSize: isSmallPhone ? 10 : 11, 
-                      color: textSecondary,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _accentColor.withValues(alpha: 0.12), 
-                      borderRadius: BorderRadius.circular(5),
-                    ),
+                  Flexible(
                     child: Text(
-                      level, 
+                      '($reviewCount)', 
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: isSmallPhone ? 8.5 : 9.5, 
-                        fontWeight: FontWeight.w600, 
-                        color: _accentColor,
+                        fontSize: isSmallPhone ? 10 : 11, 
+                        color: textSecondary,
                       ),
                     ),
                   ),
+                  if (level.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _accentColor.withValues(alpha: 0.12), 
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Text(
+                          level, 
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: isSmallPhone ? 8 : 9, 
+                            fontWeight: FontWeight.w600, 
+                            color: _accentColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
           ),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
                 child: Row(
@@ -1498,6 +1508,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 4),
               if (isFree)
                 Text(
                   'FREE', 
@@ -1510,17 +1521,22 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               else
                 Flexible(
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       if (hasDiscount) ...[
-                        Text(
-                          'रु ${originalPrice.toStringAsFixed(0)}', 
-                          style: TextStyle(
-                            fontSize: isSmallPhone ? 10 : 11, 
-                            color: textSecondary, 
-                            decoration: TextDecoration.lineThrough,
+                        Flexible(
+                          child: Text(
+                            'रु ${originalPrice.toStringAsFixed(0)}', 
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: isSmallPhone ? 10 : 11, 
+                              color: textSecondary, 
+                              decoration: TextDecoration.lineThrough,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                       ],
                       Text(
                         'रु ${price.toStringAsFixed(0)}', 

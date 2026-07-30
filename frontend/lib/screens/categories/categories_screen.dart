@@ -177,7 +177,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 768;
     final isSmallScreen = screenWidth < 400;
 
     return Scaffold(
@@ -624,9 +623,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   Widget _buildSkeleton(bool isTablet, bool isSmallScreen) {
     final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     
     // Responsive grid values
     int crossAxisCount;
@@ -656,15 +653,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       itemCount = 9;
     }
 
-    // Calculate available height for grid to prevent overflow
-    final appBarHeight = AppBar().preferredSize.height + 
-        MediaQuery.of(context).padding.top + 
-        70; // Search bar height
-    final availableHeight = screenHeight - appBarHeight - 32; // 32 for padding
-
-    return Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: GridView.builder(
+        shrinkWrap: true,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: spacing,
