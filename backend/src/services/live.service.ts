@@ -873,7 +873,6 @@ export async function joinLiveClass(
   const jaasAppId = process.env.JAAS_APP_ID;
   const jaasKid = process.env.JAAS_KID;
   const jaasPrivateKeyPath = process.env.JAAS_PRIVATE_KEY_PATH;
-  const jitsiJwtSecret = process.env.JITSI_JWT_SECRET;
   const jitsiServerUrl = process.env.JITSI_SERVER_URL || 'https://8x8.vc';
 
   let token = null;
@@ -921,49 +920,35 @@ export async function joinLiveClass(
       } catch (error) {
       throw new Error('Failed to generate authentication token');
     }
-  } else if (jitsiJwtSecret && jitsiJwtSecret.length > 0) {
-    try {
-      const now = Math.floor(Date.now() / 1000);
-      const jitsiAppId = process.env.JITSI_APP_ID || 'dev-app';
-      const jitsiDomain = process.env.JITSI_DOMAIN || 'meet.jit.si';
-      const isModerator = user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || isInstructor;
-
-      const payload = {
-        aud: 'jitsi',
-        iss: jitsiAppId,
-        sub: jitsiDomain,
-        room: liveClass.roomName,
-        exp: now + 3600,
-        nbf: now,
-        context: {
-          user: {
-            id: userId,
-            name: `${user.firstName} ${user.lastName}`.trim() || 'User',
-            email: user.email,
-            avatar: user.photo || '',
-            moderator: isModerator,
-          },
-        },
-      };
-
-      token = jwt.sign(payload, jitsiJwtSecret, { algorithm: 'HS256' });
-      } catch (error) {
-      throw new Error('Failed to generate authentication token');
-    }
   }
 
   const isModerator = user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || isInstructor;
 
-  const responseData = {
-    room: jaasAppId ? `${jaasAppId}/${liveClass.roomName}` : liveClass.roomName,
-    serverUrl: jitsiServerUrl,
-    token: token,
+  const responseData: {
+    room: string;
+    serverUrl: string;
+    token: string | null;
+    isModerator: boolean;
+    displayName: string;
+    email: string;
+    liveClassId: string;
+    title: string;
+  } = {
+    room: liveClass.roomName,
+    serverUrl: 'https://meet.jit.si',
+    token: null,
     isModerator: isModerator,
-    displayName: `${user.firstName} ${user.lastName}`.trim() || 'Instructor',
+    displayName: `${user.firstName} ${user.lastName}`.trim() || 'User',
     email: user.email,
     liveClassId: liveClass.id,
     title: liveClass.title,
   };
+
+  if (jaasAppId && jaasKid && keyFileExists) {
+    responseData.room = `${jaasAppId}/${liveClass.roomName}`;
+    responseData.serverUrl = jitsiServerUrl;
+    responseData.token = token;
+  }
 
   return responseData;
 }
