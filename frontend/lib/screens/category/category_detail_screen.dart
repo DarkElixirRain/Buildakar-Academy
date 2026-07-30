@@ -95,7 +95,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     final maxExtent = _scrollController.position.maxScrollExtent;
     final pixels = _scrollController.position.pixels;
 
-    const collapseRange = _expandedHeaderHeight - _collapsedHeaderHeight;
+    final collapseRange = _expandedHeaderHeight - _collapsedHeaderHeight;
     final progress = (pixels / collapseRange).clamp(0.0, 1.0);
     if ((progress - _headerCollapseProgress).abs() > 0.01) {
       setState(() => _headerCollapseProgress = progress);
@@ -558,9 +558,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       childAspectRatio = 0.78;
       verticalSpacing = 20.0;
     } else if (isPhone) {
-      columns = _viewMode == _ViewMode.list ? 1 : 2;
+      if (_viewMode == _ViewMode.list) {
+        columns = 1;
+        childAspectRatio = 2.6;
+      } else {
+        columns = 2;
+        childAspectRatio = 0.75;
+      }
       spacing = 12.0;
-      childAspectRatio = _viewMode == _ViewMode.list ? 2.8 : 0.75;
       verticalSpacing = 16.0;
     } else {
       columns = 2;
@@ -719,7 +724,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                         children: [
                           Icon(Icons.menu_book_rounded, color: Colors.white.withValues(alpha: 0.85), size: 14),
                           const SizedBox(width: 4),
-                          Expanded(
+                          Flexible(
                             child: Text(
                               _courseCountFromApi != null
                                   ? '$_courseCountFromApi courses'
@@ -812,6 +817,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
     if (isSmallScreen) {
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             height: 34,
@@ -826,7 +832,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   onTap: () => setState(() => _selectedLevel = level),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: selected ? _accentColor : (AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light)),
@@ -899,7 +905,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   onTap: () => setState(() => _selectedLevel = level),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: selected ? _accentColor : (AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light)),
@@ -985,20 +991,26 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          _isLoading ? 'Loading courses…' : '$filteredCount ${filteredCount == 1 ? 'course' : 'courses'} found',
-          style: TextStyle(
-            fontSize: isSmallPhone ? 13 : 14.5, 
-            fontWeight: FontWeight.w600, 
-            color: AppColors.getTextColor(b),
+        Flexible(
+          child: Text(
+            _isLoading ? 'Loading courses…' : '$filteredCount ${filteredCount == 1 ? 'course' : 'courses'} found',
+            style: TextStyle(
+              fontSize: isSmallPhone ? 13 : 14.5, 
+              fontWeight: FontWeight.w600, 
+              color: AppColors.getTextColor(b),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        Text(
-          _sortLabel(_sortOption),
-          style: TextStyle(
-            fontSize: isSmallPhone ? 11.5 : 12.5, 
-            color: AppColors.getTextSecondaryColor(b), 
-            fontStyle: FontStyle.italic,
+        Flexible(
+          child: Text(
+            _sortLabel(_sortOption),
+            style: TextStyle(
+              fontSize: isSmallPhone ? 11.5 : 12.5, 
+              color: AppColors.getTextSecondaryColor(b), 
+              fontStyle: FontStyle.italic,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -1468,18 +1480,23 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.play_circle_outline_rounded, size: 13, color: textSecondary),
-                  const SizedBox(width: 3),
-                  Text(
-                    '$lessonCount lessons', 
-                    style: TextStyle(
-                      fontSize: isSmallPhone ? 10 : 11, 
-                      color: textSecondary,
+              Flexible(
+                child: Row(
+                  children: [
+                    Icon(Icons.play_circle_outline_rounded, size: 13, color: textSecondary),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        '$lessonCount lessons', 
+                        style: TextStyle(
+                          fontSize: isSmallPhone ? 10 : 11, 
+                          color: textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (isFree)
                 Text(
@@ -1491,28 +1508,30 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                 )
               else
-                Row(
-                  children: [
-                    if (hasDiscount) ...[
+                Flexible(
+                  child: Row(
+                    children: [
+                      if (hasDiscount) ...[
+                        Text(
+                          'रु ${originalPrice.toStringAsFixed(0)}', 
+                          style: TextStyle(
+                            fontSize: isSmallPhone ? 10 : 11, 
+                            color: textSecondary, 
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
                       Text(
-                        'रु ${originalPrice.toStringAsFixed(0)}', 
+                        'रु ${price.toStringAsFixed(0)}', 
                         style: TextStyle(
-                          fontSize: isSmallPhone ? 10 : 11, 
-                          color: textSecondary, 
-                          decoration: TextDecoration.lineThrough,
+                          fontSize: isSmallPhone ? 12.5 : 14, 
+                          fontWeight: FontWeight.bold, 
+                          color: textColor,
                         ),
                       ),
-                      const SizedBox(width: 4),
                     ],
-                    Text(
-                      'रु ${price.toStringAsFixed(0)}', 
-                      style: TextStyle(
-                        fontSize: isSmallPhone ? 12.5 : 14, 
-                        fontWeight: FontWeight.bold, 
-                        color: textColor,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
             ],
           ),

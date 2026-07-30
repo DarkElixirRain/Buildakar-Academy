@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../constants/colors.dart';
 import '../../services/api_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common/error_state.dart';
 import '../course/course_learning/course_learning.dart';
 import '../../models/course_model.dart';
@@ -371,8 +372,9 @@ class _MyLearningScreenState extends State<MyLearningScreen>
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600 && screenWidth < 900;
     final isDesktop = screenWidth >= 900;
@@ -419,19 +421,19 @@ class _MyLearningScreenState extends State<MyLearningScreen>
 
     if (screenWidth < 400) {
       crossAxisCount = 1;
-      aspectRatio = 1.6;
+      aspectRatio = 1.15;
     } else if (screenWidth < 600) {
       crossAxisCount = 2;
-      aspectRatio = 1.5;
+      aspectRatio = 1.05;
     } else if (screenWidth < 900) {
       crossAxisCount = 3;
-      aspectRatio = 1.4;
+      aspectRatio = 1.0;
     } else if (screenWidth < 1200) {
       crossAxisCount = 4;
-      aspectRatio = 1.3;
+      aspectRatio = 0.95;
     } else {
       crossAxisCount = 5;
-      aspectRatio = 1.2;
+      aspectRatio = 0.9;
     }
 
     return Scaffold(
@@ -530,7 +532,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
         children: [
           // Thumbnail skeleton
           Container(
-            height: 120,
+            height: 110,
             width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.getBackgroundSelectedColor(brightness),
@@ -766,19 +768,19 @@ class _MyLearningScreenState extends State<MyLearningScreen>
 
     if (screenWidth < 400) {
       crossAxisCount = 1;
-      aspectRatio = 1.6;
+      aspectRatio = 1.15;
     } else if (screenWidth < 600) {
       crossAxisCount = 2;
-      aspectRatio = 1.5;
+      aspectRatio = 1.05;
     } else if (screenWidth < 900) {
       crossAxisCount = 3;
-      aspectRatio = 1.4;
+      aspectRatio = 1.0;
     } else if (screenWidth < 1200) {
       crossAxisCount = 4;
-      aspectRatio = 1.3;
+      aspectRatio = 0.95;
     } else {
       crossAxisCount = 5;
-      aspectRatio = 1.2;
+      aspectRatio = 0.9;
     }
 
     return RefreshIndicator(
@@ -846,6 +848,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Thumbnail
             ClipRRect(
@@ -858,12 +861,12 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                   course['thumbnail'] != null && course['thumbnail'].toString().isNotEmpty
                       ? Image.network(
                           course['thumbnail'],
-                          height: 120,
+                          height: 110,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              height: 120,
+                              height: 110,
                               width: double.infinity,
                               color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
                               child: Icon(
@@ -875,7 +878,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                           },
                         )
                       : Container(
-                          height: 120,
+                          height: 110,
                           width: double.infinity,
                           color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
                           child: Icon(
@@ -943,65 +946,85 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                 padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      course['title'] ?? 'Untitled',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: screenWidth < 400 ? 12 : 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.getTextColor(isDark ? Brightness.dark : Brightness.light),
-                        height: 1.2,
+                    // Scrollable-safe title/instructor/badges block: guarantees
+                    // this section can never throw a RenderFlex overflow error,
+                    // even with long titles, large text-scale factors, or very
+                    // short cards — it degrades to a soft clip instead of
+                    // painting the yellow/black overflow stripes.
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              course['title'] ?? 'Untitled',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: screenWidth < 400 ? 12 : 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.getTextColor(isDark ? Brightness.dark : Brightness.light),
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              course['instructor'] ?? 'Unknown Instructor',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: screenWidth < 400 ? 10 : 12,
+                                color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      course['level'] ?? 'Beginner',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: screenWidth < 400 ? 8 : 10,
+                                        color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    course['category'] ?? 'General',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: screenWidth < 400 ? 8 : 10,
+                                      color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      course['instructor'] ?? 'Unknown Instructor',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: screenWidth < 400 ? 10 : 12,
-                        color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            course['level'] ?? 'Beginner',
-                            style: TextStyle(
-                              fontSize: screenWidth < 400 ? 8 : 10,
-                              color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            course['category'] ?? 'General',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: screenWidth < 400 ? 8 : 10,
-                              color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Progress bar
+                    const SizedBox(height: 6),
+                    // Progress bar (always pinned to the bottom of the card)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
                           height: 4,
@@ -1025,13 +1048,18 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              isCompleted ? 'Completed' : (course['remainingTime'] ?? 'In progress'),
-                              style: TextStyle(
-                                fontSize: screenWidth < 400 ? 8 : 10,
-                                color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
+                            Flexible(
+                              child: Text(
+                                isCompleted ? 'Completed' : (course['remainingTime'] ?? 'In progress'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: screenWidth < 400 ? 8 : 10,
+                                  color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 4),
                             Text(
                               '${progress.round()}%',
                               style: TextStyle(
@@ -1067,6 +1095,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const CircularProgressIndicator(strokeWidth: 3),
             const SizedBox(height: 8),
@@ -1085,10 +1114,11 @@ class _MyLearningScreenState extends State<MyLearningScreen>
 
   Widget _buildEmptyState(bool isDark) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.school_outlined,
@@ -1163,10 +1193,11 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     return Scaffold(
       backgroundColor: AppColors.getBackgroundColor(isDark ? Brightness.dark : Brightness.light),
       body: Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.login_outlined,
