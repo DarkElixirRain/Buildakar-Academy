@@ -421,19 +421,19 @@ class _MyLearningScreenState extends State<MyLearningScreen>
 
     if (screenWidth < 400) {
       crossAxisCount = 1;
-      aspectRatio = 1.15;
+      aspectRatio = 0.78;
     } else if (screenWidth < 600) {
       crossAxisCount = 2;
-      aspectRatio = 1.05;
+      aspectRatio = 0.72;
     } else if (screenWidth < 900) {
       crossAxisCount = 3;
-      aspectRatio = 1.0;
+      aspectRatio = 0.68;
     } else if (screenWidth < 1200) {
       crossAxisCount = 4;
-      aspectRatio = 0.95;
+      aspectRatio = 0.64;
     } else {
       crossAxisCount = 5;
-      aspectRatio = 0.9;
+      aspectRatio = 0.6;
     }
 
     return Scaffold(
@@ -521,7 +521,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     return Container(
       decoration: BoxDecoration(
         color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
           width: 1,
@@ -529,6 +529,7 @@ class _MyLearningScreenState extends State<MyLearningScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Thumbnail skeleton
           Container(
@@ -537,8 +538,8 @@ class _MyLearningScreenState extends State<MyLearningScreen>
             decoration: BoxDecoration(
               color: AppColors.getBackgroundSelectedColor(brightness),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(14),
+                topRight: Radius.circular(14),
               ),
             ),
           ),
@@ -579,30 +580,18 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  // Level and category skeleton
-                  Row(
-                    children: [
-                      Container(
-                        height: 16,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          color: AppColors.getBackgroundSelectedColor(brightness),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        height: 16,
-                        width: 60,
-                        decoration: BoxDecoration(
-                          color: AppColors.getBackgroundSelectedColor(brightness),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 6),
+                  // Category skeleton
+                  Container(
+                    height: 8,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      color: AppColors.getBackgroundSelectedColor(brightness),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
-                  const Spacer(),
+                  // Same overflow-safe flexible gap used by the real card.
+                  const Flexible(child: SizedBox(height: 8)),
                   // Progress bar skeleton
                   Container(
                     height: 4,
@@ -612,28 +601,15 @@ class _MyLearningScreenState extends State<MyLearningScreen>
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  // Progress text skeleton
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        height: 8,
-                        width: 60,
-                        decoration: BoxDecoration(
-                          color: AppColors.getBackgroundSelectedColor(brightness),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      Container(
-                        height: 8,
-                        width: 30,
-                        decoration: BoxDecoration(
-                          color: AppColors.getBackgroundSelectedColor(brightness),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 8),
+                  // Resume/Review button skeleton
+                  Container(
+                    height: 28,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.getBackgroundSelectedColor(brightness),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ],
               ),
@@ -768,19 +744,19 @@ class _MyLearningScreenState extends State<MyLearningScreen>
 
     if (screenWidth < 400) {
       crossAxisCount = 1;
-      aspectRatio = 1.15;
+      aspectRatio = 0.78;
     } else if (screenWidth < 600) {
       crossAxisCount = 2;
-      aspectRatio = 1.05;
+      aspectRatio = 0.72;
     } else if (screenWidth < 900) {
       crossAxisCount = 3;
-      aspectRatio = 1.0;
+      aspectRatio = 0.68;
     } else if (screenWidth < 1200) {
       crossAxisCount = 4;
-      aspectRatio = 0.95;
+      aspectRatio = 0.64;
     } else {
       crossAxisCount = 5;
-      aspectRatio = 0.9;
+      aspectRatio = 0.6;
     }
 
     return RefreshIndicator(
@@ -819,30 +795,88 @@ class _MyLearningScreenState extends State<MyLearningScreen>
     double screenWidth,
   ) {
     final brightness = isDark ? Brightness.dark : Brightness.light;
+
+    // Theme-aware colors (same accessor pattern used across the app,
+    // e.g. widgets/home/continue_learning.dart)
+    final textColor = AppColors.getTextColor(brightness);
+    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
+    final primaryColor = AppColors.getPrimaryColor(brightness);
+    final successColor = AppColors.getSuccessColor(brightness);
+    final backgroundElementColor = AppColors.getBackgroundElementColor(brightness);
+    final backgroundSelectedColor = AppColors.getBackgroundSelectedColor(brightness);
+
     final progress = (course['progress'] as num?)?.toDouble() ?? 0.0;
     final isCompleted = course['isCompleted'] ?? false;
-    final progressColor = isCompleted
-        ? AppColors.getSuccessColor(brightness)
-        : AppColors.getPrimaryColor(brightness);
+    final progressColor = isCompleted ? successColor : primaryColor;
     final progressValue = (progress / 100).clamp(0.0, 1.0);
+
+    // Responsive sizing — mirrors the breakpoints/proportions used by the
+    // "Continue Learning" horizontal card so both surfaces feel consistent.
+    double fontSizeTitle;
+    double fontSizeSubtitle;
+    double fontSizeBadge;
+    double paddingSize;
+    double buttonHeight;
+    double progressBarHeight;
+    double imageHeight;
+
+    if (screenWidth < 400) {
+      fontSizeTitle = 12;
+      fontSizeSubtitle = 10;
+      fontSizeBadge = 8;
+      paddingSize = 8;
+      buttonHeight = 28;
+      progressBarHeight = 3;
+      imageHeight = 100;
+    } else if (screenWidth < 600) {
+      fontSizeTitle = 13;
+      fontSizeSubtitle = 11;
+      fontSizeBadge = 9;
+      paddingSize = 9;
+      buttonHeight = 30;
+      progressBarHeight = 3;
+      imageHeight = 105;
+    } else if (screenWidth < 900) {
+      fontSizeTitle = 13;
+      fontSizeSubtitle = 11;
+      fontSizeBadge = 9;
+      paddingSize = 10;
+      buttonHeight = 32;
+      progressBarHeight = 4;
+      imageHeight = 110;
+    } else if (screenWidth < 1200) {
+      fontSizeTitle = 14;
+      fontSizeSubtitle = 12;
+      fontSizeBadge = 10;
+      paddingSize = 10;
+      buttonHeight = 34;
+      progressBarHeight = 4;
+      imageHeight = 115;
+    } else {
+      fontSizeTitle = 15;
+      fontSizeSubtitle = 13;
+      fontSizeBadge = 10;
+      paddingSize = 12;
+      buttonHeight = 36;
+      progressBarHeight = 4;
+      imageHeight = 120;
+    }
 
     return GestureDetector(
       onTap: () => _handleCoursePress(course),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.getBackgroundElementColor(isDark ? Brightness.dark : Brightness.light),
-          borderRadius: BorderRadius.circular(16),
+          color: backgroundElementColor,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.getBackgroundSelectedColor(isDark ? Brightness.dark : Brightness.light),
+            color: backgroundSelectedColor,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.2)
-                  : AppColors.getTextColor(brightness).withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
               offset: const Offset(0, 2),
-              blurRadius: 8,
+              blurRadius: 6,
             ),
           ],
         ),
@@ -850,227 +884,255 @@ class _MyLearningScreenState extends State<MyLearningScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Thumbnail
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              child: Stack(
-                children: [
-                  course['thumbnail'] != null && course['thumbnail'].toString().isNotEmpty
+            // Image section with corner badges (percent, completed, level,
+            // remaining time) — same layout as the Continue Learning card.
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(14),
+                    topRight: Radius.circular(14),
+                  ),
+                  child: course['thumbnail'] != null && course['thumbnail'].toString().isNotEmpty
                       ? Image.network(
                           course['thumbnail'],
-                          height: 110,
+                          height: imageHeight,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
-                              height: 110,
+                              height: imageHeight,
                               width: double.infinity,
-                              color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
+                              color: primaryColor.withValues(alpha: 0.1),
                               child: Icon(
-                                Icons.school_outlined,
-                                size: 40,
-                                color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
+                                Icons.image_outlined,
+                                size: 30,
+                                color: textSecondaryColor,
                               ),
                             );
                           },
                         )
                       : Container(
-                          height: 110,
+                          height: imageHeight,
                           width: double.infinity,
-                          color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
+                          color: primaryColor.withValues(alpha: 0.1),
                           child: Icon(
                             Icons.school_outlined,
-                            size: 40,
-                            color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
+                            size: 30,
+                            color: textSecondaryColor,
                           ),
                         ),
+                ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${progress.round()}%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSizeBadge,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                if (isCompleted)
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 4,
+                    left: 4,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(12),
+                        color: successColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: fontSizeBadge + 2,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Done',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: fontSizeBadge,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (course['level'] != null)
+                  Positioned(
+                    bottom: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '${progress.round()}%',
-                        style: const TextStyle(
+                        course['level'],
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: fontSizeBadge,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
                   ),
-                  if (isCompleted)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.getSuccessColor(brightness),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.white,
-                              size: 12,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'Completed',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                ],
-              ),
-            ),
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Scrollable-safe title/instructor/badges block: guarantees
-                    // this section can never throw a RenderFlex overflow error,
-                    // even with long titles, large text-scale factors, or very
-                    // short cards — it degrades to a soft clip instead of
-                    // painting the yellow/black overflow stripes.
-                    Expanded(
-                      child: SingleChildScrollView(
-                        physics: const NeverScrollableScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              course['title'] ?? 'Untitled',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: screenWidth < 400 ? 12 : 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.getTextColor(isDark ? Brightness.dark : Brightness.light),
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              course['instructor'] ?? 'Unknown Instructor',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: screenWidth < 400 ? 10 : 12,
-                                color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      course['level'] ?? 'Beginner',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: screenWidth < 400 ? 8 : 10,
-                                        color: AppColors.getPrimaryColor(isDark ? Brightness.dark : Brightness.light),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    course['category'] ?? 'General',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: screenWidth < 400 ? 8 : 10,
-                                      color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Progress bar (always pinned to the bottom of the card)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          height: 4,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: AppColors.getBackgroundSelectedColor(brightness),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: progressValue,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: progressColor,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
+                        Icon(
+                          Icons.access_time,
+                          color: Colors.white,
+                          size: fontSizeBadge + 2,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                isCompleted ? 'Completed' : (course['remainingTime'] ?? 'In progress'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: screenWidth < 400 ? 8 : 10,
-                                  color: AppColors.getTextSecondaryColor(isDark ? Brightness.dark : Brightness.light),
-                                ),
-                              ),
+                        const SizedBox(width: 2),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 90),
+                          child: Text(
+                            course['remainingTime'] ?? 'In progress',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: fontSizeBadge,
+                              fontWeight: FontWeight.w500,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${progress.round()}%',
-                              style: TextStyle(
-                                fontSize: screenWidth < 400 ? 8 : 10,
-                                fontWeight: FontWeight.w600,
-                                color: progressColor,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Content section
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(paddingSize),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: fontSizeTitle * 2.4,
+                      child: Text(
+                        course['title'] ?? 'Untitled',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: fontSizeTitle,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: paddingSize * 0.5),
+                    SizedBox(
+                      height: fontSizeSubtitle + 2,
+                      child: Text(
+                        course['instructor'] ?? 'Unknown Instructor',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: fontSizeSubtitle,
+                          color: textSecondaryColor,
+                        ),
+                      ),
+                    ),
+                    if (course['category'] != null)
+                      SizedBox(
+                        height: fontSizeSubtitle,
+                        child: Text(
+                          course['category'],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: fontSizeSubtitle - 2,
+                            color: textSecondaryColor.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    // Flexible spacer keeps the progress bar + button pinned
+                    // to the bottom without risking an overflow: since it
+                    // lives inside a bounded Expanded, any leftover space
+                    // (which can be zero) is absorbed here safely.
+                    Flexible(child: SizedBox(height: paddingSize * 0.5)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: paddingSize * 0.5),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(2),
+                              child: LinearProgressIndicator(
+                                value: progressValue,
+                                backgroundColor: backgroundSelectedColor.withValues(alpha: 0.5),
+                                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                                minHeight: progressBarHeight,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${progress.round()}%',
+                            style: TextStyle(
+                              fontSize: fontSizeSubtitle - 1,
+                              fontWeight: FontWeight.w600,
+                              color: textSecondaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: buttonHeight,
+                      child: ElevatedButton(
+                        onPressed: () => _handleCoursePress(course),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isCompleted ? successColor : primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          isCompleted ? 'Review' : 'Resume',
+                          style: TextStyle(
+                            fontSize: fontSizeSubtitle,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

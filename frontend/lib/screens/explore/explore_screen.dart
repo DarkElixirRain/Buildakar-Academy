@@ -42,7 +42,6 @@ class _ExploreContentState extends State<ExploreScreen>
   String _selectedCategoryId = 'all';
   String _sort = 'Newest';
   Set<String> _levelFilters = {};
-  RangeValues _priceRange = const RangeValues(0, 200);
 
   List<Map<String, dynamic>> _allCourses = [];
   List<Map<String, dynamic>> _categories = [];
@@ -360,9 +359,7 @@ class _ExploreContentState extends State<ExploreScreen>
           (c['title'] as String).toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (c['instructor'] as String).toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesLevel = _levelFilters.isEmpty || _levelFilters.contains(c['level']);
-      final price = (c['price'] as num).toDouble();
-      final matchesPrice = price >= _priceRange.start && price <= _priceRange.end;
-      return matchesCategory && matchesQuery && matchesLevel && matchesPrice;
+      return matchesCategory && matchesQuery && matchesLevel;
     }).toList();
 
     // Apply sorting (client-side sorting since API might not support all sort types)
@@ -386,7 +383,7 @@ class _ExploreContentState extends State<ExploreScreen>
   }
 
   bool get _hasActiveFilters =>
-      _levelFilters.isNotEmpty || _priceRange.start != 0 || _priceRange.end != 200;
+      _levelFilters.isNotEmpty;
 
   void _toggleBookmark(String courseId) {
     setState(() {
@@ -417,12 +414,10 @@ class _ExploreContentState extends State<ExploreScreen>
       context,
       initialSort: _sort,
       initialLevels: _levelFilters,
-      initialPriceRange: _priceRange,
-      onApply: (sort, levels, price) {
+      onApply: (sort, levels) {
         setState(() {
           _sort = sort;
           _levelFilters = levels;
-          _priceRange = price;
         });
         // Reload courses with new filters
         _currentPage = 0;
@@ -576,7 +571,6 @@ class _ExploreContentState extends State<ExploreScreen>
                               onTap: () {
                                 setState(() {
                                   _levelFilters = {};
-                                  _priceRange = const RangeValues(0, 200);
                                 });
                                 _loadCourses(reset: true);
                               },
@@ -720,7 +714,6 @@ class _ExploreContentState extends State<ExploreScreen>
                             onPressed: () {
                               setState(() {
                                 _levelFilters = {};
-                                _priceRange = const RangeValues(0, 200);
                                 _searchQuery = '';
                                 _searchController.clear();
                                 _selectedCategoryId = 'all';
@@ -848,6 +841,275 @@ class _ExploreContentState extends State<ExploreScreen>
           },
         ),
       ],
+    );
+  }
+}
+
+// SortFilterSheet - Updated without price range
+class SortFilterSheet extends StatefulWidget {
+  final String initialSort;
+  final Set<String> initialLevels;
+  final Function(String, Set<String>) onApply;
+
+  const SortFilterSheet({
+    Key? key,
+    required this.initialSort,
+    required this.initialLevels,
+    required this.onApply,
+  }) : super(key: key);
+
+  static Future<void> show(
+    BuildContext context, {
+    required String initialSort,
+    required Set<String> initialLevels,
+    required Function(String, Set<String>) onApply,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SortFilterSheet(
+        initialSort: initialSort,
+        initialLevels: initialLevels,
+        onApply: onApply,
+      ),
+    );
+  }
+
+  @override
+  State<SortFilterSheet> createState() => _SortFilterSheetState();
+}
+
+class _SortFilterSheetState extends State<SortFilterSheet> {
+  late String _selectedSort;
+  late Set<String> _selectedLevels;
+
+  final List<String> _sortOptions = [
+    'Most Popular',
+    'Newest',
+    'Highest Rated',
+    'Price: Low to High',
+    'Price: High to Low',
+  ];
+
+  final List<String> _levelOptions = [
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSort = widget.initialSort;
+    _selectedLevels = Set.from(widget.initialLevels);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+    final backgroundColor = AppColors.getBackgroundElementColor(brightness);
+    final textColor = AppColors.getTextColor(brightness);
+    final textSecondaryColor = AppColors.getTextSecondaryColor(brightness);
+    final primaryColor = AppColors.getPrimaryColor(brightness);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.only(top: 12, bottom: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: textSecondaryColor.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Sort & Filter',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedLevels = {};
+                      _selectedSort = 'Most Popular';
+                    });
+                  },
+                  child: Text(
+                    'Reset',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Sort options
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sort By',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _sortOptions.map((option) {
+                    final isSelected = _selectedSort == option;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedSort = option;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? primaryColor : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? primaryColor : textSecondaryColor.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Text(
+                          option,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isSelected ? Colors.white : textColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Level filters
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Level',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _levelOptions.map((level) {
+                    final isSelected = _selectedLevels.contains(level);
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedLevels.remove(level);
+                          } else {
+                            _selectedLevels.add(level);
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? primaryColor : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? primaryColor : textSecondaryColor.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Text(
+                          level,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isSelected ? Colors.white : textColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Apply button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  widget.onApply(_selectedSort, _selectedLevels);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Apply Filters',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
