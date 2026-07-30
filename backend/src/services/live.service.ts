@@ -873,15 +873,16 @@ export async function joinLiveClass(
   const jaasAppId = process.env.JAAS_APP_ID;
   const jaasKid = process.env.JAAS_KID;
   const jaasPrivateKeyPath = process.env.JAAS_PRIVATE_KEY_PATH;
+  const jaasPrivateKeyEnv = process.env.JAAS_PRIVATE_KEY;
   const jitsiServerUrl = process.env.JITSI_SERVER_URL || 'https://8x8.vc';
 
   let token = null;
 
-  const keyFileExists = jaasPrivateKeyPath ? fs.existsSync(jaasPrivateKeyPath) : false;
+  const keyAvailable = !!(jaasPrivateKeyEnv || (jaasPrivateKeyPath && fs.existsSync(jaasPrivateKeyPath)));
 
-  if (jaasAppId && jaasKid && keyFileExists) {
+  if (jaasAppId && jaasKid && keyAvailable) {
     try {
-      const privateKey = fs.readFileSync(jaasPrivateKeyPath!, 'utf8');
+      const privateKey = jaasPrivateKeyEnv || fs.readFileSync(jaasPrivateKeyPath!, 'utf8');
       const now = Math.floor(Date.now() / 1000);
       const isModerator = user.role === 'INSTRUCTOR' || user.role === 'ADMIN' || isInstructor;
 
@@ -944,7 +945,7 @@ export async function joinLiveClass(
     title: liveClass.title,
   };
 
-  if (jaasAppId && jaasKid && keyFileExists) {
+  if (jaasAppId && jaasKid && keyAvailable) {
     responseData.room = `${jaasAppId}/${liveClass.roomName}`;
     responseData.serverUrl = jitsiServerUrl;
     responseData.token = token;
